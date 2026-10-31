@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cattle Auction Prices</title>
+<meta name="description" content="Weekly feeder calf and cull cow prices from USDA auction reports in Mississippi and Alabama.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout: a maroon market-report masthead, one market picker, then one question
+   per tab; numbers set like a printed sale report (tabular, right-aligned). */
+:root {
+  --bg: #f7f5f5;          /* page: neutral leaning toward maroon */
+  --surface: #ffffff;
+  --ink: #1c1c1c;
+  --ink-2: #4a4446;       /* secondary text */
+  --muted: #6f686a;
+  --rule: #e4dfe0;
+  --accent: #5d1725;      /* MSU maroon */
+  --accent-ink: #ffffff;
+  --accent-soft: #f3e9eb;
+  --line-1: #9b3047;      /* this year / now */
+  --line-2: #1c1c1c;      /* 3-year average, dashed */
+  --line-3: #777777;      /* last year */
+  --band: #c1c6c8;
+  --up: #2e6b3f;          /* price up: green */
+  --down: #b3261e;        /* price down: red */
+  --focus: #c99700;       /* MSU gold, focus ring only */
+  --warn-bg: #fff3d6;     /* few sales: amber */
+  --warn-ink: #7a4600;
+  --warn-line: #c98a12;
+  --display: "Bitter", Georgia, "Times New Roman", serif;
+  --body: "Public Sans", Arial, Helvetica, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151112; --surface: #1f191b; --ink: #f1ecee; --ink-2: #cfc6c9; --muted: #a59a9e;
+    --rule: #3a3134; --accent: #6e1d2e; --accent-ink: #ffffff; --accent-soft: #33212a;
+    --line-1: #e07a90; --line-2: #f1ecee; --line-3: #9a9194; --band: #4d4447;
+    --up: #86c995; --down: #f2958c; --focus: #e2b93b;
+    --warn-bg: #3b2c0e; --warn-ink: #f6c56a; --warn-line: #d9a032; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151112; --surface: #1f191b; --ink: #f1ecee; --ink-2: #cfc6c9; --muted: #a59a9e;
+  --rule: #3a3134; --accent: #6e1d2e; --accent-ink: #ffffff; --accent-soft: #33212a;
+  --line-1: #e07a90; --line-2: #f1ecee; --line-3: #9a9194; --band: #4d4447;
+  --up: #86c995; --down: #f2958c; --focus: #e2b93b;
+    --warn-bg: #3b2c0e; --warn-ink: #f6c56a; --warn-line: #d9a032; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--body);
+       -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+               z-index: 10; background: var(--bg); }
+.wrap { max-width: 1040px; margin: 0 auto;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* masthead */
+.mast { background: var(--accent); color: var(--accent-ink); }
+.mast .wrap { padding-block: 22px 20px; display: grid; gap: 14px;
+              grid-template-columns: 1fr auto; align-items: end; }
+.kicker { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+          opacity: .8; margin: 0 0 4px; }
+h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap: balance; }
+.asof { margin: 6px 0 0; font-size: 14px; opacity: .88; }
+.asof.edu { margin-top: 2px; font-size: 13px; }
+.asof a { color: inherit; }
+.disc { border: 1px solid var(--rule); border-left: 4px solid var(--ink-2); background: var(--surface); border-radius: 8px;
+        padding: 14px 16px; max-width: 78ch; display: grid; gap: 6px; }
+.disc h2 { font-size: 17px; }
+.disc p { margin: 0; }
+.pickers { display: flex; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.picker { display: grid; gap: 4px; min-width: 0; }
+.picker label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+                opacity: .85; }
+.picker select { appearance: none; -webkit-appearance: none; background: var(--surface); color: var(--ink);
+  border: 0; border-radius: 8px; padding: 11px 40px 11px 14px; font-weight: 600; font-size: 16px;
+  min-width: 230px; max-width: 100%; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px; background-repeat: no-repeat; }
+.picker select.st { min-width: 150px; }
+
+/* sale tally */
+.tally { background: var(--surface); border-bottom: 1px solid var(--rule); }
+.tally .wrap { padding-block: 14px; display: flex; flex-wrap: wrap; gap: 10px 32px; align-items: baseline; }
+.tally .lead { font-weight: 600; color: var(--ink-2); font-size: 14px; flex-basis: 100%; }
+.stat { display: grid; gap: 0; min-width: 0; }
+.stat b { font: 700 22px/1.2 var(--body); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.cov { flex-basis: 100%; grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+.cov a { color: inherit; }
+.stat.big b { font-size: 28px; color: var(--accent); }
+:root[data-theme="dark"] .stat.big b { color: var(--line-1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stat.big b { color: var(--line-1); } }
+
+/* tabs */
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+        border-bottom: 1px solid var(--rule); }
+.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+.tabs .wrap::-webkit-scrollbar { display: none; }
+.tab { flex: 0 0 auto; border: 0; background: transparent; padding: 9px 14px; border-radius: 999px;
+       font-weight: 600; font-size: 15px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+.tab:hover { background: var(--accent-soft); color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* panels */
+main { padding-block: 26px 40px; }
+.panel { display: grid; gap: 18px; }
+.panel > * { min-width: 0; }
+h2 { font: 700 clamp(22px, 3.4vw, 28px)/1.2 var(--display); margin: 0; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--ink-2); font-size: 15px; max-width: 68ch; }
+.note { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 72ch; }
+.chip-scope { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent); background: var(--accent-soft);
+  padding: 3px 9px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
+:root[data-theme="dark"] .chip-scope { color: var(--line-1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip-scope { color: var(--line-1); } }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 18px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px;
+       padding: 3px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+              font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.field input[type=number] { width: 120px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 8px;
+                            background: var(--surface); font-variant-numeric: tabular-nums; }
+
+/* report table */
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+caption { text-align: left; font: 700 16px/1.3 var(--body); padding: 0 0 8px; }
+th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+thead th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+td.price { font-weight: 700; font-size: 17px; }
+.chg { font-weight: 600; }
+.chg.up { color: var(--up); } .chg.down { color: var(--down); }
+.few { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: 11.5px; font-weight: 700;
+       color: var(--warn-ink); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 4px;
+       padding: 0 5px; white-space: nowrap; vertical-align: middle; }
+.few::before { content: "⚠"; }
+tr.thin td, td.thinchg { background: var(--warn-bg); }
+.fewmark { display: block; font-size: 11px; font-weight: 700; color: var(--warn-ink); }
+.fewmark::before { content: "⚠ "; }
+.warn { display: flex; gap: 8px; align-items: flex-start; grid-column: 1 / -1; margin: 0; background: var(--warn-bg);
+        color: var(--warn-ink); border-left: 4px solid var(--warn-line); border-radius: 6px; padding: 10px 12px;
+        font-size: 14px; font-weight: 600; }
+.warn::before { content: "⚠"; }
+.card.thin { border-color: var(--warn-line); box-shadow: inset 0 0 0 1px var(--warn-line); }
+.chart .fewpt { fill: var(--warn-bg); stroke: var(--warn-line); stroke-width: 2.5; }
+.chart .fewlab { fill: var(--warn-ink); font-weight: 700; }
+.fewkey { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--warn-line); background: var(--warn-bg); }
+.none { color: var(--muted); font-weight: 400; font-size: 14px; }
+.headsm { display: none; }
+.facts { display: grid; gap: 10px; }
+.facts h3 { margin: 0; font: 700 15px/1.3 var(--body); color: var(--ink-2); }
+.facts dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 10px 24px; margin: 0; }
+.facts dt { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts dd small { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.facts .gmix { margin: 0; font-size: 13px; color: var(--muted); }
+.facts .gmix a { color: inherit; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
+.two > * { min-width: 0; }
+
+/* calf value */
+.answer { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
+.answer .k { font-size: 13px; color: var(--muted); font-weight: 600; }
+.answer .v { font: 700 34px/1.1 var(--body); font-variant-numeric: tabular-nums; }
+.answer .v.hero { color: var(--accent); }
+:root[data-theme="dark"] .answer .v.hero { color: var(--line-1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .answer .v.hero { color: var(--line-1); } }
+.answer .d { font-size: 14px; color: var(--ink-2); }
+.answer .v.up, .cow dd.up { color: var(--up); } .answer .v.down, .cow dd.down { color: var(--down); }
+.weightrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.weightrow input[type=range] { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
+
+/* charts */
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--ink-2); font: 500 12px var(--body); font-variant-numeric: tabular-nums; }
+.chart .endlab { fill: var(--ink); font-weight: 700; font-size: 12.5px; }
+.chart .axis { stroke: var(--muted); stroke-width: 1; fill: none; }
+.chart .ref { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 4 3; fill: none; }
+.chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
+.chart .s1 { stroke: var(--line-1); } .chart .f1 { fill: var(--line-1); }
+.chart .s2 { stroke: var(--line-2); } .chart .f2 { fill: var(--line-2); }
+.chart .s3 { stroke: var(--line-3); } .chart .f3 { fill: var(--line-3); }
+.chart .fband { fill: var(--band); }
+.chart .fsurf { fill: var(--surface); }
+.chart .fpos { fill: var(--up); } .chart .fneg { fill: var(--down); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink);
+       border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+       box-shadow: 0 4px 16px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
+.tip b { display: block; margin-bottom: 2px; }
+.tip .row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.key { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; }
+.key.dash { border-top-style: dashed; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 7px; }
+.k1 { border-color: var(--line-1); } .k2 { border-color: var(--line-2); } .k3 { border-color: var(--line-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid var(--rule); background: var(--surface); border-radius: 999px; padding: 6px 12px;
+                font-weight: 600; font-size: 14px; color: var(--ink-2); cursor: pointer; font-variant-numeric: tabular-nums; }
+.chips button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+
+/* sell or keep */
+.build { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0; font-variant-numeric: tabular-nums; }
+.build dt { color: var(--ink-2); font-size: 14.5px; }
+.build dt small { display: block; color: var(--muted); font-size: 12.5px; }
+.build dd { margin: 0; text-align: right; font-weight: 600; }
+.build .tot { border-top: 1px solid var(--rule); padding-top: 8px; font-weight: 700; color: var(--ink); }
+.linkish { border: 0; background: none; padding: 0; color: var(--ink-2); text-decoration: underline; cursor: pointer; font-size: 13px; }
+tr.pick td { background: var(--accent-soft); }
+tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+#keep-table tbody tr { cursor: pointer; }
+
+/* cows */
+.cows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
+.cow h3 { margin: 0 0 2px; font: 700 18px/1.25 var(--display); }
+.cow .grade { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.cow dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; font-variant-numeric: tabular-nums; }
+.cow dt { color: var(--ink-2); font-size: 14px; }
+.cow dd { margin: 0; text-align: right; font-weight: 600; }
+.cow dd.hero { font-size: 26px; font-weight: 700; }
+.pill { display: inline-block; font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+.pill.yes { background: var(--accent-soft); color: var(--ink); }
+.pill.no { background: transparent; border: 1px solid var(--rule); color: var(--muted); }
+
+footer { border-top: 1px solid var(--rule); }
+footer .wrap { padding-block: 26px 40px; display: grid; gap: 10px; color: var(--ink-2); font-size: 14px; }
+footer h2 { font-size: 18px; }
+footer ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 78ch; }
+
+details.method { border-top: 1px solid var(--rule); padding-top: 10px; max-width: 72ch; }
+details.method > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink-2); list-style: none; }
+details.method > summary::-webkit-details-marker { display: none; }
+details.method > summary::before { content: "▸ "; }
+details.method[open] > summary::before { content: "▾ "; }
+details.method > :not(summary) { margin-top: 10px; }
+details.method .card { margin-top: 10px; }
+.sold { margin: 6px 0 0; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.sold span { font-weight: 400; color: var(--muted); }
+.fewhead { color: var(--warn-ink); font-weight: 700; }
+.chg.muted { color: var(--muted); font-weight: 500; }
+.legend-few { margin: 0 0 6px; font-size: 13px; color: var(--warn-ink); font-weight: 600; }
+.short { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .mast .wrap { grid-template-columns: 1fr; }
+
+  .pickers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .picker select, .picker select.st { width: 100%; min-width: 0; }
+  .tally .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+  .tally .lead { grid-column: 1 / -1; }
+  .card { padding: 14px 12px; }
+  table { font-size: 14px; }
+  th, td { padding: 9px 3px; }
+  thead th { white-space: normal; font-size: 11px; vertical-align: bottom; }
+  td.price { font-size: 15px; }
+  .pct, .headcol, .sm-hide { display: none; }
+  td:first-child > .few { display: flex; width: fit-content; margin: 3px 0 0; }
+  .headsm { display: block; font-size: 12px; color: var(--muted); }
+  .answer .v { font-size: 30px; }
+}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div>
+      <p class="kicker">Weekly auction prices</p>
+      <h1>Cattle Auction Prices</h1>
+      <p class="asof" id="asof">Loading the latest sale reports…</p>
+      <p class="asof edu">For educational use only. <a href="#disclaimer" id="to-disc">Read the disclaimer</a>.</p>
+    </div>
+    <div class="pickers">
+      <div class="picker">
+        <label for="state">State</label>
+        <select id="state" class="st"></select>
+      </div>
+      <div class="picker">
+        <label for="market">Market</label>
+        <select id="market"></select>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="tally" aria-label="Cattle sold">
+  <div class="wrap" id="tally"></div>
+</section>
+
+<nav class="tabs" aria-label="Questions">
+  <div class="wrap" role="tablist" id="tablist">
+    <button class="tab" role="tab" id="t-week" aria-controls="week" data-tab="week">This week</button>
+    <button class="tab" role="tab" id="t-value" aria-controls="value" data-tab="value">Calf value</button>
+    <button class="tab" role="tab" id="t-trend" aria-controls="trend" data-tab="trend">Price trend</button>
+    <button class="tab" role="tab" id="t-keep" aria-controls="keep" data-tab="keep">Sell or keep</button>
+    <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
+    <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
+    <button class="tab" role="tab" id="t-cows" aria-controls="cows" data-tab="cows">Cull cows</button>
+    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season" data-scope="state">Seasonal trend</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="panel" id="week" role="tabpanel" aria-labelledby="t-week">
+    <div>
+      <h2>What are cattle prices this week?</h2>
+      <p class="sub" id="week-sub"></p>
+    </div>
+    <div class="controls"><div class="seg" id="week-class"></div></div>
+    <div class="card tablewrap"><table id="week-feeders"></table></div>
+    <div class="card tablewrap"><table id="week-slaughter"></table></div>
+    <div class="card facts" id="week-facts"></div>
+    <details class="method"><summary>Calculation methods</summary><p class="note" id="week-note"></p></details>
+  </section>
+
+  <section class="panel" id="value" role="tabpanel" aria-labelledby="t-value" hidden>
+    <div>
+      <h2>What's my calf worth?</h2>
+      <p class="sub">Based on M&L #1-2 calves sold the last 2 weeks.</p>
+    </div>
+    <div class="card" style="display:grid;gap:18px">
+      <div class="controls">
+        <div class="seg" id="value-class"></div>
+        <div class="weightrow" style="flex:1 1 320px">
+          <label class="field" for="value-weight-n" style="flex:0 0 auto"><span>Weight (lb)</span>
+            <input type="number" id="value-weight-n" min="250" max="950" step="5" value="550"></label>
+          <input type="range" id="value-weight" min="250" max="950" step="5" value="550" aria-label="Calf weight in pounds">
+        </div>
+      </div>
+      <div class="answer" id="value-answer"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="curve-title">Price by weight</h3>
+        <p class="note" id="curve-sub"></p>
+      </div>
+      <ul class="legend" id="curve-legend"></ul>
+      <div class="chart" id="curve-chart"></div>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><p class="note">The value is the average price of Medium and Large #1 and #2 calves in that 50-lb weight class
+      over the last two sale weeks, times the weight. Plain lots only. The year-ago figure uses the same class and the
+      same two weeks last year.</p></details>
+  </section>
+
+  <section class="panel" id="trend" role="tabpanel" aria-labelledby="t-trend" hidden>
+    <div>
+      <h2>How do prices this year compare?</h2>
+      <p class="sub" id="trend-sub"></p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="trend-class"></div>
+      <div class="chips" id="trend-weight" aria-label="Weight group"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <p style="margin:0;font-weight:600" id="trend-summary"></p>
+      <ul class="legend" id="trend-legend"></ul>
+      <div class="chart" id="trend-chart"></div>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><p class="note" id="trend-note"></p></details>
+  </section>
+
+  <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
+    <div>
+      <h2>Sell now, or keep and add weight? <span class="chip-scope">Statewide</span></h2>
+      <p class="sub">Sell this week, or keep 30, 60 or 90 days? Estimate, not a forecast.</p>
+    </div>
+    <div class="card" style="display:grid;gap:18px">
+      <div class="controls">
+        <div class="seg" id="keep-class"></div>
+        <div class="seg" id="keep-days" aria-label="How long to keep"></div>
+      </div>
+      <div class="controls">
+        <label class="field" for="keep-w"><span>Weight now (lb)</span>
+          <input type="number" id="keep-w" min="300" max="800" step="5" value="500"></label>
+        <label class="field" for="keep-adg"><span>Gain (lb/day)</span>
+          <input type="number" id="keep-adg" min="0.5" max="4" step="0.1" value="1.5"></label>
+        <label class="field" for="keep-cog"><span>Cost per lb gained ($, optional)</span>
+          <input type="number" id="keep-cog" min="0" max="5" step="0.05" placeholder="e.g. 1.00"></label>
+        <label class="field" for="keep-dl"><span>Death loss (%)</span>
+          <input type="number" id="keep-dl" min="0" max="20" step="0.5" value="1"></label>
+      </div>
+      <div class="answer" id="keep-answer"></div>
+    </div>
+    <div class="card tablewrap" style="display:grid;gap:8px">
+      <table id="keep-table"></table>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
+      <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-build-title">How the estimate is built</h3>
+      <dl class="build" id="keep-build"></dl>
+    </div><p class="note" id="keep-note"></p></details>
+  </section>
+
+  <section class="panel" id="buy" role="tabpanel" aria-labelledby="t-buy" hidden>
+    <div>
+      <h2>Thinking of buying calves? <span class="chip-scope">Statewide</span></h2>
+      <p class="sub">What calves you'd buy, how long you'd keep them, what they'd bring. Estimate, not a forecast.</p>
+    </div>
+    <div class="card" style="display:grid;gap:18px">
+      <div class="controls">
+        <div class="seg" id="buy-class"></div>
+        <label class="field" for="buy-w"><span>Purchase weight (lb)</span>
+          <input type="number" id="buy-w" min="300" max="800" step="5" value="450"></label>
+        <label class="field" for="buy-price"><span>Price you'd pay ($/cwt, optional)</span>
+          <input type="number" id="buy-price" min="50" max="900" step="1" placeholder="blank = recent avg."></label>
+      </div>
+      <div class="controls">
+        <label class="field" for="buy-days"><span>Days you'd keep them</span>
+          <input type="number" id="buy-days" min="30" max="300" step="1" value="120"></label>
+        <div class="chips" id="buy-days-chips" aria-label="Common keep lengths"></div>
+      </div>
+      <div class="controls">
+        <div class="seg" id="buy-gmode" aria-label="How to enter the gain"></div>
+        <label class="field" for="buy-gain" id="buy-gain-lab"><span id="buy-gain-k">Gain (lb/day)</span>
+          <input type="number" id="buy-gain" min="0.1" max="600" step="0.1" value="1.5"></label>
+        <label class="field" for="buy-cog"><span>Cost per lb gained ($, optional)</span>
+          <input type="number" id="buy-cog" min="0" max="5" step="0.05" placeholder="e.g. 1.00"></label>
+        <label class="field" for="buy-dl"><span>Death loss (%)</span>
+          <input type="number" id="buy-dl" min="0" max="20" step="0.5" value="1"></label>
+      </div>
+      <div class="answer" id="buy-answer"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="buy-chart-title"></h3>
+        <p class="note" id="buy-chart-sub"></p>
+      </div>
+      <div class="chart" id="buy-chart"></div>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
+      <h3 style="margin:0;font:700 17px/1.3 var(--body)">How the estimate is built</h3>
+      <dl class="build" id="buy-build"></dl>
+    </div><p class="note" id="buy-note"></p></details>
+  </section>
+
+  <section class="panel" id="bull" role="tabpanel" aria-labelledby="t-bull" hidden>
+    <div>
+      <h2>Does it pay to castrate? <span class="chip-scope">Statewide</span></h2>
+      <p class="sub" id="bull-sub"></p>
+    </div>
+    <div class="card" style="display:grid;gap:18px">
+      <div class="controls">
+        <div class="weightrow" style="flex:1 1 320px">
+          <label class="field" for="bull-w-n" style="flex:0 0 auto"><span>Weight at sale (lb)</span>
+            <input type="number" id="bull-w-n" min="300" max="895" step="5" value="550"></label>
+          <input type="range" id="bull-w" min="300" max="895" step="5" value="550" aria-label="Weight at sale in pounds">
+        </div>
+      </div>
+      <div class="controls">
+        <label class="field" for="bull-extra"><span>Extra weight as a bull (lb, optional)</span>
+          <input type="number" id="bull-extra" min="0" max="150" step="5" placeholder="0"></label>
+        <label class="field" for="bull-cost"><span>Cost to castrate ($/head, optional)</span>
+          <input type="number" id="bull-cost" min="0" max="200" step="1" placeholder="0"></label>
+      </div>
+      <div class="answer" id="bull-answer"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)">How much more steers bring, by weight</h3>
+        <p class="short">Last 12 months, $/cwt (and %).</p>
+      </div>
+      <div class="chart" id="bull-chart"></div>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><p class="note" id="bull-chart-sub"></p><div class="card tablewrap"><table id="bull-years"></table></div><p class="note" id="bull-note"></p></details>
+  </section>
+
+  <section class="panel" id="cows" role="tabpanel" aria-labelledby="t-cows" hidden>
+    <div>
+      <h2>What are cull cows bringing?</h2>
+      <p class="sub" id="cows-sub"></p>
+    </div>
+    <div class="cows" id="cows-cards"></div>
+    <p class="note" id="cows-note"></p>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Average dressing, all three cull grades, the last three sale weeks. Value per head is the price
+      times the average weight sold. The change from a year ago is figured at today's average weight, so a lighter or
+      heavier mix of cows isn't counted as a price change.</p></details>
+  </section>
+
+  <section class="panel" id="season" role="tabpanel" aria-labelledby="t-season" hidden>
+    <div>
+      <h2>Seasonal trend</h2>
+      <p class="sub" id="season-sub"></p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="season-class"></div>
+      <div class="chips" id="season-weight" aria-label="Weight group"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <p style="margin:0;font-weight:600" id="season-summary"></p>
+      <div class="chart" id="season-chart"></div>
+    </div>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Each bar is how far that month's price usually runs above or below that year's normal level
+      (a centered 12-month average), averaged over the years shown. The long-run price trend is removed first, so a
+      rising market doesn't make the late months look better than they were, and the grade mix is held fixed. Thin
+      lines on each bar show the lowest and highest year.</p></details>
+  </section>
+</main>
+
+<footer id="about">
+  <div class="wrap">
+    <section class="disc" id="disclaimer" aria-labelledby="disc-h">
+      <h2 id="disc-h">Disclaimer</h2>
+      <p>This dashboard is for educational purposes only. It summarizes past USDA auction reports and makes simple
+        estimates from them. It is not a price quote, a forecast of what any animal will bring, or financial,
+        legal or marketing advice.</p>
+      <p>Reports can contain errors and can be late or revised. The Sell or keep and Purchase planner estimates rest
+        on assumptions (the market holding at recent levels, usual seasonal patterns, and the weights, gains and
+        costs you enter) that may not hold. Confirm prices with your auction market and check the numbers for your
+        own operation before you buy or sell.</p>
+      <p>The information is provided as is, without warranty of any kind, and you use it at your own risk. Its authors
+        are not responsible for decisions made with it. This page is not affiliated with or endorsed by USDA, the state
+        departments of agriculture or any auction market.</p>
+    </section>
+    <h2>About these numbers</h2>
+    <ul>
+      <li id="foot-src">Prices come from USDA Agricultural Marketing Service auction reports.</li>
+      <li>Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
+        hundredweight (cwt). Only plain lots count: #3 and Value Added, fancy and fleshy lots are left out. Cull cows
+        use Average dressing.</li>
+      <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span> Pick one auction to see its own prices.
+        Graded, special and board sales are not included.</li>
+      <li>Market reporters grade and price part of each sale (often 40-90%, depending on the auction). Prices here come
+        only from the cattle they priced; the "About this sale" box on This week gives that share for the market you pick.
+        Small weight classes can rest on a handful of head, so head counts are shown. Likely data-entry errors are
+        left out.</li>
+      <li>These are past sale prices, not a quote or a guarantee of what any calf will bring.</li>
+    </ul>
+    <p class="note" id="foot-gen"></p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, el = document) => el.querySelector(s);
+  const NS = "http://www.w3.org/2000/svg";
+  const MON = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
+  const MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const store = {
+    get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
+  };
+  const S = { tab: "week", market: "state", wcls: "Steers", vcls: "Steers", weight: 550,
+              tcls: "Steers", tgrp: "500-600", scls: "Steers", sgrp: "500-600",
+              kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
+              bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 1 };
+  let D = null;
+  const FEW = 20;           // under 20 head: a thin sample, as `ask` marks it
+  const fewTag = () => el("span", { class: "few", text: "Few sales" });
+  const warnBox = t => el("p", { class: "warn", role: "note", text: t });
+  const fewLegend = () => el("li", {}, [el("span", { class: "fewkey" }), el("span", { text: `Fewer than ${FEW} head` })]);
+
+  // ---------- formatting ----------
+  const fmt$ = (v, cents = true) => v == null ? "—" : (v < 0 ? "−" : "") +
+    "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 });
+  const R = Math.round;
+  const pctS = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) + "%";   // signed %, true minus sign
+  const an = n => /^8\d\d$/.test(String(n)) || /^(11|18)\d$/.test(String(n)) ? "an" : "a";  // "an 800-lb", "a 550-lb"
+  // dates counted from today on the calendar (not 24-hour blocks, which slip a day across a time change)
+  const today = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const lastDay = s => s > D.meta.through ? D.meta.through : s;      // a window's end, never after the latest sale
+  const fmtN = v => v == null ? "—" : v.toLocaleString("en-US");
+  const iso = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const day = (s, year) => { const d = iso(s); return `${MON[d.getMonth()]} ${d.getDate()}` + (year ? `, ${d.getFullYear()}` : ""); };
+  const span = (a, b) => {
+    const x = iso(a), y = iso(b);
+    if (x.getMonth() === y.getMonth()) return `${MON[x.getMonth()]} ${x.getDate()}-${y.getDate()}`;
+    return `${day(a)}-${day(b)}`;
+  };
+  const signed$ = v => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v));
+  const el = (tag, attrs = {}, kids = []) => {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "text") e.textContent = v; else if (k === "html") e.innerHTML = v; else e.setAttribute(k, v);
+    }
+    for (const k of [].concat(kids)) if (k != null) e.append(k);
+    return e;
+  };
+  const market = () => D.markets.find(m => m.id === S.market) || D.markets[0];
+  const isState = () => S.market === "state";
+  const stName = () => D.meta.state;
+
+  // ---------- small controls ----------
+  // re-focus the rebuilt button with the same label, so keyboard users don't lose their place
+  const refocus = (host, t) => { const b = [...host.querySelectorAll("button")].find(x => x.textContent === t); if (b) b.focus(); };
+  function seg(host, opts, get, set) {
+    host.replaceChildren(...opts.map(o => {
+      const b = el("button", { type: "button", "aria-pressed": String(get() === o.v), text: o.t });
+      b.addEventListener("click", () => { set(o.v); render(); refocus(host, o.t); });
+      return b;
+    }));
+  }
+  function chips(host, opts, get, set) {
+    host.replaceChildren(...opts.map(o => {
+      const b = el("button", { type: "button", "aria-pressed": String(get() === o.v), text: o.t });
+      b.addEventListener("click", () => { set(o.v); render(); refocus(host, o.t); });
+      return b;
+    }));
+  }
+  const CLS = [{ v: "Steers", t: "Steers" }, { v: "Heifers", t: "Heifers" }];
+
+  // ---------- SVG chart kit ----------
+  function svgEl(tag, attrs = {}) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+  function niceTicks(lo, hi, n = 5) {
+    const raw = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || p * 10;
+    const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+    return { ticks: out, step };
+  }
+  // series: [{cls:"1|2|3", dash, width, pts:[{x,y,head,label}], end:"label", dot:bool, name}]
+  function lineChart(host, cfg) {
+    const W = Math.max(280, host.clientWidth || 600), small = W < 520;
+    const H = cfg.height || (small ? 290 : 320);
+    const m = { t: 12, r: cfg.endLabels ? (small ? 74 : 104) : 14, b: 30, l: small ? 46 : 54 };
+    const all = cfg.series.flatMap(s => s.pts);
+    if (!all.length) { host.replaceChildren(el("p", { class: "none", text: cfg.empty || "No sales to chart." })); return; }
+    let ylo = Math.min(...all.map(p => p.y)), yhi = Math.max(...all.map(p => p.y));
+    if (cfg.marker && cfg.marker.y != null) { ylo = Math.min(ylo, cfg.marker.y); yhi = Math.max(yhi, cfg.marker.y); }
+    const pad = (yhi - ylo) * 0.08 || 10; ylo -= pad; yhi += pad;
+    const { ticks } = niceTicks(ylo, yhi, small ? 4 : 5);
+    ylo = Math.min(ylo, ticks[0]); yhi = Math.max(yhi, ticks[ticks.length - 1]);
+    const X = v => m.l + (v - cfg.x.min) / (cfg.x.max - cfg.x.min) * (W - m.l - m.r);
+    const Y = v => m.t + (1 - (v - ylo) / (yhi - ylo)) * (H - m.t - m.b);
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": cfg.aria || "" });
+    // axes
+    svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b} H${W - m.r}` }));
+    for (const t of ticks) {
+      const y = Y(t);
+      svg.append(svgEl("path", { class: "axis", d: `M${m.l - 4},${y} H${m.l}` }));
+      const tx = svgEl("text", { x: m.l - 7, y: y + 4, "text-anchor": "end" }); tx.textContent = cfg.yfmt(t); svg.append(tx);
+    }
+    for (const t of cfg.x.ticks) {
+      const x = X(t.v);
+      svg.append(svgEl("path", { class: "axis", d: `M${x},${H - m.b} V${H - m.b + 4}` }));
+      const tx = svgEl("text", { x, y: H - m.b + 18, "text-anchor": "middle" }); tx.textContent = t.t; svg.append(tx);
+    }
+    if (cfg.zero && ylo < 0 && yhi > 0) svg.append(svgEl("path", { class: "axis", d: `M${m.l},${Y(0)} H${W - m.r}` }));
+    if (cfg.marker) {
+      const x = X(cfg.marker.x);
+      svg.append(svgEl("path", { class: "ref", d: `M${x},${m.t} V${H - m.b}` }));
+      const tx = svgEl("text", { x: x + 6, y: m.t + 12, class: "endlab" }); tx.textContent = cfg.marker.t; svg.append(tx);
+    }
+    // lines, drawn back to front, breaking at gaps
+    const ends = []; let thin = 0;
+    [...cfg.series].reverse().forEach(s => {
+      if (!s.pts.length) return;
+      let d = "", prev = null;
+      for (const p of s.pts) {
+        const brk = prev == null || (cfg.gap && p.x - prev.x > cfg.gap);
+        d += (brk ? "M" : "L") + X(p.x).toFixed(1) + "," + Y(p.y).toFixed(1);
+        prev = p;
+      }
+      svg.append(svgEl("path", { d, class: "s" + s.cls, fill: "none", "stroke-width": s.width || 2,
+        "stroke-linejoin": "round", "stroke-linecap": "round", ...(s.dash ? { "stroke-dasharray": s.dash } : {}) }));
+      for (const p of s.pts) if (s.dots) {
+        svg.append(svgEl("circle", { cx: X(p.x), cy: Y(p.y), r: small ? 3 : 3.5, class: "f" + s.cls }));
+      }
+      for (const p of s.pts) if (p.head != null && p.head < FEW) {
+        svg.append(svgEl("circle", { cx: X(p.x), cy: Y(p.y), r: 5, class: "fewpt" })); thin++;
+      }
+      const last = s.pts[s.pts.length - 1];
+      if (s.dot) svg.append(svgEl("circle", { cx: X(last.x), cy: Y(last.y), r: 5, class: "f" + s.cls,
+        stroke: "var(--surface)", "stroke-width": 2 }));
+      if (s.markAt != null) { const q = s.pts.reduce((b, p) => Math.abs(p.x - s.markAt) < Math.abs(b.x - s.markAt) ? p : b, s.pts[0]);
+        svg.append(svgEl("circle", { cx: X(q.x), cy: Y(q.y), r: 4.5, class: "f" + s.cls, stroke: "var(--surface)", "stroke-width": 2 })); }
+      if (cfg.endLabels && s.end) ends.push({ x: X(last.x), y: Y(last.y), t: s.end, v: cfg.yfmt(last.y, true) });
+    });
+    // end labels: spread so they never overlap
+    ends.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 30) ends[i].y = ends[i - 1].y + 30;
+    const over = ends.length ? ends[ends.length - 1].y - (H - m.b) : 0;
+    if (over > 0) ends.forEach(e => e.y -= over);
+    for (const e of ends) {
+      const lx = W - m.r + 8;
+      const t1 = svgEl("text", { x: lx, y: e.y - 2, class: "endlab" }); t1.textContent = e.t;
+      const t2 = svgEl("text", { x: lx, y: e.y + 13 }); t2.textContent = e.v;
+      svg.append(t1, t2);
+    }
+    // hover / tap layer
+    const xs = [...new Set(all.map(p => p.x))].sort((a, b) => a - b);
+    const cross = svgEl("path", { class: "cross", d: "", visibility: "hidden" });
+    const hit = svgEl("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" });
+    svg.append(cross, hit);
+    const tip = el("div", { class: "tip", hidden: "" });
+    const move = ev => {
+      const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+      let best = xs[0];
+      for (const x of xs) if (Math.abs(X(x) - px) < Math.abs(X(best) - px)) best = x;
+      const rows = cfg.series.map(s => ({ s, p: s.pts.find(p => p.x === best) })).filter(o => o.p);
+      if (!rows.length) return;
+      cross.setAttribute("d", `M${X(best)},${m.t} V${H - m.b}`); cross.setAttribute("visibility", "visible");
+      tip.replaceChildren(el("b", { text: cfg.xlab(best) }), ...rows.map(({ s, p }) => el("div", { class: "row" }, [
+        el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }),
+        el("span", { text: `${s.name}: ${cfg.yfmt(p.y, true)}${p.head != null ? ` · ${fmtN(p.head)} hd` : ""}${p.head != null && p.head < FEW ? " ⚠ few sales" : ""}` })])));
+      tip.hidden = false;
+      const tw = tip.offsetWidth, cx = X(best) * r.width / W;
+      tip.style.left = Math.max(0, Math.min(r.width - tw, cx + 12 > r.width - tw ? cx - tw - 12 : cx + 12)) + "px";
+      tip.style.top = "8px";
+    };
+    const leave = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); };
+    hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") leave(); });
+    host.replaceChildren(svg, tip);
+    return thin;
+  }
+
+  // seasonal index bars around 100
+  function monthBars(host, rows) {
+    const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = small ? 250 : 300;
+    const m = { t: 14, r: 10, b: 30, l: small ? 40 : 46 };
+    const vals = rows.flatMap(r => [r.low, r.high, r.index]);
+    let lo = Math.min(90, ...vals), hi = Math.max(110, ...vals);
+    const { ticks } = niceTicks(lo, hi, 4); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks[ticks.length - 1]);
+    const bw = (W - m.l - m.r) / 12;
+    const Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
+      "aria-label": "Seasonal price index by month" });
+    svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b}` }));
+    for (const t of ticks) {
+      const tx = svgEl("text", { x: m.l - 7, y: Y(t) + 4, "text-anchor": "end" }); tx.textContent = t === 100 ? "0%" : (t > 100 ? "+" : "−") + Math.abs(t - 100) + "%"; svg.append(tx);
+      svg.append(svgEl("path", { class: "axis", d: `M${m.l - 4},${Y(t)} H${m.l}` }));
+    }
+    const tip = el("div", { class: "tip", hidden: "" });
+    rows.forEach((r, i) => {
+      const x = m.l + i * bw, w = bw * 0.62, cx = x + bw / 2;
+      const y0 = Y(100), y1 = Y(r.index);
+      svg.append(svgEl("rect", { x: cx - w / 2, y: Math.min(y0, y1), width: w, height: Math.max(1.5, Math.abs(y1 - y0)),
+        rx: 3, class: r.index >= 100 ? "fpos" : "fneg" }));
+      svg.append(svgEl("path", { class: "s2", d: `M${cx},${Y(r.high)} V${Y(r.low)}`, "stroke-width": 1.2, opacity: .55 }));
+      const tx = svgEl("text", { x: cx, y: H - m.b + 18, "text-anchor": "middle" });
+      tx.textContent = small ? MON3[i][0] : MON3[i]; svg.append(tx);
+      const hit = svgEl("rect", { x, y: m.t, width: bw, height: H - m.t - m.b, fill: "transparent" });
+      const show = () => {
+        tip.replaceChildren(el("b", { text: MON[i].replace(".", "") }),
+          el("div", { text: `${r.index >= 100 ? "+" : "−"}${Math.abs(r.index - 100).toFixed(1)}% vs. a typical month` }),
+          el("div", { text: `Range across years: ${r.low.toFixed(0)}-${r.high.toFixed(0)}` }),
+          el("div", { text: `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]} average price: ${fmt$(r.price)}/cwt` }));
+        tip.hidden = false;
+        const rr = svg.getBoundingClientRect(), px = cx * rr.width / W, tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, Math.min(rr.width - tw, px - tw / 2)) + "px"; tip.style.top = "6px";
+      };
+      hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
+      hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
+      svg.append(hit);
+    });
+    svg.append(svgEl("path", { class: "ref", d: `M${m.l},${Y(100)} H${W - m.r}` }));
+    host.replaceChildren(svg, tip);
+  }
+
+  // steer premium over bulls by weight group: horizontal bars, $/cwt, with % and $/head
+  function premiumBars(host, rows, pick) {
+    const W = Math.max(280, host.clientWidth || 600), small = W < 520;
+    const rowH = small ? 50 : 44, m = { t: 6, r: small ? 8 : 16, b: 6, l: small ? 76 : 96 };
+    const H = m.t + m.b + rows.length * rowH;
+    const max = Math.max(...rows.map(r => r.premium), 1) * (small ? 1.02 : 1.0);
+    const lab = small ? 118 : 140;                       // room for the value label
+    const X = v => m.l + Math.max(0, v) / max * (W - m.l - m.r - lab);
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Steer premium over bulls by weight group" });
+    rows.forEach((r, i) => {
+      const y = m.t + i * rowH, bh = 20, by = y + (rowH - bh) / 2;
+      const on = r.group === pick;
+      const t1 = svgEl("text", { x: m.l - 10, y: by + 10, "text-anchor": "end", class: "endlab" }); t1.textContent = `${r.group} lb`;
+      const few = Math.min(r.steers, r.bulls) < FEW;
+      const t2 = svgEl("text", { x: m.l - 10, y: by + 24, "text-anchor": "end", class: few ? "fewlab" : "" });
+      t2.textContent = few ? "⚠ few sales" : `${fmtN(Math.min(r.steers, r.bulls))} hd`;
+      svg.append(t1, t2);
+      if (few) svg.append(svgEl("rect", { x: 0, y: y + 1, width: W, height: rowH - 2, rx: 4, fill: "var(--warn-bg)" }));
+      svg.append(svgEl("rect", { x: m.l, y: by, width: Math.max(2, X(r.premium) - m.l), height: bh, rx: 4, class: r.premium >= 0 ? "fpos" : "fneg",
+        opacity: pick && !on ? .45 : 1 }));
+      const tv = svgEl("text", { x: X(r.premium) + 8, y: by + 15, class: "endlab" });
+      tv.textContent = `${fmt$(r.premium)}/cwt (${r.pct.toFixed(1)}%)`;
+      svg.append(tv);
+    });
+    svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b}` }));
+    host.replaceChildren(svg);
+  }
+
+  function renderBull() {
+    const C = D.castration, rows = C.rows.filter(r => r.steers > 0 && r.bulls > 0);
+    const w = S.bw, grp = grpOf(Math.min(899, w)), Rw = rows.find(r => r.group === grp);
+    for (const [id, v] of [["#bull-w", w], ["#bull-w-n", w], ["#bull-extra", S.bextra ?? ""], ["#bull-cost", S.bcost ?? ""]]) {
+      const f = $(id); if (document.activeElement !== f) f.value = v;
+    }
+    $("#bull-sub").textContent = `Steers vs. bulls, same weight and grade, same ${stName()} sale.`;
+    const ans = $("#bull-answer");
+    const now = priceAt(D.curve.state.Steers.now, "Steers", w);
+    if (!Rw || !now) {
+      ans.replaceChildren(el("p", { class: "none", text: "Not enough steers and bulls of that weight sold at the same sales to compare." }));
+    } else {
+      // bull priced at its own weight: the steer price less the matched gap, moved along the slide if it's heavier
+      const sp = now.price, extra = S.bextra || 0, cost = S.bcost || 0, wb = Math.min(900, w + extra);
+      const s0 = slideAt("Steers", w), s1 = slideAt("Steers", wb);
+      const bp = sp / (1 + Rw.pct / 100) * (s0 && s1 ? s1 / s0 : 1);
+      const sv = R(sp * w / 100), bv = R(bp * (w + extra) / 100), net = sv - bv - cost;
+      ans.replaceChildren(
+        el("div", {}, [el("div", { class: "k", text: net >= 0 ? `At ${w} lb, a steer brings about` : `At ${w} lb, a bull brings about` }),
+          el("div", { class: "v hero " + (net >= 0 ? "up" : "down"), text: fmt$(Math.abs(net), false) + " more a head" }),
+          el("div", { class: "d", text: (cost ? `After ${fmt$(cost, false)} to castrate` : "Before your cost to castrate") +
+            (extra ? `, bull ${extra} lb heavier` : "") })]),
+        el("div", {}, [el("div", { class: "k", text: `As ${an(w)} ${w}-lb steer` }),
+          el("div", { class: "v", text: fmt$(sv, false) }),
+          el("div", { class: "d", text: `About ${fmt$(sp)}/cwt` })]),
+        el("div", {}, [el("div", { class: "k", text: `As ${an(w + extra)} ${fmtN(w + extra)}-lb bull` }),
+          el("div", { class: "v", text: fmt$(bv, false) }),
+          el("div", { class: "d", text: `About ${fmt$(bp)}/cwt (${Rw.pct.toFixed(1)}% under steer prices)` })]));
+      const mh = Math.min(Rw.steers, Rw.bulls);
+      if (mh < FEW) ans.append(warnBox(`Few sales: only ${fmtN(mh)} head of ${grp} lb bulls or steers sold alongside each other in the last 12 months. Treat this as a rough guide.`));
+      if (now.head < FEW) ans.append(warnBox(`Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
+    }
+    $("#bull-chart-sub").textContent = `Steer price minus bull price, ${day(C.start, true)} to ${day(C.end, true)}. The per-head answer above applies the percentage to the last two weeks' steer price. ` +
+      `Medium and Large #1 and #2, plain lots, matched within each sale. Head is the smaller of the steer and bull totals.`;
+    premiumBars($("#bull-chart"), rows, Rw ? grp : null);
+    // the same comparison each year, for the chosen weight group
+    const Y = (C.years[grp] || []).filter(r => r[3] > 0 && r[4] > 0);
+    $("#bull-years").replaceChildren(el("caption", { text: `${grp} lb: steer premium each year` }),
+      el("thead", {}, el("tr", {}, [el("th", { text: "Year" }), el("th", { text: "$/cwt" }), el("th", { text: "%" }),
+        el("th", { class: "sm-hide", text: "Steers / bulls (head)" })])),
+      el("tbody", {}, Y.map(r => {
+        const few = Math.min(r[3], r[4]) < FEW;
+        return el("tr", { class: few ? "thin" : "" }, [el("td", { text: r[0] === +D.meta.through.slice(0, 4) ? `${r[0]} to date` : String(r[0]) }),
+          el("td", { class: "price" }, [document.createTextNode(fmt$(r[1])), few ? fewTag() : null]),
+          el("td", { text: `${r[2].toFixed(1)}%` }),
+          el("td", { class: "sm-hide", text: `${fmtN(r[3])} / ${fmtN(r[4])}` })]);
+      })));
+    const notes = [];
+    if (!isState()) notes.push("Shown statewide so enough matched lots are compared.");
+    notes.push("Only sales where steers and bulls of the same 50-lb class and grade both sold are compared, so differences in weight, grade or barn don't creep in. " +
+      "The per-head figures use the last two weeks' steer price and the last 12 months' gap. They don't count differences in gain, health or death loss after castration; the extra-weight box is there for a bull's added gain.");
+    $("#bull-note").textContent = notes.join(" ");
+  }
+
+  // ---------- views ----------
+  function renderHead() {
+    const mk = market(), r = D.report[S.market];
+    $("#asof").textContent = `${stName()} sales through ${day(D.meta.through, true)}`;
+    const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
+    // change from last year over the barn-weeks reported in both years; left off when too few match
+    const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
+    const lead = isState()
+      ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${r.reports ? ` (${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far)` : ""}`
+      : `Cattle sold at ${mk.name}, sale of ${day(r.sale)}`;
+    t.replaceChildren(
+      el("div", { class: "lead", text: lead }),
+      el("div", { class: "stat big" }, [el("b", { text: fmtN(rc.week) }), el("span", { text: isState() ? "head this week" : "head this sale" })]),
+      el("div", { class: "stat" }, [el("b", { text: fmtN(rc.prior) }), el("span", { text: "week before" })]),
+      el("div", { class: "stat" }, [el("b", { text: fmtN(rc.year_ago) }), el("span", { text: "same week last year" })]),
+      el("div", { class: "stat" }, [el("b", { text: fmtN(y.ytd) }), el("span", {
+        text: `so far in ${y.through.slice(0, 4)}` + (ytdP != null ? ` · ${Math.abs(ytdP).toFixed(1)}% ${ytdP >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "") })]));
+    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page built ${D.meta.generated}.`;
+  }
+
+  function changeCell(v, pct, heads) {
+    if (v == null) return el("td", { class: "none", text: "—" });
+    const cls = v > 0 ? "up" : v < 0 ? "down" : "";
+    const arrow = v > 0 ? "▲ " : v < 0 ? "▼ " : "";
+    const p = pct != null ? el("span", { class: "pct", text: ` (${pctS(pct)})` }) : null;
+    // a change resting on a thin week (either side) is shown in grey, without an arrow
+    const thin = heads && Math.min(...heads) < FEW;
+    if (thin) return el("td", { class: "chg muted", title: `Rests on ${heads[0]} head vs. ${heads[1]} head` },
+      [document.createTextNode((v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v))), p]);
+    return el("td", { class: `chg ${cls}` }, [document.createTextNode(arrow + fmt$(Math.abs(v))), p]);
+  }
+  function reportRows(rows, label) {
+    return rows.map(r => {
+      const few = r.head > 0 && r.head < FEW;
+      const head = el("td", { class: "headcol" + (few ? " fewhead" : ""), text: fmtN(r.head) + (few ? " ⚠" : "") });
+      // on a phone the head count moves under the label so the row fits
+      const first = el("td", {}, [document.createTextNode(label(r)),
+        el("span", { class: "headsm" + (few ? " fewhead" : ""), text: `${fmtN(r.head)} head${few ? " ⚠" : ""}` })]);
+      if (r.price == null) return el("tr", {}, [first, el("td", { class: "none", text: "Not priced", colspan: "3" }), el("td", { class: "headcol", text: "0" })]);
+      return el("tr", { class: few ? "thin" : "" }, [first, el("td", { class: "price", text: fmt$(r.price) }),
+        changeCell(r.chg, null, r.chg_head), changeCell(r.chg_yr, r.pct_yr, r.chg_yr_head), head]);
+    });
+  }
+  const thead = first => el("thead", {}, el("tr", {}, [el("th", { text: first }), el("th", { text: "This week" }),
+    el("th", { text: "vs. last week" }), el("th", { text: "vs. a year ago" }), el("th", { class: "headcol", text: "Head" })]));
+
+  function renderWeek() {
+    const r = D.report[S.market], mk = market();
+    $("#week-sub").textContent = (isState()
+      ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}. `
+      : `${mk.name}, sale of ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt).";
+    seg($("#week-class"), CLS, () => S.wcls, v => S.wcls = v);
+    const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
+    const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
+    const anyThin = r.rows.some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
+    $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`Feeder ${S.wcls.toLowerCase()}, M&L #1-2, $/cwt`),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
+      thead("Weight (lb)"), el("tbody", {}, noFeeders
+        ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
+        : reportRows(feed, x => x.item.split(" ")[1])));
+    const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
+    $("#week-slaughter").replaceChildren(el("caption", { text: "Cull cows and slaughter bulls, $/cwt" }),
+      thead("Class"), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
+    renderFacts(r);
+    const notes = [];
+    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), plain lots, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "Last week" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    $("#week-note").textContent = notes.join(" ");
+  }
+
+  // sale facts: plain numbers about this sale (or week) against the same market's own year, no rankings
+  function renderFacts(r) {
+    const yr = D.meta.through.slice(0, 4), pc = (a, b) => b ? Math.round(a / b * 100) : null;
+    const cv = D.coverage[S.market] || {}, gm = D.grades[S.market] || {}, G = ["1", "1-2", "2", "3"];
+    const sum = tag => G.map(g => ["Steers", "Heifers"].reduce((t, c) => t + (((gm[c] || {})[tag] || {})[g] || 0), 0));
+    const gw = sum("week"), gy = sum("ytd"), tw = gw.reduce((a, b) => a + b, 0), ty = gy.reduce((a, b) => a + b, 0);
+    const lots = gm.lots || {}, va = o => o ? pc(o.va, o.va + o.plain) : null;
+    const items = [];
+    const add = (k, v, sub) => items.push(el("div", {}, [el("dt", { text: k }), el("dd", {}, [document.createTextNode(v), sub ? el("small", { text: sub }) : null])]));
+    const here = isState() ? "this week" : "this sale";
+    add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? `${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far`
+      : `Sale of ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
+    if (cv.week && cv.week.receipts) add("Priced in the report", `${pc(cv.week.priced, cv.week.receipts)}% ${here} (${fmtN(cv.week.priced)} head)`,
+      cv.ytd && cv.ytd.receipts ? `${pc(cv.ytd.priced, cv.ytd.receipts)}% so far in ${yr}` : "");
+    if (tw || ty) add("Feeder calves by grade", tw ? G.map((g, i) => `#${g} ${pc(gw[i], tw)}%`).join(" · ") : "None graded " + here,
+      ty ? `${yr}: ` + G.map((g, i) => `${pc(gy[i], ty)}%`).join(" · ") : "");
+    if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "—",
+      va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
+    const why = el("a", { href: "#about", text: "More on these numbers" });
+    why.addEventListener("click", e => { e.preventDefault(); $("#about").scrollIntoView({ behavior: "smooth" }); });
+    $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About this week's ${stName()} sales` : `About this sale at ${market().name}` }),
+      el("dl", {}, items),
+      el("p", { class: "gmix" }, [document.createTextNode("Grades and lot labels follow each reporter's practice; #3 and Value Added lots aren't in the averages. "), why]));
+  }
+
+  function renderValue() {
+    seg($("#value-class"), CLS, () => S.vcls, v => S.vcls = v);
+    const c = D.curve[S.market], now = c[S.vcls].now, ago = c[S.vcls].ago, w = S.weight;
+    $("#value-weight").value = w; $("#value-weight-n").value = w;
+    const lo = Math.floor(w / 50) * 50;
+    const cp = pts => { const r = pts.find(p => p[0] === lo); return r ? { price: r[1], cls: r[1], head: r[2] } : null; };
+    const a = cp(now), b = cp(ago);
+    const ans = $("#value-answer");
+    const cls = S.vcls.toLowerCase().replace(/s$/, "");
+    if (!a) {
+      ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.vcls.toLowerCase()} were priced ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks. Try a nearby weight${isState() ? "" : " or the statewide view"}.` }));
+    } else {
+      const ph = R(a.price * w / 100), phAgo = b ? R(b.price * w / 100) : null;
+      const thinNow = a.head < FEW, thinAgo = b && b.head < FEW;
+      ans.replaceChildren(
+        el("div", {}, [el("div", { class: "k", text: `${an(w) === "an" ? "An" : "A"} ${w}-lb ${cls} is worth about` }),
+          el("div", { class: "v hero", text: fmt$(ph, false) }),
+          el("div", { class: "d", text: `${fmt$(a.price)}/cwt (${lo}-${lo + 50} lb, ${fmtN(a.head)} head)` })]),
+        el("div", {}, [el("div", { class: "k", text: "Same 2 weeks last year" }),
+          el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "—" }),
+          el("div", { class: "d", text: b ? `${fmt$(b.price)}/cwt (${fmtN(b.head)} head)` : "None priced in that class a year ago" })]),
+        el("div", {}, [el("div", { class: "k", text: "vs. last year" }),
+          // a thin sample on either side makes the change meaningless, as on the cull cow cards
+          el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
+            text: !phAgo ? "—" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
+          el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
+      if (thinNow || thinAgo) {
+        const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
+          thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
+        ans.append(warnBox(`Few sales: ${which}${thinNow && thinAgo ? " on very few sales" : ""}. Treat it as a rough guide, or try a nearby weight${isState() ? "" : " or the statewide view"}.`));
+      }
+    }
+    $("#curve-title").textContent = `${S.vcls}: price by weight`;
+    $("#curve-sub").textContent = `${span(c.now[0], lastDay(c.now[1]))} vs. a year earlier, $/cwt. Tap a point for head counts.`;
+    $("#curve-legend").replaceChildren(
+      el("li", {}, [el("span", { class: "key k1" }), el("span", { text: "Last 2 weeks" })]),
+      el("li", {}, [el("span", { class: "key k1 dash" }), el("span", { text: "A year ago" })]));
+    const toPts = pts => pts.filter(p => p[0] >= 250 && p[0] < 950).map(p => ({ x: p[0] + 25, y: p[1], head: p[2] }));
+    const ticks = []; for (let v = 300; v <= 900; v += 100) ticks.push({ v, t: String(v) });
+    const thinC = lineChart($("#curve-chart"), {
+      series: [{ cls: 1, pts: toPts(now), name: "Last 2 weeks", dots: true, width: 2.4 },
+               { cls: 1, pts: toPts(ago), name: "Year ago", dash: "6 5", width: 1.8 }],
+      x: { min: 250, max: 950, ticks }, gap: 60, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
+      xlab: x => `${x - 25}-${x + 25} lb`, marker: { x: w, t: `${w} lb` },
+      aria: `${S.vcls} price by weight, last two weeks and a year ago`, empty: "No sales to chart for this auction." });
+    if (thinC) $("#curve-legend").append(fewLegend());
+  }
+
+  function renderTrend() {
+    const Y = D.years[S.market], mk = market();
+    seg($("#trend-class"), CLS, () => S.tcls, v => S.tcls = v);
+    const groups = Object.keys(Y[S.tcls] || {});
+    if (!groups.includes(S.tgrp)) S.tgrp = groups.includes("500-600") ? "500-600" : groups[0];
+    chips($("#trend-weight"), groups.map(g => ({ v: g, t: `${g} lb` })), () => S.tgrp, v => S.tgrp = v);
+    const weekly = Y.by === "week", yr = Y.year, base = D.meta.base_years;
+    $("#trend-sub").textContent = `${S.tgrp} lb feeder ${S.tcls.toLowerCase()}, Medium and Large #1 and #2, ${isState() ? `all reporting ${stName()} auctions` : mk.name}. ` +
+      `${weekly ? "Weekly" : "Monthly"} average, $/cwt.`;
+    const g = Y[S.tcls] && Y[S.tcls][S.tgrp];
+    if (!g) { $("#trend-chart").replaceChildren(el("p", { class: "none", text: "No sales in this weight group this year." }));
+      $("#trend-summary").textContent = ""; $("#trend-legend").replaceChildren(); return; }
+    const doy = s => { const [mm, dd] = s.split("-").map(Number); return Math.round((Date.UTC(yr, mm - 1, dd) - Date.UTC(yr, 0, 1)) / 864e5); };
+    const P = arr => arr.map(p => ({ x: doy(p[0]), y: p[1], head: p[2] }));
+    const cur = P(g.cur), ago = P(g.ago), avg = P(g.avg);
+    const ticks = MON3.map((t, i) => ({ v: Math.round((Date.UTC(yr, i, 1) - Date.UTC(yr, 0, 1)) / 864e5), t: t }));
+    const narrow = $("#trend-chart").clientWidth < 520;
+    const series = [{ cls: 1, pts: cur, name: String(yr), end: String(yr), dot: true, width: 2.6 },
+      { cls: 3, pts: ago, name: String(yr - 1), width: 1.8, markAt: cur.length ? cur[cur.length - 1].x : null },
+      { cls: 2, pts: avg, name: `${base} avg.`, end: narrow ? "3-yr avg." : `${base} avg.`, dash: "6 4", width: 1.8 }].filter(s => s.pts.length);
+    $("#trend-legend").replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
+    const thinT = lineChart($("#trend-chart"), {
+      series, x: { min: 0, max: 365, ticks: window.innerWidth < 520 ? ticks.filter((_, i) => i % 2 === 0) : ticks },
+      gap: weekly ? 20 : 45, endLabels: true, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
+      // weekly points are labeled by the week's Friday; the week starts that Monday
+      xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (weekly ? x - 4 : x) * 864e5); return weekly ? `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}` : MON[d.getUTCMonth()].replace(".", ""); },
+      aria: `${S.tgrp} lb ${S.tcls.toLowerCase()} price this year, last year and the ${base} average` });
+    if (thinT) $("#trend-legend").append(fewLegend());
+    const last = cur[cur.length - 1];
+    const near = (arr) => arr.reduce((b, p) => Math.abs(p.x - last.x) < Math.abs(b.x - last.x) ? p : b, arr[0]);
+    const parts = [];
+    const unit = weekly ? "week" : "month";
+    if (last) parts.push(`This ${unit} ${fmt$(Math.round(last.y), false)}`);
+    if (last && ago.length) { const a = near(ago); if (Math.abs(a.x - last.x) <= (weekly ? 7 : 20)) parts.push(`same ${unit} last year ${fmt$(Math.round(a.y), false)}`); }
+    $("#trend-summary").replaceChildren(...[document.createTextNode(parts.join(" · ") + " ($/cwt)"), last && last.head != null && last.head < FEW ? fewTag() : null].filter(Boolean));
+    const avgNote = avg.length ? ` The ${base} average is drawn only for ${weekly ? "weeks" : "months"} all three years had sales.` : "";
+    $("#trend-note").textContent = (weekly ? "" : "Single auctions are shown by month because weekly samples at one barn are often small.") + avgNote;
+  }
+
+  // ---------- sell now or keep ----------
+  const KEEP = [30, 60, 90];
+  // price at exactly w lb: the 50-lb class average (centered on the class midpoint), moved along the
+  // statewide slide to w, so the value doesn't jump at each 50-lb line
+  function priceAt(pts, cls, w) {
+    const lo = Math.floor(w / 50) * 50, row = pts.find(p => p[0] === lo);
+    if (!row) return null;
+    const a = slideAt(cls, w), b = slideAt(cls, lo + 25);
+    return { lo, cls: row[1], price: a && b ? row[1] * a / b : row[1], head: row[2] };
+  }
+  const grpOf = w => { const lo = Math.max(300, Math.min(800, Math.floor(w / 100) * 100)); return `${lo}-${lo + 100}`; };
+  function slideAt(cls, w) {              // smooth statewide price line, 10-lb steps
+    const L = D.slide[cls]; if (w < L[0][0] || w > L[L.length - 1][0]) return null;
+    const i = Math.min(L.length - 2, Math.floor((w - L[0][0]) / 10)), [x0, y0] = L[i], [x1, y1] = L[i + 1];
+    return y0 + (y1 - y0) * (w - x0) / (x1 - x0);
+  }
+  // seasonal index for weight w, blended between the 100-lb groups' midpoints so
+  // the estimate doesn't jump when a calf crosses from one group into the next
+  const groupIdx = (cls, lo, mo) => {
+    const r = (D.season.series[`${cls} ${lo}-${lo + 100}`] || []).find(x => x.month === MON3[mo]);
+    return r ? r.index : null;
+  };
+  const seasonIdx = (cls, w, mo) => {
+    const x = Math.max(350, Math.min(850, w)), lo = Math.min(800, Math.floor((x - 350) / 100) * 100 + 300);
+    const a = groupIdx(cls, lo, mo), b = groupIdx(cls, Math.min(800, lo + 100), mo);
+    if (a == null && b == null) return groupIdx(cls, lo - 100, mo);   // heaviest group too thin for a pattern
+    if (a == null || b == null) return a ?? b;
+    const f = Math.min(1, (x - (lo + 50)) / 100);
+    return a + (b - a) * f;
+  };
+  // today's price at weight w, carried to weight w + gain and to the month `days` from now
+  function project(cls, w, days, gain) {
+    const now = priceAt(D.curve.state[cls].now, cls, w);
+    if (!now) return null;
+    const w2 = Math.round(w + gain), t0 = today(), t1 = addDays(t0, days);
+    const out = { lo: now.lo, pc: now.cls, p1: now.price, head: now.head, days, gain, w2, t1, m0: t0.getMonth(), m1: t1.getMonth() };
+    const s1 = slideAt(cls, w), s2 = slideAt(cls, w2);
+    if (s1 == null || s2 == null) return { ...out, over: true };
+    const i0 = seasonIdx(cls, w2, out.m0), i1 = seasonIdx(cls, w2, out.m1);
+    out.pSlide = out.p1 * s2 / s1;
+    out.sea = i0 && i1 ? i1 / i0 : 1;
+    out.p2 = out.pSlide * out.sea;
+    out.gross = w2 * out.p2 / 100;
+    return out;
+  }
+  const yrsLabel = () => `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]}`;
+  // link to the seasonal tab, opened on the weight group the estimate used (nearest one with a pattern)
+  function seasonLink(cls, w) {
+    if (!isState()) return null;
+    const b = el("button", { type: "button", class: "linkish", text: "See the seasonal trend" });
+    b.addEventListener("click", () => { S.scls = cls; S.sgrp = grpOf(w); setTab("season", true); window.scrollTo({ top: 0 }); });
+    return b;
+  }
+  function keepPlan(cls, w, days) {
+    const out = project(cls, w, days, S.adg * days);
+    if (!out) return null;
+    out.v1 = R(w * out.p1 / 100);
+    if (out.over) return out;
+    out.gross = R(out.gross);
+    out.loss = R(out.gross * S.dl / 100);
+    out.cost = R(out.gain * (S.cog || 0));
+    out.net = out.gross - out.loss - out.cost;
+    out.diff = out.net - out.v1;
+    out.be = out.gain > 0 ? (out.gross - out.loss - out.v1) / out.gain : null;   // cost of gain where keeping breaks even
+    return out;
+  }
+  const signedR = v => (v >= 0 ? "+" : "−") + fmt$(Math.round(Math.abs(v)), false);
+  const beText = be => be == null ? "" : be <= 0 ? "Keeping loses money even if the gain were free"
+    : `Keeping pays if your cost of gain is under ${fmt$(be)}/lb`;
+  const pct = v => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(1) + "%";
+
+  function renderKeep() {
+    seg($("#keep-class"), CLS, () => S.kcls, v => S.kcls = v);
+    seg($("#keep-days"), KEEP.map(d => ({ v: d, t: `${d} days` })), () => S.days, v => { S.days = v; store.set("days", v); });
+    for (const [id, k, dec] of [["#keep-w", "kw", 0], ["#keep-adg", "adg", 1], ["#keep-cog", "cog", 2], ["#keep-dl", "dl", 1]]) {
+      const f = $(id); if (document.activeElement !== f) f.value = S[k] == null ? "" : k === "dl" ? S[k] : S[k].toFixed(dec);
+    }
+    const cls = S.kcls.toLowerCase().replace(/s$/, ""), P = keepPlan(S.kcls, S.kw, S.days);
+    const ans = $("#keep-answer"), build = $("#keep-build");
+    if (!P) {
+      ans.replaceChildren(el("p", { class: "none", text: `No ${S.kcls.toLowerCase()} in that weight class sold statewide in the last two weeks.` }));
+      build.replaceChildren(); $("#keep-table").replaceChildren(); return;
+    }
+    const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
+    const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
+      el("div", { class: "v", text: fmt$(P.v1, false) }),
+      el("div", { class: "d", text: `${S.kw} lb at about ${fmt$(P.p1)}/cwt` })]);
+    if (P.over) {
+      ans.replaceChildren(sellNow, el("p", { class: "none", text: `At ${S.adg} lb/day the calf would weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try a shorter keep or a lighter weight.` }));
+    } else {
+      const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
+        el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb, sell about ${sellDay(P.t1)}, about ${fmt$(P.p2)}/cwt` })]);
+      const yours = S.cog != null
+        ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
+            el("div", { class: "v " + (P.diff >= 0 ? "up" : "down"), text: signedR(P.diff) + " a head" }),
+            el("div", { class: "d", text: `vs. selling now; ${fmt$(P.net, false)} after gain cost and death loss` })])
+        : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
+            el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it below to see dollars a head" })]);
+      ans.replaceChildren(be, sellNow, yours);
+    }
+    if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
+    if (S.adg > 4) ans.append(warnBox(`${S.adg} lb a day is more than most calves gain; check the gain you entered.`));
+    if (!P.over && P.w2 >= 800) ans.append(warnBox(`Few sales: not many calves over 800 lb sell at ${stName()} auctions, so the price at ${fmtN(P.w2)} lb is less certain.`));
+    // the build-up, line by line
+    $("#keep-build-title").textContent = `How the ${S.days}-day estimate is built`;
+    const rows = [];
+    const add = (k, sub, v, cls = "") => rows.push(el("dt", { class: cls }, [document.createTextNode(k), sub ? el("small", {}, sub) : null]), el("dd", { class: cls, text: v }));
+    add(`Price now at ${S.kw} lb`, `${P.lo}-${P.lo + 50} lb class ${fmt$(P.pc)}, last two weeks, ${fmtN(P.head)} head`, `${fmt$(P.p1)}/cwt`);
+    add(`Weight in ${S.days} days`, `+${fmtN(Math.round(P.gain))} lb at ${S.adg} lb/day`, `${fmtN(P.w2)} lb`);
+    if (!P.over) {
+      add(`Today's price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls}`, "Heavier calves bring less per cwt", `${fmt$(P.pSlide)}/cwt`);
+      add(`Usual change, ${MON[P.m0].replace(".", "")} to ${MON[P.m1].replace(".", "")}`,
+        [document.createTextNode(`${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.kcls, P.w2)],
+        P.m0 === P.m1 ? "none" : pct(P.sea - 1));
+      add("Estimated price at sale", "", `${fmt$(P.p2)}/cwt`, "tot");
+      add("Value at sale", `${fmtN(P.w2)} lb × ${fmt$(P.p2)}/cwt`, fmt$(P.gross, false));
+      add(`Less death loss (${S.dl}%)`, "", "−" + fmt$(P.loss, false));
+      if (S.cog != null) add("Less cost of gain", `${fmtN(Math.round(P.gain))} lb × ${fmt$(S.cog)}/lb`, "−" + fmt$(P.cost, false));
+      add(S.cog != null ? "Net if you keep" : "Value at sale less death loss", "", fmt$(P.net, false), "tot");
+      add("Sell now", "", fmt$(P.v1, false));
+    }
+    build.replaceChildren(...rows);
+    // all three keep lengths side by side
+    const tb = KEEP.map(d => {
+      const q = keepPlan(S.kcls, S.kw, d);
+      const tr = el("tr", { class: d === S.days ? "pick" : "", tabindex: "0", ...(d === S.days ? { "aria-current": "true" } : {}) });
+      const pickRow = () => { S.days = d; store.set("days", d); renderKeep(); const r = $("#keep-table tbody").children[KEEP.indexOf(d)]; if (r) r.focus(); };
+      tr.addEventListener("click", pickRow);
+      tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickRow(); } });
+      if (!q || q.over) return tr.append(el("td", { text: `${d} days` }), el("td", { class: "none", colspan: "4", text: "past 900 lb" })), tr;
+      tr.append(el("td", {}, [document.createTextNode(`${d} days`), el("span", { class: "headsm", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` })]),
+        el("td", { class: "sm-hide", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` }),
+        el("td", { text: q.be == null ? "—" : q.be <= 0 ? "never" : fmt$(q.be) }),
+        ...(S.cog != null ? [el("td", { class: "chg " + (q.diff >= 0 ? "up" : "down"), text: signedR(q.diff) })] : []));
+      return tr;
+    });
+    $("#keep-table").replaceChildren(el("caption", { text: `Sell now: ${fmt$(P.v1, false)} a head` }),
+      el("thead", {}, el("tr", {}, [el("th", { text: "Keep" }), el("th", { class: "sm-hide", text: "Sell about" }),
+        el("th", { text: "Pays if gain under" }), S.cog != null ? el("th", { text: "vs. sell now" }) : null])),
+      el("tbody", {}, tb));
+    const notes = [];
+    if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
+    notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, labor and marketing costs aren't included, so count them in your cost of gain. Dates count from today. The discount for a heavier calf comes from a smooth line through the last two weeks' statewide prices by weight.");
+    $("#keep-note").textContent = notes.join(" ");
+  }
+
+  function renderCows() {
+    const rows = D.cows[S.market] || [], mk = market();
+    const w = rows.find(r => r.now) ;
+    $("#cows-sub").textContent = `${isState() ? `All reporting ${stName()} auctions` : mk.name}, last three sale weeks` +
+      (w ? ` (${span(w.now.dates[0], lastDay(w.now.dates[1]))})` : "") + ".";
+    const names = { "Breaker 75-80%": ["Breakers", "75-80% lean · fleshier cows"], "Boner 80-85%": ["Boners", "80-85% lean · the most common grade"], "Lean 85-90%": ["Leans", "85-90% lean · thinner cows"] };
+    if (!rows.length) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: "No cull cows priced in the last three weeks." })); return; }
+    $("#cows-cards").replaceChildren(...rows.map(r => {
+      const [n, g] = names[r.grade] || [r.grade, ""];
+      const kids = [el("h3", { text: n }), el("p", { class: "grade", text: g })];
+      if (!r.now) return el("div", { class: "card cow" }, [...kids, el("p", { class: "none", text: "None priced in the last three weeks." })]);
+      const dl = el("dl"), few = r.now.head < FEW;
+      const add = (k, v, cls = "") => dl.append(el("dt", { text: k }), el("dd", { class: cls }, v));
+      add("Per head", fmt$(r.now.per_head, false), "hero");
+      add("Price", `${fmt$(r.now.price)}/cwt`);
+      add("Average weight", `${fmtN(r.now.weight)} lb`);
+      add("Head", [document.createTextNode(fmtN(r.now.head)), few ? fewTag() : null]);
+      if (r.ago) {
+        // price change at today's average weight, so a lighter or heavier mix of cows isn't counted as price
+        const d = R((r.now.price - r.ago.price) * r.now.weight / 100);
+        add("A year ago", `${fmt$(r.ago.price)}/cwt`);
+        const thin = Math.min(r.now.head, r.ago.head) < FEW;
+        add("vs. a year ago", thin ? "too few sales" : (d >= 0 ? "+" : "−") + fmt$(Math.abs(d), false) + " a head",
+          thin ? "" : d >= 0 ? "up" : "down");
+      }
+      if (few) kids.push(warnBox(`Few sales: only ${fmtN(r.now.head)} head in three weeks. Treat this price as a rough guide.`));
+      return el("div", { class: "card cow" + (few ? " thin" : "") }, [...kids, dl]);
+    }));
+    const bull = (D.report[S.market].rows || []).find(x => x.item.startsWith("Slaughter bulls"));
+    $("#cows-note").replaceChildren(...(bull && bull.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1-2) brought ${fmt$(bull.price)}/cwt this week on ${fmtN(bull.head)} head.`), bull.head < FEW ? fewTag() : null].filter(Boolean) : []));
+  }
+
+  // ---------- purchase planner ----------
+  const BUY_DAYS = [60, 90, 120, 150, 180];
+  // total-gain mode works at the daily rate it implies, so the chart's other keep lengths stay realistic
+  const buyAdg = () => S.gmode === "adg" ? S.padg : S.ptot / S.pdays;
+  const buyGain = days => S.gmode === "total" && days === S.pdays ? S.ptot : buyAdg() * days;
+  function buyPlan(days) {
+    const P = project(S.pcls, S.pw, days, buyGain(days));
+    if (!P) return null;
+    P.buyP = S.pbuy ?? P.p1;
+    P.buy = R(S.pw * P.buyP / 100);
+    if (P.over) return P;
+    P.gross = R(P.gross);
+    P.loss = R(P.gross * S.pdl / 100);
+    P.cost = S.pcog != null ? R(P.gain * S.pcog) : null;
+    P.margin = P.cost != null ? P.gross - P.loss - P.cost - P.buy : null;
+    P.voG = P.gain > 0 ? (P.gross - P.loss - P.buy) / P.gain : null;          // break-even cost of gain, $/lb
+    P.maxBuy = P.cost != null ? (P.gross - P.loss - P.cost) / S.pw * 100 : null; // break-even purchase price, $/cwt
+    return P;
+  }
+  function renderBuy() {
+    seg($("#buy-class"), CLS, () => S.pcls, v => S.pcls = v);
+    seg($("#buy-gmode"), [{ v: "adg", t: "Gain per day" }, { v: "total", t: "Total gain" }], () => S.gmode, v => { S.gmode = v; store.set("gmode", v); });
+    chips($("#buy-days-chips"), BUY_DAYS.map(d => ({ v: d, t: `${d} days` })), () => S.pdays, v => { S.pdays = v; store.set("pdays", v); });
+    $("#buy-gain-k").textContent = S.gmode === "adg" ? "Gain (lb/day)" : "Total gain (lb)";
+    const fields = [["#buy-w", S.pw, 0], ["#buy-days", S.pdays, 0], ["#buy-gain", S.gmode === "adg" ? S.padg : S.ptot, S.gmode === "adg" ? 1 : 0],
+      ["#buy-dl", S.pdl, null], ["#buy-cog", S.pcog, 2], ["#buy-price", S.pbuy, null]];
+    for (const [id, v, dec] of fields) {
+      const f = $(id); if (document.activeElement !== f) f.value = v == null ? "" : dec == null ? v : (+v).toFixed(dec);
+    }
+    const P = buyPlan(S.pdays), cls = S.pcls.toLowerCase().replace(/s$/, "");
+    $("#buy-price").placeholder = P ? P.p1.toFixed(2) : "";
+    const ans = $("#buy-answer"), build = $("#buy-build");
+    if (!P) {
+      ans.replaceChildren(el("p", { class: "none", text: `No ${S.pcls.toLowerCase()} in that weight class sold statewide in the last two weeks.` }));
+      build.replaceChildren(); $("#buy-chart").replaceChildren(); return;
+    }
+    const when = `${MON[P.t1.getMonth()]} ${P.t1.getDate()}, ${P.t1.getFullYear()}`;
+    const buyCard = el("div", {}, [el("div", { class: "k", text: "Cost to buy now" }),
+      el("div", { class: "v", text: fmt$(P.buy, false) }),
+      el("div", { class: "d", text: `${S.pw} lb at ${fmt$(P.buyP)}/cwt` + (S.pbuy != null ? " (your price)" : " (last two weeks' average)") })]);
+    if (P.over) {
+      ans.replaceChildren(buyCard, el("p", { class: "none", text: `With that gain they'd weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try less gain or a lighter purchase weight.` }));
+      build.replaceChildren(); $("#buy-chart").replaceChildren(); $("#buy-chart-title").textContent = ""; $("#buy-chart-sub").textContent = "";
+      return;
+    }
+    const third = P.margin != null
+      ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
+          el("div", { class: "v " + (P.margin >= 0 ? "up" : "down"), text: signedR(P.margin) + " a head" }),
+          el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` })])
+      : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
+          el("div", { class: "v", text: P.voG == null ? "—" : P.voG <= 0 ? "None" : fmt$(P.voG) + "/lb" }),
+          el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "Loses money even if the gain were free." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." })]);
+    ans.replaceChildren(buyCard,
+      el("div", {}, [el("div", { class: "k", text: `Estimated value when sold, about ${when}` }),
+        el("div", { class: "v hero", text: fmt$(P.gross, false) }),
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt` })]),
+      third);
+    if (P.head < FEW) ans.append(warnBox(`Few sales: the purchase price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.pcls.toLowerCase()}. Treat the estimate as a rough guide.`));
+    const adg = P.gain / P.days;
+    if (adg < 0.5 || adg > 4) ans.append(warnBox(`That works out to ${adg.toFixed(2)} lb a day, outside what most calves gain; check the gain and days you entered.`));
+    if (P.w2 >= 800) ans.append(warnBox(`Few sales: not many calves over 800 lb sell at ${stName()} auctions, so the price at ${fmtN(P.w2)} lb is less certain.`));
+    // build-up
+    const rows = [];
+    const add = (k, sub, v, c = "") => rows.push(el("dt", { class: c }, [document.createTextNode(k), sub ? el("small", {}, sub) : null]), el("dd", { class: c, text: v }));
+    add(`Price now at ${S.pw} lb`, `${P.lo}-${P.lo + 50} lb class ${fmt$(P.pc)}, statewide, last two weeks, ${fmtN(P.head)} head`, `${fmt$(P.p1)}/cwt`);
+    add("Purchase cost", `${S.pw} lb × ${fmt$(P.buyP)}/cwt`, fmt$(P.buy, false));
+    add(`Weight after ${P.days} days`, S.gmode === "adg" ? `+${fmtN(Math.round(P.gain))} lb at ${S.padg} lb/day`
+      : `+${fmtN(Math.round(P.gain))} lb (${(P.gain / P.days).toFixed(2)} lb/day)`, `${fmtN(P.w2)} lb`);
+    add(`Today's price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls}`, "Heavier calves bring less per cwt", `${fmt$(P.pSlide)}/cwt`);
+    add(`Usual change, ${MON[P.m0].replace(".", "")} to ${MON[P.m1].replace(".", "")}`,
+      [document.createTextNode(`${fmtN(P.w2)}-lb ${S.pcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.pcls, P.w2)],
+      P.m0 === P.m1 && P.days < 300 ? "none" : pct(P.sea - 1));
+    add("Estimated price at sale", "", `${fmt$(P.p2)}/cwt`, "tot");
+    add("Estimated value at sale", `${fmtN(P.w2)} lb × ${fmt$(P.p2)}/cwt`, fmt$(P.gross, false));
+    add(`Less death loss (${S.pdl}%)`, "", "−" + fmt$(P.loss, false));
+    add("Less purchase cost", "", "−" + fmt$(P.buy, false));
+    if (P.cost != null) {
+      add("Less cost of gain", `${fmtN(Math.round(P.gain))} lb × ${fmt$(S.pcog)}/lb`, "−" + fmt$(P.cost, false));
+      add("Estimated margin", "", signedR(P.margin), "tot");
+    } else {
+      add("Left to pay for the gain", `${fmtN(Math.round(P.gain))} lb`, fmt$(P.gross - P.loss - P.buy, false), "tot");
+      add("Break-even cost of gain", "", P.voG == null ? "—" : P.voG <= 0 ? "none" : `${fmt$(P.voG)}/lb`);
+    }
+    build.replaceChildren(...rows);
+    // how the answer changes with the keep length
+    const pts = [], ds = [];
+    for (let d = 30; d <= 300; d += 10) ds.push(d);
+    if (!ds.includes(S.pdays)) ds.push(S.pdays);                 // a point at the chosen keep length
+    for (const d of ds.sort((a, b) => a - b)) {
+      const q = buyPlan(d);
+      if (!q || q.over) break;
+      const y = q.margin != null ? q.margin : q.voG;
+      if (y != null) pts.push({ x: d, y });
+    }
+    const useM = P.margin != null;
+    $("#buy-chart-title").textContent = useM ? "Estimated margin by how long you keep them" : "Break-even cost of gain by how long you keep them";
+    $("#buy-chart-sub").textContent = `At ${+buyAdg().toFixed(2)} lb/day` + (S.gmode === "total" ? ` (your ${fmtN(S.ptot)} lb over ${S.pdays} days)` : "") +
+      `, bought now, sold after each number of days. ${useM ? "$ per head." : "$ per lb of gain."} The seasonal pattern makes the line rise and fall.`;
+    const ticks = []; for (let v = 30; v <= 300; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
+    lineChart($("#buy-chart"), {
+      series: [{ cls: 1, pts, name: useM ? "Margin" : "Break-even", width: 2.4 }],
+      x: { min: 30, max: Math.max(60, pts.length ? pts[pts.length - 1].x : 60), ticks },
+      yfmt: (v, full) => useM ? (full ? signedR(v) : (v < 0 ? "−$" : "$") + Math.abs(Math.round(v))) : (full ? fmt$(v) + "/lb" : "$" + v.toFixed(2)),
+      xlab: d => { const t = addDays(today(), d); return `Keep ${d} days (sell ${MON[t.getMonth()]} ${t.getDate()})`; },
+      marker: { x: Math.min(S.pdays, pts.length ? pts[pts.length - 1].x : S.pdays), t: `${S.pdays} days` }, zero: useM,
+      aria: "Estimate by number of days kept", empty: "Too heavy to price at any keep length." });
+    const notes = [];
+    if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
+    notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today.");
+    $("#buy-note").textContent = notes.join(" ");
+  }
+
+  function renderSeason() {
+    const Sx = D.season;
+    seg($("#season-class"), [...CLS, { v: "Cows", t: "Cull cows" }], () => S.scls, v => S.scls = v);
+    const cows = S.scls === "Cows";
+    const groups = cows ? [] : Object.keys(Sx.series).filter(k => k.startsWith(S.scls + " ")).map(k => k.split(" ")[1]);
+    if (!cows && !groups.includes(S.sgrp))       // nearest group with a pattern (AL heavy heifers have none)
+      S.sgrp = groups.reduce((b, g) => Math.abs(parseInt(g) - parseInt(S.sgrp)) < Math.abs(parseInt(b) - parseInt(S.sgrp)) ? g : b, groups[0]);
+    chips($("#season-weight"), groups.map(g => ({ v: g, t: `${g} lb` })), () => S.sgrp, v => S.sgrp = v);
+    const yrs = Sx.used_years;
+    const what = cows ? "Cull cows (Boner, Average dressing)" : `${S.sgrp} lb feeder ${S.scls.toLowerCase()}, Medium and Large #1 and #2`;
+    $("#season-sub").textContent = `${cows ? "Cull cows" : `${S.sgrp} lb ${S.scls.toLowerCase()}`}: % above or below a typical month, ${yrs[0]}-${yrs[yrs.length - 1]}, ${stName()}.`;
+    const rows = Sx.series[cows ? "Cull cows" : `${S.scls} ${S.sgrp}`];
+    const by = [...rows].sort((a, b) => b.index - a.index);
+    const nm = r => MON[MON3.indexOf(r.month)].replace(".", "");
+    // two months next to each other read as a span ("Mar-Apr"); otherwise "March and June"
+    const pair = (a, b) => { const [x, y] = [a, b].sort((p, q) => MON3.indexOf(p.month) - MON3.indexOf(q.month));
+      const gap = MON3.indexOf(y.month) - MON3.indexOf(x.month);
+      return gap === 1 ? `${nm(x)}-${nm(y)}` : gap === 11 ? `${nm(y)}-${nm(x)}` : `${nm(x)} and ${nm(y)}`; };
+    $("#season-summary").textContent = `Highest: ${pair(by[0], by[1])} (about +${(by[0].index - 100).toFixed(0)}%). ` +
+      `Lowest: ${pair(by[by.length - 1], by[by.length - 2])} (about −${(100 - by[by.length - 1].index).toFixed(0)}%).`;
+    monthBars($("#season-chart"), rows);
+  }
+
+  const VIEWS = { week: renderWeek, value: renderValue, trend: renderTrend, keep: renderKeep, buy: renderBuy, bull: renderBull, cows: renderCows, season: renderSeason };
+  function render() {
+    renderHead();
+    if (!isState() && S.tab === "season") S.tab = "week";
+    for (const b of document.querySelectorAll(".tab")) {
+      b.hidden = b.dataset.scope === "state" && !isState();
+      const on = b.dataset.tab === S.tab;
+      b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
+      $("#" + b.dataset.tab).hidden = !on;
+      if (on) try { b.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) { /* old browser */ }
+    }
+    VIEWS[S.tab]();
+  }
+
+  // ---------- wiring ----------
+  function setTab(t, push) {
+    if (!VIEWS[t]) return;
+    S.tab = t; store.set("tab", t);
+    if (push) { try { history.replaceState(null, "", "#" + t); } catch (e) { /* sandboxed */ } }
+    render();
+  }
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab, true)));
+  $("#tablist").addEventListener("keydown", e => {
+    const tabs = [...document.querySelectorAll(".tab")].filter(b => !b.hidden), i = tabs.findIndex(b => b.dataset.tab === S.tab);
+    const n = e.key === "ArrowRight" ? tabs[(i + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(i + tabs.length - 1) % tabs.length]
+      : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : null;
+    if (n) { setTab(n.dataset.tab, true); n.focus(); e.preventDefault(); }
+  });
+  const setW = v => { v = Math.max(250, Math.min(945, Math.round(+v / 5) * 5 || 550)); S.weight = v; store.set("weight", v); renderValue(); };
+  $("#value-weight").addEventListener("input", e => setW(e.target.value));
+  $("#value-weight-n").addEventListener("change", e => setW(e.target.value));
+  for (const [id, k, lo, hi] of [["#keep-w", "kw", 300, 800], ["#keep-adg", "adg", 0.5, 4], ["#keep-cog", "cog", 0, 5], ["#keep-dl", "dl", 0, 20]]) {
+    $(id).addEventListener("input", e => {
+      if (k === "cog" && e.target.value.trim() === "") { S.cog = null; store.set("cog", ""); renderKeep(); return; }
+      const v = parseFloat(e.target.value);
+      if (!(v >= lo && v <= hi)) return;          // wait for a usable number
+      S[k] = k === "kw" ? Math.round(v) : v; store.set(k, v); renderKeep();
+    });
+  }
+  const BUY_IN = [["#buy-w", "pw", 300, 800], ["#buy-days", "pdays", 30, 300], ["#buy-dl", "pdl", 0, 20]];
+  for (const [id, k, lo, hi] of BUY_IN) $(id).addEventListener("input", e => {
+    const v = parseFloat(e.target.value); if (!(v >= lo && v <= hi)) return;
+    S[k] = k === "pdl" ? v : Math.round(v); store.set(k, S[k]); renderBuy();
+  });
+  $("#buy-gain").addEventListener("input", e => {
+    const v = parseFloat(e.target.value);
+    if (S.gmode === "adg") { if (v >= 0.1 && v <= 5) { S.padg = v; store.set("padg", v); renderBuy(); } }
+    else if (v >= 10 && v <= 600) { S.ptot = Math.round(v); store.set("ptot", S.ptot); renderBuy(); }
+  });
+  for (const [id, k, lo, hi] of [["#buy-cog", "pcog", 0, 5], ["#buy-price", "pbuy", 50, 900]]) $(id).addEventListener("input", e => {
+    const raw = e.target.value.trim(), v = parseFloat(raw);
+    if (raw === "") S[k] = null; else if (v >= lo && v <= hi) S[k] = v; else return;   // blank = not used
+    store.set(k, S[k] ?? ""); renderBuy();
+  });
+  const setBW = v => { v = Math.max(300, Math.min(895, Math.round(+v / 5) * 5 || 550)); S.bw = v; store.set("bw", v); renderBull(); };
+  $("#bull-w").addEventListener("input", e => setBW(e.target.value));
+  $("#bull-w-n").addEventListener("change", e => setBW(e.target.value));
+  for (const [id, k, hi] of [["#bull-extra", "bextra", 150], ["#bull-cost", "bcost", 200]]) $(id).addEventListener("input", e => {
+    const raw = e.target.value.trim(), v = parseFloat(raw);
+    if (raw === "") S[k] = null; else if (v >= 0 && v <= hi) S[k] = v; else return;
+    store.set(k, S[k] ?? ""); renderBull();
+  });
+  document.querySelector("main").addEventListener("focusout", e => {
+    if (e.target.matches && e.target.matches("input[type=number]")) setTimeout(() => D && VIEWS[S.tab](), 0);
+  });
+  // a tap outside a chart closes its tooltip (touch has no "mouse left")
+  document.addEventListener("pointerdown", e => {
+    for (const c of document.querySelectorAll(".chart")) if (!c.contains(e.target)) {
+      const t = c.querySelector(".tip"), x = c.querySelector(".cross");
+      if (t) t.hidden = true; if (x) x.setAttribute("visibility", "hidden");
+    }
+  });
+  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disclaimer").scrollIntoView({ behavior: "smooth" }); });
+  $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
+  $("#state").addEventListener("change", e => loadState(e.target.value));
+  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => D && VIEWS[S.tab](), 120); }).observe(document.querySelector("main"));
+
+  // the pickers and footer for the state just loaded
+  function setState(data) {
+    D = data;
+    const st = D.meta.id;
+    $("#state").replaceChildren(...D.meta.states.map(x => el("option", { value: x.id, text: x.name })));
+    $("#state").value = st;
+    const og1 = el("optgroup", { label: "Statewide" }, el("option", { value: "state", text: "All auctions" }));
+    const og2 = el("optgroup", { label: "One auction" }, D.markets.filter(m => m.id !== "state").map(m => el("option", { value: m.id, text: m.name })));
+    $("#market").replaceChildren(og1, og2);
+    const saved = store.get("market." + st);
+    S.market = saved && D.markets.some(m => m.id === saved) ? saved : "state";
+    $("#market").value = S.market;
+    $("#foot-src").textContent = `Prices come from USDA Agricultural Marketing Service auction reports, co-published by the ${D.meta.agency} (Source: ${D.meta.source}).`;
+    $("#foot-all").textContent = `"All auctions" combines every reporting ${D.meta.state} auction.`;
+    store.set("state", st);
+  }
+  const getData = st => fetch(`data/${st}.json`, { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  let loadSeq = 0;
+  function loadState(st) {
+    $("#state").disabled = true;
+    const seq = ++loadSeq;
+    return getData(st).then(data => { if (seq !== loadSeq) return; setState(data); render(); })
+      .catch(err => { console.error(err); if (D) $("#state").value = D.meta.id; })
+      .finally(() => { $("#state").disabled = false; });
+  }
+
+  function restore() {               // one viewer's remembered settings
+    const w = +store.get("weight"); if (w >= 250 && w <= 945) S.weight = w;
+    for (const [k, lo, hi] of [["bw", 300, 895], ["bextra", 0, 150], ["bcost", 0, 200], ["pw", 300, 800], ["pdays", 30, 300], ["pdl", 0, 20], ["padg", 0.1, 5], ["ptot", 10, 600], ["pcog", 0, 5], ["pbuy", 50, 900]]) {
+      const raw = store.get(k), v = parseFloat(raw);
+      if (raw !== "" && v >= lo && v <= hi) S[k] = ["bw", "pw", "pdays", "ptot"].includes(k) ? Math.round(v) : v;
+    }
+    if (store.get("gmode") === "total") S.gmode = "total";
+    for (const [k, lo, hi] of [["kw", 300, 800], ["adg", 0.5, 4], ["cog", 0, 5], ["dl", 0, 20], ["days", 30, 90]]) {
+      const v = parseFloat(store.get(k)); if (v >= lo && v <= hi) S[k] = k === "days" ? (KEEP.includes(v) ? v : S.days) : k === "kw" ? Math.round(v) : v;
+    }
+    const h = (location.hash || "").slice(1);
+    S.tab = VIEWS[h] ? h : (VIEWS[store.get("tab")] ? store.get("tab") : "week");
+  }
+
+  // first state: ?state=al in the link (for a state's own Extension page), else the last one used
+  let first = "ms";
+  try { first = (new URLSearchParams(location.search).get("state") || store.get("state") || "ms").toLowerCase(); } catch (e) { /* no query */ }
+  if (!/^[a-z]{2}$/.test(first)) first = "ms";
+  restore();
+  getData(first).catch(() => first === "ms" ? Promise.reject(new Error("no data")) : getData("ms"))
+    .then(data => { setState(data); render(); })
+    .catch(err => { $("#asof").textContent = "The price data didn't load. Refresh the page to try again."; console.error(err); });
+})();
+</script>
+
+</body>
+</html>
