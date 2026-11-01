@@ -83,6 +83,8 @@ h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap:
         padding: 14px 16px; max-width: 78ch; display: grid; gap: 6px; }
 .disc h2 { font-size: 17px; }
 .disc p { margin: 0; }
+.disc details.method { border-top: 0; padding-top: 0; }
+.disc details.method p + p { margin-top: 8px; }
 .pickers { display: flex; gap: 10px; flex-wrap: wrap; min-width: 0; }
 .picker { display: grid; gap: 4px; min-width: 0; }
 .picker label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
@@ -96,18 +98,15 @@ h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap:
   background-size: 6px 6px; background-repeat: no-repeat; }
 .picker select.st { min-width: 150px; }
 
-/* sale tally */
+/* sale tally: one line of head counts (the year-to-date count is in the About box) */
 .tally { background: var(--surface); border-bottom: 1px solid var(--rule); }
-.tally .wrap { padding-block: 14px; display: flex; flex-wrap: wrap; gap: 10px 32px; align-items: baseline; }
-.tally .lead { font-weight: 600; color: var(--ink-2); font-size: 14px; flex-basis: 100%; }
-.stat { display: grid; gap: 0; min-width: 0; }
-.stat b { font: 700 22px/1.2 var(--body); font-variant-numeric: tabular-nums; }
-.stat span { font-size: 13px; color: var(--muted); }
-.cov { flex-basis: 100%; grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
-.cov a { color: inherit; }
-.stat.big b { font-size: 28px; color: var(--accent); }
-:root[data-theme="dark"] .stat.big b { color: var(--line-1); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stat.big b { color: var(--line-1); } }
+.tally .wrap { padding-block: 11px 12px; display: grid; gap: 3px; }
+.tally .lead { font-weight: 600; color: var(--ink-2); font-size: 14px; }
+.tally .row { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+.tally .row b { font-size: 17px; color: var(--ink); }
+.tally .row b.big { color: var(--accent); font-size: 19px; }
+:root[data-theme="dark"] .tally .row b.big { color: var(--line-1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tally .row b.big { color: var(--line-1); } }
 
 /* tabs */
 .tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
@@ -268,11 +267,15 @@ details.method .card { margin-top: 10px; }
 @media (max-width: 640px) {
   .mast .wrap { grid-template-columns: 1fr; }
 
-  .pickers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .pickers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }   /* "Mississippi" fits */
   .picker select, .picker select.st { width: 100%; min-width: 0; }
-  .tally .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
-  .tally .lead { grid-column: 1 / -1; }
   .card { padding: 14px 12px; }
+  /* number fields two per row, so a planner's inputs fit one screen */
+  .controls .field { flex: 1 1 calc(50% - 9px); min-width: 0; }
+  .controls .field input[type=number] { width: 100%; }
+  .tabs::after { content: ""; position: absolute; right: 0; top: 0; bottom: 1px; width: 44px; pointer-events: none;
+                 background: linear-gradient(to right, transparent, var(--bg)); }
+  .tabs.end::after { display: none; }
   table { font-size: 14px; }
   th, td { padding: 9px 3px; }
   thead th { white-space: normal; font-size: 11px; vertical-align: bottom; }
@@ -318,7 +321,7 @@ details.method .card { margin-top: 10px; }
     <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
     <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
     <button class="tab" role="tab" id="t-cows" aria-controls="cows" data-tab="cows">Cull cows</button>
-    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season" data-scope="state">Seasonal trend</button>
+    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season">Seasonal trend</button>
   </div>
 </nav>
 
@@ -405,6 +408,7 @@ details.method .card { margin-top: 10px; }
     </div>
     <div class="card tablewrap" style="display:grid;gap:8px">
       <table id="keep-table"></table>
+      <p class="note" id="keep-season"></p>
     </div>
     <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
       <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-build-title">How the estimate is built</h3>
@@ -499,7 +503,7 @@ details.method .card { margin-top: 10px; }
 
   <section class="panel" id="season" role="tabpanel" aria-labelledby="t-season" hidden>
     <div>
-      <h2>Seasonal trend</h2>
+      <h2>Seasonal trend <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="season-sub"></p>
     </div>
     <div class="controls">
@@ -521,16 +525,17 @@ details.method .card { margin-top: 10px; }
   <div class="wrap">
     <section class="disc" id="disclaimer" aria-labelledby="disc-h">
       <h2 id="disc-h">Disclaimer</h2>
-      <p>This dashboard is for educational purposes only. It summarizes past USDA auction reports and makes simple
-        estimates from them. It is not a price quote, a forecast of what any animal will bring, or financial,
-        legal or marketing advice.</p>
-      <p>Reports can contain errors and can be late or revised. The Sell or keep and Purchase planner estimates rest
-        on assumptions (the market holding at recent levels, usual seasonal patterns, and the weights, gains and
-        costs you enter) that may not hold. Confirm prices with your auction market and check the numbers for your
-        own operation before you buy or sell.</p>
-      <p>The information is provided as is, without warranty of any kind, and you use it at your own risk. Its authors
-        are not responsible for decisions made with it. This page is not affiliated with or endorsed by USDA, the state
-        departments of agriculture or any auction market.</p>
+      <p>For educational use only. This page summarizes past USDA auction reports and makes simple estimates from
+        them. It is not a price quote, a forecast, or financial, legal or marketing advice, and you use it at your
+        own risk.</p>
+      <details class="method" id="disc-full"><summary>Full disclaimer</summary>
+        <p>Reports can contain errors and may be late or revised. The Sell or keep and Purchase planner figures assume
+          the market holds at recent levels and follows its usual seasonal pattern, along with the weights, gains and
+          costs you enter; none of that is guaranteed. Confirm prices with your auction market before you buy or sell.</p>
+        <p>The information is provided as is, without warranty of any kind. Its authors are not liable for decisions
+          made with it. This page is not affiliated with or endorsed by USDA, any state department of agriculture or
+          any auction market.</p>
+      </details>
     </section>
     <h2>About these numbers</h2>
     <ul>
@@ -754,7 +759,7 @@ details.method .card { margin-top: 10px; }
         rx: 3, class: r.index >= 100 ? "fpos" : "fneg" }));
       svg.append(svgEl("path", { class: "s2", d: `M${cx},${Y(r.high)} V${Y(r.low)}`, "stroke-width": 1.2, opacity: .55 }));
       const tx = svgEl("text", { x: cx, y: H - m.b + 18, "text-anchor": "middle" });
-      tx.textContent = small ? MON3[i][0] : MON3[i]; svg.append(tx);
+      tx.textContent = small ? (i % 2 ? "" : MON3[i]) : MON3[i]; svg.append(tx);   // every other month on a phone
       const hit = svgEl("rect", { x, y: m.t, width: bw, height: H - m.t - m.b, fill: "transparent" });
       const show = () => {
         tip.replaceChildren(el("b", { text: MON[i].replace(".", "") }),
@@ -776,7 +781,7 @@ details.method .card { margin-top: 10px; }
   // steer premium over bulls by weight group: horizontal bars, $/cwt, with % and $/head
   function premiumBars(host, rows, pick) {
     const W = Math.max(280, host.clientWidth || 600), small = W < 520;
-    const rowH = small ? 50 : 44, m = { t: 6, r: small ? 8 : 16, b: 6, l: small ? 76 : 96 };
+    const rowH = small ? 50 : 44, m = { t: 6, r: small ? 8 : 16, b: 6, l: small ? 82 : 100 };
     const H = m.t + m.b + rows.length * rowH;
     const max = Math.max(...rows.map(r => r.premium), 1) * (small ? 1.02 : 1.0);
     const lab = small ? 118 : 140;                       // room for the value label
@@ -788,7 +793,7 @@ details.method .card { margin-top: 10px; }
       const t1 = svgEl("text", { x: m.l - 10, y: by + 10, "text-anchor": "end", class: "endlab" }); t1.textContent = `${r.group} lb`;
       const few = Math.min(r.steers, r.bulls) < FEW;
       const t2 = svgEl("text", { x: m.l - 10, y: by + 24, "text-anchor": "end", class: few ? "fewlab" : "" });
-      t2.textContent = few ? "⚠ few sales" : `${fmtN(Math.min(r.steers, r.bulls))} hd`;
+      t2.textContent = few ? "⚠ few sales" : `${fmtN(Math.min(r.steers, r.bulls))} head`;
       svg.append(t1, t2);
       if (few) svg.append(svgEl("rect", { x: 0, y: y + 1, width: W, height: rowH - 2, rx: 4, fill: "var(--warn-bg)" }));
       svg.append(svgEl("rect", { x: m.l, y: by, width: Math.max(2, X(r.premium) - m.l), height: bh, rx: 4, class: r.premium >= 0 ? "fpos" : "fneg",
@@ -820,7 +825,7 @@ details.method .card { margin-top: 10px; }
       const sv = R(sp * w / 100), bv = R(bp * (w + extra) / 100), net = sv - bv - cost;
       ans.replaceChildren(
         el("div", {}, [el("div", { class: "k", text: net >= 0 ? `At ${w} lb, a steer brings about` : `At ${w} lb, a bull brings about` }),
-          el("div", { class: "v hero " + (net >= 0 ? "up" : "down"), text: fmt$(Math.abs(net), false) + " more a head" }),
+          el("div", { class: "v hero", text: fmt$(Math.abs(net), false) + " more a head" }),   // maroon: a premium, not a price move
           el("div", { class: "d", text: (cost ? `After ${fmt$(cost, false)} to castrate` : "Before your cost to castrate") +
             (extra ? `, bull ${extra} lb heavier` : "") })]),
         el("div", {}, [el("div", { class: "k", text: `As ${an(w)} ${w}-lb steer` }),
@@ -865,15 +870,19 @@ details.method .card { margin-top: 10px; }
     const lead = isState()
       ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${r.reports ? ` (${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far)` : ""}`
       : `Cattle sold at ${mk.name}, sale of ${day(r.sale)}`;
+    // one line: this week, last week, a year ago (year to date is in the About box)
+    // each count stays with its label; the spaces around the dots are where a narrow screen breaks the line
+    const item = (n, label, big) => el("span", { style: "white-space:nowrap" }, [el("b", { class: big ? "big" : "", text: fmtN(n) }), " " + label]);
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
-      el("div", { class: "stat big" }, [el("b", { text: fmtN(rc.week) }), el("span", { text: isState() ? "head this week" : "head this sale" })]),
-      el("div", { class: "stat" }, [el("b", { text: fmtN(rc.prior) }), el("span", { text: "week before" })]),
-      el("div", { class: "stat" }, [el("b", { text: fmtN(rc.year_ago) }), el("span", { text: "same week last year" })]),
-      el("div", { class: "stat" }, [el("b", { text: fmtN(y.ytd) }), el("span", {
-        text: `so far in ${y.through.slice(0, 4)}` + (ytdP != null ? ` · ${Math.abs(ytdP).toFixed(1)}% ${ytdP >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "") })]));
-    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page built ${D.meta.generated}.`;
+      el("div", { class: "row" }, [item(rc.week, `head ${isState() ? "this week" : "this sale"}`, true), " · ",
+        item(rc.prior, "last week"), " · ", item(rc.year_ago, "a year ago")]));
+    YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
+    const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
+    const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"}` : "";
+    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? day(gd, true) + when : g}. Updates each weekday morning.`;
   }
+  let YTD = null;                 // the year-to-date count, shown in the About box
 
   function changeCell(v, pct, heads) {
     if (v == null) return el("td", { class: "none", text: "—" });
@@ -936,10 +945,12 @@ details.method .card { margin-top: 10px; }
     const here = isState() ? "this week" : "this sale";
     add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? `${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far`
       : `Sale of ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
+    if (YTD) add(`Sold so far in ${YTD.yr}`, `${fmtN(YTD.n)} head`,
+      YTD.pct != null ? `${Math.abs(YTD.pct).toFixed(1)}% ${YTD.pct >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "");
     if (cv.week && cv.week.receipts) add("Priced in the report", `${pc(cv.week.priced, cv.week.receipts)}% ${here} (${fmtN(cv.week.priced)} head)`,
       cv.ytd && cv.ytd.receipts ? `${pc(cv.ytd.priced, cv.ytd.receipts)}% so far in ${yr}` : "");
     if (tw || ty) add("Feeder calves by grade", tw ? G.map((g, i) => `#${g} ${pc(gw[i], tw)}%`).join(" · ") : "None graded " + here,
-      ty ? `${yr}: ` + G.map((g, i) => `${pc(gy[i], ty)}%`).join(" · ") : "");
+      ty ? `${yr}: ` + G.map((g, i) => `#${g} ${pc(gy[i], ty)}%`).join(" · ") : "");
     if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "—",
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
@@ -1031,7 +1042,9 @@ details.method .card { margin-top: 10px; }
     const unit = weekly ? "week" : "month";
     if (last) parts.push(`This ${unit} ${fmt$(Math.round(last.y), false)}`);
     if (last && ago.length) { const a = near(ago); if (Math.abs(a.x - last.x) <= (weekly ? 7 : 20)) parts.push(`same ${unit} last year ${fmt$(Math.round(a.y), false)}`); }
-    $("#trend-summary").replaceChildren(...[document.createTextNode(parts.join(" · ") + " ($/cwt)"), last && last.head != null && last.head < FEW ? fewTag() : null].filter(Boolean));
+    // each value stays with its label; a narrow screen breaks the line at the dot
+    const kids = parts.flatMap((p, i) => [i ? " · " : null, el("span", { style: "white-space:nowrap", text: p })]).filter(Boolean);
+    $("#trend-summary").replaceChildren(...kids, " ($/cwt)", last && last.head != null && last.head < FEW ? fewTag() : null);
     const avgNote = avg.length ? ` The ${base} average is drawn only for ${weekly ? "weeks" : "months"} all three years had sales.` : "";
     $("#trend-note").textContent = (weekly ? "" : "Single auctions are shown by month because weekly samples at one barn are often small.") + avgNote;
   }
@@ -1066,15 +1079,24 @@ details.method .card { margin-top: 10px; }
     const f = Math.min(1, (x - (lo + 50)) / 100);
     return a + (b - a) * f;
   };
-  // today's price at weight w, carried to weight w + gain and to the month `days` from now
+  // the index on a given day: each month's value sits at mid-month, and days between are blended,
+  // so a keep length that ends on the 1st doesn't jump to the next month's figure
+  const seasonIdxDay = (cls, w, d) => {
+    const mo = d.getMonth(), dim = new Date(d.getFullYear(), mo + 1, 0).getDate(), f = (d.getDate() - 0.5) / dim - 0.5;
+    const other = (mo + (f < 0 ? 11 : 1)) % 12;
+    const a = seasonIdx(cls, w, mo), b = seasonIdx(cls, w, other);
+    if (a == null || b == null) return a ?? b;
+    return a + (b - a) * Math.abs(f);
+  };
+  // today's price at weight w, carried to weight w + gain and to the day `days` from now
   function project(cls, w, days, gain) {
     const now = priceAt(D.curve.state[cls].now, cls, w);
     if (!now) return null;
     const w2 = Math.round(w + gain), t0 = today(), t1 = addDays(t0, days);
-    const out = { lo: now.lo, pc: now.cls, p1: now.price, head: now.head, days, gain, w2, t1, m0: t0.getMonth(), m1: t1.getMonth() };
+    const out = { lo: now.lo, pc: now.cls, p1: now.price, head: now.head, days, gain, w2, t0, t1, m0: t0.getMonth(), m1: t1.getMonth() };
     const s1 = slideAt(cls, w), s2 = slideAt(cls, w2);
     if (s1 == null || s2 == null) return { ...out, over: true };
-    const i0 = seasonIdx(cls, w2, out.m0), i1 = seasonIdx(cls, w2, out.m1);
+    const i0 = seasonIdxDay(cls, w2, t0), i1 = seasonIdxDay(cls, w2, t1);
     out.pSlide = out.p1 * s2 / s1;
     out.sea = i0 && i1 ? i1 / i0 : 1;
     out.p2 = out.pSlide * out.sea;
@@ -1084,7 +1106,6 @@ details.method .card { margin-top: 10px; }
   const yrsLabel = () => `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]}`;
   // link to the seasonal tab, opened on the weight group the estimate used (nearest one with a pattern)
   function seasonLink(cls, w) {
-    if (!isState()) return null;
     const b = el("button", { type: "button", class: "linkish", text: "See the seasonal trend" });
     b.addEventListener("click", () => { S.scls = cls; S.sgrp = grpOf(w); setTab("season", true); window.scrollTo({ top: 0 }); });
     return b;
@@ -1128,13 +1149,13 @@ details.method .card { margin-top: 10px; }
     } else {
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
-        el("div", { class: "d", text: `${fmtN(P.w2)} lb, sell about ${sellDay(P.t1)}, about ${fmt$(P.p2)}/cwt` })]);
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb, sold about ${sellDay(P.t1)} at ~${fmt$(P.p2)}/cwt` })]);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
             el("div", { class: "v " + (P.diff >= 0 ? "up" : "down"), text: signedR(P.diff) + " a head" }),
             el("div", { class: "d", text: `vs. selling now; ${fmt$(P.net, false)} after gain cost and death loss` })])
         : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
-            el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it below to see dollars a head" })]);
+            el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it above to see dollars a head" })]);
       ans.replaceChildren(be, sellNow, yours);
     }
     if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
@@ -1148,9 +1169,9 @@ details.method .card { margin-top: 10px; }
     add(`Weight in ${S.days} days`, `+${fmtN(Math.round(P.gain))} lb at ${S.adg} lb/day`, `${fmtN(P.w2)} lb`);
     if (!P.over) {
       add(`Today's price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls}`, "Heavier calves bring less per cwt", `${fmt$(P.pSlide)}/cwt`);
-      add(`Usual change, ${MON[P.m0].replace(".", "")} to ${MON[P.m1].replace(".", "")}`,
+      add(`Usual seasonal change, ${sellDay(P.t0)} to ${sellDay(P.t1)}`,
         [document.createTextNode(`${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.kcls, P.w2)],
-        P.m0 === P.m1 ? "none" : pct(P.sea - 1));
+        pct(P.sea - 1));
       add("Estimated price at sale", "", `${fmt$(P.p2)}/cwt`, "tot");
       add("Value at sale", `${fmtN(P.w2)} lb × ${fmt$(P.p2)}/cwt`, fmt$(P.gross, false));
       add(`Less death loss (${S.dl}%)`, "", "−" + fmt$(P.loss, false));
@@ -1175,8 +1196,11 @@ details.method .card { margin-top: 10px; }
     });
     $("#keep-table").replaceChildren(el("caption", { text: `Sell now: ${fmt$(P.v1, false)} a head` }),
       el("thead", {}, el("tr", {}, [el("th", { text: "Keep" }), el("th", { class: "sm-hide", text: "Sell about" }),
-        el("th", { text: "Pays if gain under" }), S.cog != null ? el("th", { text: "vs. sell now" }) : null])),
+        el("th", { text: "Pays if gain under ($/lb)" }), S.cog != null ? el("th", { text: "vs. sell now" }) : null])),
       el("tbody", {}, tb));
+    // the seasonal move behind each keep length, so an odd-looking middle row has a visible reason
+    const sea = KEEP.map(d => { const q = keepPlan(S.kcls, S.kw, d); return q && !q.over ? `${d} days ${pct(q.sea - 1)}` : null; }).filter(Boolean);
+    $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
     notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, labor and marketing costs aren't included, so count them in your cost of gain. Dates count from today. The discount for a heavier calf comes from a smooth line through the last two weeks' statewide prices by weight.");
@@ -1245,7 +1269,7 @@ details.method .card { margin-top: 10px; }
       const f = $(id); if (document.activeElement !== f) f.value = v == null ? "" : dec == null ? v : (+v).toFixed(dec);
     }
     const P = buyPlan(S.pdays), cls = S.pcls.toLowerCase().replace(/s$/, "");
-    $("#buy-price").placeholder = P ? P.p1.toFixed(2) : "";
+    $("#buy-price").placeholder = P ? "avg. " + P.p1.toFixed(2) : "";
     const ans = $("#buy-answer"), build = $("#buy-build");
     if (!P) {
       ans.replaceChildren(el("p", { class: "none", text: `No ${S.pcls.toLowerCase()} in that weight class sold statewide in the last two weeks.` }));
@@ -1284,9 +1308,9 @@ details.method .card { margin-top: 10px; }
     add(`Weight after ${P.days} days`, S.gmode === "adg" ? `+${fmtN(Math.round(P.gain))} lb at ${S.padg} lb/day`
       : `+${fmtN(Math.round(P.gain))} lb (${(P.gain / P.days).toFixed(2)} lb/day)`, `${fmtN(P.w2)} lb`);
     add(`Today's price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls}`, "Heavier calves bring less per cwt", `${fmt$(P.pSlide)}/cwt`);
-    add(`Usual change, ${MON[P.m0].replace(".", "")} to ${MON[P.m1].replace(".", "")}`,
+    add(`Usual seasonal change, ${MON[P.t0.getMonth()]} ${P.t0.getDate()} to ${MON[P.t1.getMonth()]} ${P.t1.getDate()}`,
       [document.createTextNode(`${fmtN(P.w2)}-lb ${S.pcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.pcls, P.w2)],
-      P.m0 === P.m1 && P.days < 300 ? "none" : pct(P.sea - 1));
+      pct(P.sea - 1));
     add("Estimated price at sale", "", `${fmt$(P.p2)}/cwt`, "tot");
     add("Estimated value at sale", `${fmtN(P.w2)} lb × ${fmt$(P.p2)}/cwt`, fmt$(P.gross, false));
     add(`Less death loss (${S.pdl}%)`, "", "−" + fmt$(P.loss, false));
@@ -1353,16 +1377,20 @@ details.method .card { margin-top: 10px; }
   const VIEWS = { week: renderWeek, value: renderValue, trend: renderTrend, keep: renderKeep, buy: renderBuy, bull: renderBull, cows: renderCows, season: renderSeason };
   function render() {
     renderHead();
-    if (!isState() && S.tab === "season") S.tab = "week";
     for (const b of document.querySelectorAll(".tab")) {
-      b.hidden = b.dataset.scope === "state" && !isState();
       const on = b.dataset.tab === S.tab;
       b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
       $("#" + b.dataset.tab).hidden = !on;
-      if (on) try { b.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) { /* old browser */ }
+      // the open tab sits mid-strip on a phone, clear of the "more tabs" fade at the right edge
+      // (the strip scrolls, never the page)
+      if (on) { const w = $("#tablist"); w.scrollLeft = b.offsetLeft - (w.clientWidth - b.offsetWidth) / 2; }
     }
+    tabFade();
     VIEWS[S.tab]();
   }
+  // the fade at the strip's right edge goes away once the strip is scrolled to its end
+  const tabFade = () => { const w = $("#tablist"); $(".tabs").classList.toggle("end", w.scrollLeft + w.clientWidth >= w.scrollWidth - 2); };
+  $("#tablist").addEventListener("scroll", tabFade, { passive: true });
 
   // ---------- wiring ----------
   function setTab(t, push) {
@@ -1422,7 +1450,7 @@ details.method .card { margin-top: 10px; }
       if (t) t.hidden = true; if (x) x.setAttribute("visibility", "hidden");
     }
   });
-  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disclaimer").scrollIntoView({ behavior: "smooth" }); });
+  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disc-full").open = true; $("#disclaimer").scrollIntoView({ behavior: "smooth" }); });
   $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
   $("#state").addEventListener("change", e => loadState(e.target.value));
   let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => D && VIEWS[S.tab](), 120); }).observe(document.querySelector("main"));
