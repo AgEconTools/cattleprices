@@ -939,7 +939,7 @@ details.method .card { margin-top: 10px; }
                             { v: "prev", t: `Week of ${day(P.week[0])}` }], () => S.week, v => S.week = v);
       const sf = $("#week-sofar");
       sf.hidden = !soFar(r);
-      if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts will change as the rest come in. The week of ${day(P.week[0])} is complete.`;
+      if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts may change as more report. The week of ${day(P.week[0])} is complete.`;
     }
     const now = prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week", vs = prevWeek() ? "vs. week before" : "vs. last week";
     seg($("#week-class"), CLS, () => S.wcls, v => S.wcls = v);
