@@ -331,6 +331,7 @@ details.method .card { margin-top: 10px; }
       <h2>What are cattle prices this week?</h2>
       <p class="sub" id="week-sub"></p>
     </div>
+    <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div><p class="note" id="week-sofar"></p></div>
     <div class="controls"><div class="seg" id="week-class"></div></div>
     <div class="card tablewrap"><table id="week-feeders"></table></div>
     <div class="card tablewrap"><table id="week-slaughter"></table></div>
@@ -566,7 +567,7 @@ details.method .card { margin-top: 10px; }
     get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
   };
-  const S = { tab: "week", market: "state", wcls: "Steers", vcls: "Steers", weight: 550,
+  const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", vcls: "Steers", weight: 550,
               tcls: "Steers", tgrp: "500-600", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
               bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 1 };
@@ -606,6 +607,19 @@ details.method .card { margin-top: 10px; }
   const market = () => D.markets.find(m => m.id === S.market) || D.markets[0];
   const isState = () => S.market === "state";
   const stName = () => D.meta.state;
+  // The This week tab's week (statewide only; Josh, 11/1/2026): the latest sale week or the one before
+  // it. On a Tuesday the latest week holds Monday's barns only, so until at least half the expected
+  // auctions have reported, the page opens on the complete week. S.week isn't remembered: the right
+  // default depends on the day.
+  const hasPrev = () => isState() && !!(D.prev && D.prev.state);
+  const prevWeek = () => S.week === "prev" && hasPrev();
+  const wk = () => prevWeek() ? D.prev.state : { report: D.report[S.market], coverage: D.coverage[S.market], grades: D.grades[S.market] };
+  const soFar = r => isState() && r.complete === false;            // barns still to report this week
+  const defaultWeek = () => { const r = D.report.state; return D.prev && D.prev.state && r.complete === false && r.expected && r.reports < r.expected / 2 ? "prev" : "latest"; };
+  // "(4 of 16 auctions reported so far)" / "(14 auctions reported)"
+  const reported = r => !r.reports ? "" : soFar(r) ? ` (${r.reports} of ${r.expected} auctions reported so far)`
+    : ` (${r.reports} auction${r.reports === 1 ? "" : "s"} reported)`;
+  const weekWord = r => prevWeek() ? "last week" : soFar(r) ? "this week so far" : "this week";
 
   // ---------- small controls ----------
   // re-focus the rebuilt button with the same label, so keyboard users don't lose their place
@@ -862,21 +876,23 @@ details.method .card { margin-top: 10px; }
 
   // ---------- views ----------
   function renderHead() {
-    const mk = market(), r = D.report[S.market];
+    const mk = market(), r = wk().report;
     $("#asof").textContent = `${stName()} sales through ${day(D.meta.through, true)}`;
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
     const lead = isState()
-      ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${r.reports ? ` (${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far)` : ""}`
+      ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${reported(r)}`
       : `Cattle sold at ${mk.name}, sale of ${day(r.sale)}`;
     // one line: this week, last week, a year ago (year to date is in the About box)
     // each count stays with its label; the spaces around the dots are where a narrow screen breaks the line
+    // when a barn that sold last week hasn't reported, the other two counts cover only the barns in
     const item = (n, label, big) => el("span", { style: "white-space:nowrap" }, [el("b", { class: big ? "big" : "", text: fmtN(n) }), " " + label]);
+    const same = isState() && r.held_out && r.held_out.length ? ", same auctions" : "";
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
-      el("div", { class: "row" }, [item(rc.week, `head ${isState() ? "this week" : "this sale"}`, true), " · ",
-        item(rc.prior, "last week"), " · ", item(rc.year_ago, "a year ago")]));
+      el("div", { class: "row" }, [item(rc.week, `head ${isState() ? weekWord(r) : "this sale"}`, true), " · ",
+        item(rc.prior, (prevWeek() ? "the week before" : "last week") + same), " · ", item(rc.year_ago, "a year ago" + same)]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
     const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"}` : "";
@@ -907,43 +923,54 @@ details.method .card { margin-top: 10px; }
         changeCell(r.chg, null, r.chg_head), changeCell(r.chg_yr, r.pct_yr, r.chg_yr_head), head]);
     });
   }
-  const thead = first => el("thead", {}, el("tr", {}, [el("th", { text: first }), el("th", { text: "This week" }),
-    el("th", { text: "vs. last week" }), el("th", { text: "vs. a year ago" }), el("th", { class: "headcol", text: "Head" })]));
+  const thead = (first, now, vs) => el("thead", {}, el("tr", {}, [el("th", { text: first }), el("th", { text: now }),
+    el("th", { text: vs }), el("th", { text: "vs. a year ago" }), el("th", { class: "headcol", text: "Head" })]));
 
   function renderWeek() {
-    const r = D.report[S.market], mk = market();
+    const r = wk().report, mk = market();
     $("#week-sub").textContent = (isState()
-      ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}. `
+      ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}${reported(r)}. `
       : `${mk.name}, sale of ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt).";
+    // week picker: the latest week (marked "so far" while barns are still to report) or the one before
+    $("#week-pick-row").hidden = !hasPrev();
+    if (hasPrev()) {
+      const L = D.report.state, P = D.prev.state.report;
+      seg($("#week-pick"), [{ v: "latest", t: `Week of ${day(L.week[0])}${soFar(L) ? " (so far)" : ""}` },
+                            { v: "prev", t: `Week of ${day(P.week[0])}` }], () => S.week, v => S.week = v);
+      const sf = $("#week-sofar");
+      sf.hidden = !soFar(r);
+      if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts will change as the rest come in. The week of ${day(P.week[0])} is complete.`;
+    }
+    const now = prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week", vs = prevWeek() ? "vs. week before" : "vs. last week";
     seg($("#week-class"), CLS, () => S.wcls, v => S.wcls = v);
     const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
     const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
     const anyThin = r.rows.some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
     $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`Feeder ${S.wcls.toLowerCase()}, M&L #1-2, $/cwt`),
       anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
-      thead("Weight (lb)"), el("tbody", {}, noFeeders
+      thead("Weight (lb)", now, vs), el("tbody", {}, noFeeders
         ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
         : reportRows(feed, x => x.item.split(" ")[1])));
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
     $("#week-slaughter").replaceChildren(el("caption", { text: "Cull cows and slaughter bulls, $/cwt" }),
-      thead("Class"), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
+      thead("Class", now, vs), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
-    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), plain lots, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "Last week" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), plain lots, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
     $("#week-note").textContent = notes.join(" ");
   }
 
   // sale facts: plain numbers about this sale (or week) against the same market's own year, no rankings
   function renderFacts(r) {
     const yr = D.meta.through.slice(0, 4), pc = (a, b) => b ? Math.round(a / b * 100) : null;
-    const cv = D.coverage[S.market] || {}, gm = D.grades[S.market] || {}, G = ["1", "1-2", "2", "3"];
+    const cv = wk().coverage || {}, gm = wk().grades || {}, G = ["1", "1-2", "2", "3"];
     const sum = tag => G.map(g => ["Steers", "Heifers"].reduce((t, c) => t + (((gm[c] || {})[tag] || {})[g] || 0), 0));
     const gw = sum("week"), gy = sum("ytd"), tw = gw.reduce((a, b) => a + b, 0), ty = gy.reduce((a, b) => a + b, 0);
     const lots = gm.lots || {}, va = o => o ? pc(o.va, o.va + o.plain) : null;
     const items = [];
     const add = (k, v, sub) => items.push(el("div", {}, [el("dt", { text: k }), el("dd", {}, [document.createTextNode(v), sub ? el("small", { text: sub }) : null])]));
-    const here = isState() ? "this week" : "this sale";
-    add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? `${r.reports} auction${r.reports === 1 ? "" : "s"} reported so far`
+    const here = isState() ? weekWord(r) : "this sale";
+    add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? reported(r).slice(2, -1)
       : `Sale of ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
     if (YTD) add(`Sold so far in ${YTD.yr}`, `${fmtN(YTD.n)} head`,
       YTD.pct != null ? `${Math.abs(YTD.pct).toFixed(1)}% ${YTD.pct >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "");
@@ -955,7 +982,7 @@ details.method .card { margin-top: 10px; }
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
     why.addEventListener("click", e => { e.preventDefault(); $("#about").scrollIntoView({ behavior: "smooth" }); });
-    $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About this week's ${stName()} sales` : `About this sale at ${market().name}` }),
+    $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
       el("p", { class: "gmix" }, [document.createTextNode("Grades and lot labels follow each reporter's practice; #3 and Value Added lots aren't in the averages. "), why]));
   }
@@ -1467,6 +1494,7 @@ details.method .card { margin-top: 10px; }
     const saved = store.get("market." + st);
     S.market = saved && D.markets.some(m => m.id === saved) ? saved : "state";
     $("#market").value = S.market;
+    S.week = defaultWeek();
     $("#foot-src").textContent = `Prices come from USDA Agricultural Marketing Service auction reports, co-published by the ${D.meta.agency} (Source: ${D.meta.source}).`;
     $("#foot-all").textContent = `"All auctions" combines every reporting ${D.meta.state} auction.`;
     store.set("state", st);
