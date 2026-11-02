@@ -1039,7 +1039,7 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
       // why dollars per head can step down at a class boundary (Josh, 11/1/2026): the reports price 50-lb classes
       const nx = now.find(p => p[0] === lo + 50);
-      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class, so this is the ${lo}-${lo + 50} lb class price times ${w} lb. ` +
+      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class, so this is the ${lo}-${lo + 50} lb class price multiplied by ${w} lb. ` +
         `At ${lo + 50} lb it switches to the ${lo + 50}-${lo + 100} lb class${nx ? ` (${fmt$(nx[1])}/cwt)` : ""}, and dollars per head can step down there. ` +
         "That is how the reports work, not a real drop: heavier calves bring less per pound, and nothing is smoothed between classes." }));
       if (thinNow || thinAgo) {
