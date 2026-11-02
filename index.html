@@ -201,6 +201,7 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
 :root[data-theme="dark"] .answer .v.hero { color: var(--line-1); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .answer .v.hero { color: var(--line-1); } }
 .answer .d { font-size: 14px; color: var(--ink-2); }
+.answer .keep-assume { grid-column: 1 / -1; margin: -6px 0 0; }
 .answer .v.up, .cow dd.up { color: var(--up); } .answer .v.down, .cow dd.down { color: var(--down); }
 .weightrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .weightrow input[type=range] { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
@@ -1203,16 +1204,23 @@ details.method .card { margin-top: 10px; }
     if (P.over) {
       ans.replaceChildren(sellNow, el("p", { class: "none", text: `At ${S.adg} lb/day the calf would weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try a shorter keep or a lighter weight.` }));
     } else {
+      // the estimated value if kept, beside Sell now, with what it assumes (Josh, 11/1/2026)
+      const keepVal = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: estimated value` }),
+        el("div", { class: "v", text: fmt$(P.gross, false) }),
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}` })]);
+      const assume = el("p", { class: "note keep-assume" }, [document.createTextNode(
+        `The estimated value assumes recent prices (the last two weeks' sales) adjusted for the normal month-to-month seasonal pattern: ` +
+        `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)]);
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
-        el("div", { class: "d", text: `${fmtN(P.w2)} lb, sold about ${sellDay(P.t1)} at ~${fmt$(P.p2)}/cwt` })]);
+        el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` })]);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
             el("div", { class: "v " + (P.diff >= 0 ? "up" : "down"), text: signedR(P.diff) + " a head" }),
             el("div", { class: "d", text: `vs. selling now; ${fmt$(P.net, false)} after gain cost and death loss` })])
         : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
             el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it above to see dollars a head" })]);
-      ans.replaceChildren(be, sellNow, yours);
+      ans.replaceChildren(sellNow, keepVal, assume, be, yours);
     }
     if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
     if (S.adg > 4) ans.append(warnBox(`${S.adg} lb a day is more than most calves gain; check the gain you entered.`));
