@@ -546,7 +546,7 @@ details.method .card { margin-top: 10px; }
     </section>
     <h2>About these numbers</h2>
     <p id="foot-src">Prices come from USDA Agricultural Marketing Service auction reports.</p>
-    <details class="method" id="foot-how"><summary>How these prices are figured</summary>
+    <details class="method" id="foot-how"><summary>How these numbers are calculated</summary>
       <ul>
         <li>Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
           hundredweight (cwt). Only plain lots count: #3 and Value Added, fancy and fleshy lots are left out. Cull cows
@@ -903,7 +903,8 @@ details.method .card { margin-top: 10px; }
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
     const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"}` : "";
-    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? day(gd, true) + when : g}. Updates each weekday morning.`;
+    const ver = D.meta.build ? `version ${D.meta.build}, ` : "";   // commits to the page code; "+" = uncommitted edits (support)
+    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? day(gd, true) + when : g}. Updates each weekday morning.`;
   }
   let YTD = null;                 // the year-to-date count, shown in the About box
 
