@@ -459,7 +459,7 @@ details.method .card { margin-top: 10px; }
         <label class="field" for="buy-cog"><span>Cost per lb gained ($, optional)</span>
           <input type="number" id="buy-cog" min="0" max="5" step="0.05" placeholder="e.g. 1.00"></label>
         <label class="field" for="buy-dl"><span>Death loss (%)</span>
-          <input type="number" id="buy-dl" min="0" max="20" step="0.5" value="1"></label>
+          <input type="number" id="buy-dl" min="0" max="20" step="0.5" value="2"></label>
       </div>
       <div class="answer" id="buy-answer"></div>
     </div>
@@ -517,8 +517,9 @@ details.method .card { margin-top: 10px; }
     <div class="cows" id="cows-cards"></div>
     <p class="note" id="cows-note"></p>
     <details class="method"><summary>Calculation methods</summary><p class="note">Average dressing, all three cull grades, the last three sale weeks. Value per head is the price
-      times the average weight sold. The change from a year ago is figured at today's average weight, so a lighter or
-      heavier mix of cows isn't counted as a price change.</p></details>
+      times the average weight sold. The change from a year ago is calculated at today's average weight, so a lighter or
+      heavier mix of cows isn't counted as a price change. Slaughter bulls (Yield Grade 1-2, average dressing) pool the
+      same three sale weeks.</p></details>
   </section>
 
   <section class="panel" id="season" role="tabpanel" aria-labelledby="t-season" hidden>
@@ -590,7 +591,7 @@ details.method .card { margin-top: 10px; }
   const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", vcls: "Steers", weight: 550,
               tcls: "Steers", tgrp: "500-600", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
-              bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 1 };
+              bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 2 };   // 2% death loss for bought calves, 1% (dl) for home-raised (Josh, 11/2/2026)
   let D = null;
   const FEW = 20;           // under 20 head: a thin sample, as `ask` marks it
   const fewTag = () => el("span", { class: "few", text: "Few sales" });
@@ -1215,6 +1216,13 @@ details.method .card { margin-top: 10px; }
     out.net = out.gross - out.loss - out.cost;
     out.diff = out.net - out.v1;
     out.be = out.gain > 0 ? (out.gross - out.loss - out.v1) / out.gain : null;   // cost of gain where keeping breaks even
+    // the same estimate with the sale month at its lowest and highest year (the purchase planner's band), as a
+    // range under the value and the break-even (review item F1; Josh, 11/2/2026)
+    const at = sea => { const g = R(out.w2 * out.pSlide * sea / 100), l = R(g * S.dl / 100);
+      return { gross: g, be: out.gain > 0 ? (g - l - out.v1) / out.gain : null }; };
+    const a = at(out.seaLo), b = at(out.seaHi);
+    out.grossLo = Math.min(a.gross, b.gross); out.grossHi = Math.max(a.gross, b.gross);
+    out.beLo = a.be == null || b.be == null ? null : Math.min(a.be, b.be); out.beHi = a.be == null || b.be == null ? null : Math.max(a.be, b.be);
     return out;
   }
   const signedR = v => (v >= 0 ? "+" : "−") + fmt$(Math.round(Math.abs(v)), false);
@@ -1244,13 +1252,15 @@ details.method .card { margin-top: 10px; }
       // the estimated value if kept, beside Sell now, with what it assumes (Josh, 11/1/2026)
       const keepVal = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: estimated value` }),
         el("div", { class: "v", text: fmt$(P.gross, false) }),
-        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}` })]);
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}` }),
+        ...(P.grossLo < P.grossHi ? [el("div", { class: "d", text: `${fmt$(P.grossLo, false)} to ${fmt$(P.grossHi, false)} across the ${yrsLabel()} seasonal patterns` })] : [])]);
       const assume = el("p", { class: "note keep-assume" }, [document.createTextNode(
         `The estimated value assumes recent prices (the last two weeks' sales) adjusted for the normal month-to-month seasonal pattern: ` +
         `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)]);
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
         el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` }),
+        ...(P.beLo != null && P.beLo < P.beHi ? [el("div", { class: "d", text: `${P.beLo <= 0 ? "never" : fmt$(P.beLo) + "/lb"} to ${P.beHi <= 0 ? "never" : fmt$(P.beHi) + "/lb"} across the ${yrsLabel()} seasonal patterns` })] : []),
         el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
@@ -1337,10 +1347,12 @@ details.method .card { margin-top: 10px; }
       if (few) kids.push(warnBox(`Few sales: only ${fmtN(r.now.head)} head in three weeks. Treat this price as a rough guide.`));
       return el("div", { class: "card cow" + (few ? " thin" : "") }, [...kids, dl]);
     }));
-    const bull = (D.report[S.market].rows || []).find(x => x.item.startsWith("Slaughter bulls"));
+    // slaughter bulls over the same three sale weeks as the cows (review item I2; Josh, 11/2/2026)
+    const bull = (D.bulls || {})[S.market] || {}, bn = bull.now;
     const cowSeason = el("button", { type: "button", class: "linkish", text: "See the seasonal trend for cull cows" });
     cowSeason.addEventListener("click", () => { S.scls = "Cows"; setTab("season", true); window.scrollTo({ top: 0 }); });
-    $("#cows-note").replaceChildren(...(bull && bull.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1-2) brought ${fmt$(bull.price)}/cwt this week on ${fmtN(bull.head)} head. `), bull.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), cowSeason);
+    const bullAgo = bull.ago && bn && Math.min(bn.head, bull.ago.head) >= FEW ? `, ${fmt$(bull.ago.price)}/cwt in the same weeks a year ago` : "";
+    $("#cows-note").replaceChildren(...(bn && bn.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1-2) brought ${fmt$(bn.price)}/cwt over the same three sale weeks on ${fmtN(bn.head)} head${bullAgo}. `), bn.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), cowSeason);
   }
 
   // ---------- purchase planner ----------
@@ -1465,7 +1477,8 @@ details.method .card { margin-top: 10px; }
       aria: "Estimate by number of days kept", empty: "Too heavy to price at any keep length." });
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push(`This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
+    notes.push(`Death loss starts at 2% for bought calves, which are hauled and mixed with others; Sell or keep starts at 1% for home-raised calves. Change it to fit your experience. ` +
+      `This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
       `The chart's shaded band repeats the estimate with the month of sale at its lowest and highest level in ${yrsLabel()} (today's month held at its average).`);
     $("#buy-note").textContent = notes.join(" ");
   }
