@@ -254,6 +254,8 @@ footer { border-top: 1px solid var(--rule); }
 footer .wrap { padding-block: 26px 40px; display: grid; gap: 10px; color: var(--ink-2); font-size: 14px; }
 footer h2 { font-size: 18px; }
 footer ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 78ch; }
+footer p { margin: 0; max-width: 78ch; }
+footer .wrap > details.method { border-top: 0; padding-top: 0; }   /* the credit line sits right above it */
 
 details.method { border-top: 1px solid var(--rule); padding-top: 10px; max-width: 72ch; }
 details.method > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink-2); list-style: none; }
@@ -543,19 +545,20 @@ details.method .card { margin-top: 10px; }
       </details>
     </section>
     <h2>About these numbers</h2>
-    <ul>
-      <li id="foot-src">Prices come from USDA Agricultural Marketing Service auction reports.</li>
-      <li>Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
-        hundredweight (cwt). Only plain lots count: #3 and Value Added, fancy and fleshy lots are left out. Cull cows
-        use Average dressing.</li>
-      <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span> Pick one auction to see its own prices.
-        Graded, special and board sales are not included.</li>
-      <li>Market reporters grade and price part of each sale (often 40-90%, depending on the auction). Prices here come
-        only from the cattle they priced; the "About this sale" box on This week gives that share for the market you pick.
-        Small weight classes can rest on a handful of head, so head counts are shown. Likely data-entry errors are
-        left out.</li>
-      <li>These are past sale prices, not a quote or a guarantee of what any calf will bring.</li>
-    </ul>
+    <p id="foot-src">Prices come from USDA Agricultural Marketing Service auction reports.</p>
+    <details class="method" id="foot-how"><summary>How these prices are figured</summary>
+      <ul>
+        <li>Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
+          hundredweight (cwt). Only plain lots count: #3 and Value Added, fancy and fleshy lots are left out. Cull cows
+          use Average dressing.</li>
+        <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span> Pick one auction to see its own prices.
+          Graded, special and board sales are not included.</li>
+        <li>Market reporters grade and price part of each sale (often 40-90%, depending on the auction). Prices here come
+          only from the cattle they priced; the "About this sale" box on This week gives that share for the market you pick.
+          Small weight classes can rest on a handful of head, so head counts are shown. Likely data-entry errors are
+          left out.</li>
+      </ul>
+    </details>
     <p class="note" id="foot-gen"></p>
   </div>
 </footer>
@@ -985,7 +988,7 @@ details.method .card { margin-top: 10px; }
     if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "—",
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
-    why.addEventListener("click", e => { e.preventDefault(); $("#about").scrollIntoView({ behavior: "smooth" }); });
+    why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
       el("p", { class: "gmix" }, [document.createTextNode("Grades and lot labels follow each reporter's practice; #3 and Value Added lots aren't in the averages. "), why]));
