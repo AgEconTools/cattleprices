@@ -170,6 +170,9 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
         font-size: 14px; font-weight: 600; }
 .warn::before { content: "⚠"; }
 .stale-row { padding-block: 14px 0; }
+.specials-row { padding-block: 10px 0; }
+.specials-row .note { margin: 0; }
+.specials-row a { color: inherit; }
 .card.thin { border-color: var(--warn-line); box-shadow: inset 0 0 0 1px var(--warn-line); }
 .chart .fewpt { fill: var(--warn-bg); stroke: var(--warn-line); stroke-width: 2.5; }
 .chart .fewlab { fill: var(--warn-ink); font-weight: 700; }
@@ -328,6 +331,7 @@ details.method .card { margin-top: 10px; }
   <div class="wrap" id="tally"></div>
 </section>
 <div class="wrap stale-row" id="stale-row" hidden><p class="warn" role="status" id="stale"></p></div>
+<div class="wrap specials-row" id="specials-row" hidden><p class="note" id="specials"></p></div>
 
 <nav class="tabs" aria-label="Questions">
   <div class="wrap" role="tablist" id="tablist">
@@ -925,6 +929,18 @@ details.method .card { margin-top: 10px; }
     $("#stale-row").hidden = age <= STALE_DAYS;
     if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${wday(built, true)}, ${age} days ago, with sales through ` +
       `${wday(D.meta.through, true)}. It normally updates every morning, so prices may be out of date.`;
+    // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
+    // report, and never in any figure on the page (Josh, 11/2/2026); statewide view only
+    const sp = isState() ? (D.specials || []) : [];
+    $("#specials-row").hidden = !sp.length;
+    if (sp.length) $("#specials").replaceChildren(
+      document.createTextNode("Special sales reported in the last three weeks, not included in these figures: "),
+      ...sp.flatMap((s, i) => [
+        i ? document.createTextNode(" · ") : null,
+        el("a", { href: s.url, target: "_blank", rel: "noopener", title: `${s.title} (USDA report)`, text: s.name }),
+        document.createTextNode(`, ${day(s.date)}, ${fmtN(s.head)} head${s.sales > 1 ? ` (${s.sales} sales)` : ""}`)
+      ].filter(Boolean)),
+      document.createTextNode("."));
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
@@ -1011,6 +1027,7 @@ details.method .card { margin-top: 10px; }
     renderFacts(r);
     const notes = [];
     notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), plain lots, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    notes.push("Graded, special and board sales are reported separately by USDA and are never part of these figures or any other tab: graded sales sort calves into uniform, often weaned and vaccinated lots; board sales sell load lots for delivery weeks later. Any reported in the last three weeks are listed under the head counts with links to their USDA reports.");
     $("#week-note").textContent = notes.join(" ");
   }
 
