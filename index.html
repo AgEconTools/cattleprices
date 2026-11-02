@@ -492,10 +492,11 @@ details.method .card { margin-top: 10px; }
       </div>
       <div class="controls">
         <label class="field" for="bull-extra"><span>Extra weight as a bull (lb, optional)</span>
-          <input type="number" id="bull-extra" min="0" max="150" step="5" placeholder="0"></label>
+          <input type="number" id="bull-extra" min="0" max="150" step="5" placeholder="e.g. 25"></label>
         <label class="field" for="bull-cost"><span>Cost to castrate ($/head, optional)</span>
           <input type="number" id="bull-cost" min="0" max="200" step="1" placeholder="0"></label>
       </div>
+      <p class="note">Bulls often gain more than steers before weaning; enter your own estimate of the extra weight. Left blank, the comparison is at the same weight.</p>
       <div class="answer" id="bull-answer"></div>
     </div>
     <div class="card" style="display:grid;gap:10px">
@@ -732,7 +733,10 @@ details.method .card { margin-top: 10px; }
         stroke: "var(--surface)", "stroke-width": 2 }));
       if (s.markAt != null) { const q = s.pts.reduce((b, p) => Math.abs(p.x - s.markAt) < Math.abs(b.x - s.markAt) ? p : b, s.pts[0]);
         svg.append(svgEl("circle", { cx: X(q.x), cy: Y(q.y), r: 4.5, class: "f" + s.cls, stroke: "var(--surface)", "stroke-width": 2 })); }
-      if (cfg.endLabels && s.end) ends.push({ x: X(last.x), y: Y(last.y), t: s.end, v: cfg.yfmt(last.y, true) });
+      if (cfg.endLabels && s.end) {   // labelAt: read the label at that x (a full-year average vs. a year to date), not the line's end
+        const lp = s.labelAt != null ? s.pts.reduce((b, p) => Math.abs(p.x - s.labelAt) < Math.abs(b.x - s.labelAt) ? p : b, s.pts[0]) : last;
+        ends.push({ x: X(lp.x), y: Y(lp.y), t: s.end, v: cfg.yfmt(lp.y, true) });
+      }
     });
     // end labels: spread so they never overlap
     ends.sort((a, b) => a.y - b.y);
@@ -964,7 +968,8 @@ details.method .card { margin-top: 10px; }
     const r = wk().report, mk = market();
     $("#week-sub").textContent = (isState()
       ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}${reported(r)}. `
-      : `${mk.name} sale on ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt).";
+      : `${mk.name} sale on ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt). " +
+      `${prevWeek() ? "The week before" : "Last week"} is the week of ${day(r.prior)}; a year ago is the week of ${day(r.year_ago, true)}.`;
     // week picker: the latest week (marked "so far" while barns are still to report) or the one before
     $("#week-pick-row").hidden = !hasPrev();
     if (hasPrev()) {
@@ -1027,7 +1032,7 @@ details.method .card { margin-top: 10px; }
     why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
-      el("p", { class: "gmix" }, [document.createTextNode("Grades and lot labels follow each reporter's practice; #3 and Value Added lots aren't in the averages. "), why]));
+      el("p", { class: "gmix" }, [document.createTextNode("Reporters apply grades differently at each barn, so prices here pool #1 and #2 calves: the pooled price is comparable across barns and states; the grade shares above are not. #3 and Value Added lots aren't in the averages. "), why]));
   }
 
   function renderValue() {
@@ -1050,7 +1055,8 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "d", text: `${fmt$(a.price)}/cwt (${lo}-${lo + 50} lb, ${fmtN(a.head)} head)` })]),
         el("div", {}, [el("div", { class: "k", text: "Same 2 weeks last year" }),
           el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "—" }),
-          el("div", { class: "d", text: b ? `${fmt$(b.price)}/cwt (${fmtN(b.head)} head)` : "None priced in that class a year ago" })]),
+          el("div", { class: "d", text: b ? `${fmt$(b.price)}/cwt (${fmtN(b.head)} head)` : "None priced in that class a year ago" }),
+          el("div", { class: "d", text: `Two-week average, ${span(c.now[0], lastDay(c.now[1]))}, vs. the same two weeks last year.` })]),
         el("div", {}, [el("div", { class: "k", text: "vs. last year" }),
           // a thin sample on either side makes the change meaningless, as on the cull cow cards
           el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
@@ -1102,7 +1108,8 @@ details.method .card { margin-top: 10px; }
     const narrow = $("#trend-chart").clientWidth < 520;
     const series = [{ cls: 1, pts: cur, name: String(yr), end: String(yr), dot: true, width: 2.6 },
       { cls: 3, pts: ago, name: String(yr - 1), width: 1.8, markAt: cur.length ? cur[cur.length - 1].x : null },
-      { cls: 2, pts: avg, name: `${base} avg.`, end: narrow ? "3-yr avg." : `${base} avg.`, dash: "6 4", width: 1.8 }].filter(s => s.pts.length);
+      { cls: 2, pts: avg, name: `${base} avg.`, end: narrow ? "3-yr avg." : `${base} avg.`, dash: "6 4", width: 1.8,
+        markAt: cur.length ? cur[cur.length - 1].x : null, labelAt: cur.length ? cur[cur.length - 1].x : null }].filter(s => s.pts.length);
     $("#trend-legend").replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
     const thinT = lineChart($("#trend-chart"), {
       series, x: { min: 0, max: 365, ticks: window.innerWidth < 520 ? ticks.filter((_, i) => i % 2 === 0) : ticks },
@@ -1119,7 +1126,7 @@ details.method .card { margin-top: 10px; }
     if (last && ago.length) { const a = near(ago); if (Math.abs(a.x - last.x) <= (weekly ? 7 : 20)) parts.push(`same ${unit} last year ${fmt$(Math.round(a.y), false)}`); }
     // each value stays with its label; a narrow screen breaks the line at the dot
     const kids = parts.flatMap((p, i) => [i ? " · " : null, el("span", { style: "white-space:nowrap", text: p })]).filter(Boolean);
-    $("#trend-summary").replaceChildren(...kids, " ($/cwt)", last && last.head != null && last.head < FEW ? fewTag() : null);
+    $("#trend-summary").replaceChildren(...kids, " ($/cwt)", ...(last && last.head != null && last.head < FEW ? [fewTag()] : []));
     const avgNote = avg.length ? ` The ${base} average is drawn only for ${weekly ? "weeks" : "months"} all three years had sales.` : "";
     $("#trend-note").textContent = (weekly ? "" : "Single auctions are shown by month because weekly samples at one barn are often small.") + avgNote;
   }
@@ -1236,7 +1243,8 @@ details.method .card { margin-top: 10px; }
         `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)]);
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
-        el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` })]);
+        el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` }),
+        el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
             el("div", { class: "v " + (P.diff >= 0 ? "up" : "down"), text: signedR(P.diff) + " a head" }),
@@ -1323,7 +1331,9 @@ details.method .card { margin-top: 10px; }
       return el("div", { class: "card cow" + (few ? " thin" : "") }, [...kids, dl]);
     }));
     const bull = (D.report[S.market].rows || []).find(x => x.item.startsWith("Slaughter bulls"));
-    $("#cows-note").replaceChildren(...(bull && bull.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1-2) brought ${fmt$(bull.price)}/cwt this week on ${fmtN(bull.head)} head.`), bull.head < FEW ? fewTag() : null].filter(Boolean) : []));
+    const cowSeason = el("button", { type: "button", class: "linkish", text: "See the seasonal trend for cull cows" });
+    cowSeason.addEventListener("click", () => { S.scls = "Cows"; setTab("season", true); window.scrollTo({ top: 0 }); });
+    $("#cows-note").replaceChildren(...(bull && bull.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1-2) brought ${fmt$(bull.price)}/cwt this week on ${fmtN(bull.head)} head. `), bull.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), cowSeason);
   }
 
   // ---------- purchase planner ----------
@@ -1377,10 +1387,12 @@ details.method .card { margin-top: 10px; }
     const third = P.margin != null
       ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
           el("div", { class: "v " + (P.margin >= 0 ? "up" : "down"), text: signedR(P.margin) + " a head" }),
-          el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` })])
+          el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` }),
+          el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })])
       : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
           el("div", { class: "v", text: P.voG == null ? "—" : P.voG <= 0 ? "None" : fmt$(P.voG) + "/lb" }),
-          el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "Loses money even if the gain were free." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." })]);
+          el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "Loses money even if the gain were free." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." }),
+          el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
     ans.replaceChildren(buyCard,
       el("div", {}, [el("div", { class: "k", text: `Estimated value when sold, about ${when}` }),
         el("div", { class: "v hero", text: fmt$(P.gross, false) }),
@@ -1414,10 +1426,10 @@ details.method .card { margin-top: 10px; }
     }
     build.replaceChildren(...rows);
     // how the answer changes with the keep length
-    // 60-210 days (the keep lengths the planner offers, plus a month), with a band for how much the seasonal
+    // 60-180 days (the keep lengths the planner offers), with a band for how much the seasonal
     // pattern has varied, so its rises and dips aren't read as precise (Josh, 11/1/2026)
     const pts = [], band = [], ds = [];
-    for (let d = 60; d <= 210; d += 10) ds.push(d);   // from 60: shorter keeps spread a price swing over too few pounds
+    for (let d = 60; d <= 180; d += 10) ds.push(d);   // from 60: shorter keeps spread a price swing over too few pounds
     if (!ds.includes(S.pdays)) ds.push(S.pdays);                 // a point at the chosen keep length
     for (const d of ds.sort((a, b) => a - b)) {
       const q = buyPlan(d);
@@ -1435,7 +1447,7 @@ details.method .card { margin-top: 10px; }
     $("#buy-legend").replaceChildren(
       el("li", {}, [el("span", { class: "key k1" }), el("span", { text: `Estimate (${yrs} average pattern)` })]),
       el("li", {}, [el("span", { class: "key kband" }), el("span", { text: "Range across those years" })]));
-    const ticks = []; for (let v = 60; v <= 210; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
+    const ticks = []; for (let v = 60; v <= 180; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
     lineChart($("#buy-chart"), {
       band: band.length ? { pts: band, name: "Range" } : null,
       series: [{ cls: 1, pts, name: useM ? "Estimate" : "Break-even", width: 2.4 }],
@@ -1493,6 +1505,7 @@ details.method .card { margin-top: 10px; }
   $("#tablist").addEventListener("scroll", tabFade, { passive: true });
 
   // ---------- wiring ----------
+  window.addEventListener("hashchange", () => { const h = (location.hash || "").slice(1); if (VIEWS[h] && h !== S.tab) setTab(h, false); });
   function setTab(t, push) {
     if (!VIEWS[t]) return;
     S.tab = t; store.set("tab", t);
