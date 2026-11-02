@@ -182,6 +182,13 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
 .facts dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .facts dd small { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); }
 .facts .gmix { margin: 0; font-size: 13px; color: var(--muted); }
+/* grade shares as a small table: grades across, this week bold, the year grey (Josh, 11/1/2026) */
+.facts .gr { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 1px 12px; max-width: 300px;
+             margin-top: 2px; font-variant-numeric: tabular-nums; }
+.facts .gr span { text-align: right; white-space: nowrap; }
+.facts .gr .lab { text-align: left; font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.facts .gr .hd { font-size: 12px; font-weight: 600; color: var(--muted); }
+.facts .gr .yr { font-size: 12.5px; font-weight: 400; color: var(--muted); }
 .facts .gmix a { color: inherit; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
 .two > * { min-width: 0; }
@@ -890,7 +897,7 @@ details.method .card { margin-top: 10px; }
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
     const lead = isState()
       ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${reported(r)}`
-      : `Cattle sold at ${mk.name}, sale of ${day(r.sale)}`;
+      : `Cattle sold at ${mk.name} on ${day(r.sale)}`;
     // one line: this week, last week, a year ago (year to date is in the About box)
     // each count stays with its label; the spaces around the dots are where a narrow screen breaks the line
     // when a barn that sold last week hasn't reported, the other two counts cover only the barns in
@@ -938,7 +945,7 @@ details.method .card { margin-top: 10px; }
     const r = wk().report, mk = market();
     $("#week-sub").textContent = (isState()
       ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}${reported(r)}. `
-      : `${mk.name}, sale of ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt).";
+      : `${mk.name} sale on ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt).";
     // week picker: the latest week (marked "so far" while barns are still to report) or the one before
     $("#week-pick-row").hidden = !hasPrev();
     if (hasPrev()) {
@@ -950,17 +957,22 @@ details.method .card { margin-top: 10px; }
       if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts may change as more report. The week of ${day(P.week[0])} is complete.`;
     }
     const now = prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week", vs = prevWeek() ? "vs. week before" : "vs. last week";
-    seg($("#week-class"), CLS, () => S.wcls, v => S.wcls = v);
+    // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
+    seg($("#week-class"), [...CLS, { v: "Cows", t: "Cows & bulls" }], () => S.wcls, v => S.wcls = v);
+    const cows = S.wcls === "Cows";
+    $("#week-feeders").parentElement.hidden = cows;
+    $("#week-slaughter").parentElement.hidden = !cows;
     const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
     const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
-    const anyThin = r.rows.some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
-    $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`Feeder ${S.wcls.toLowerCase()}, M&L #1-2, $/cwt`),
+    const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
+    const anyThin = (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
+    if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`Feeder ${S.wcls.toLowerCase()}, M&L #1-2, $/cwt`),
       anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
       thead("Weight (lb)", now, vs), el("tbody", {}, noFeeders
         ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
         : reportRows(feed, x => x.item.split(" ")[1])));
-    const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
-    $("#week-slaughter").replaceChildren(el("caption", { text: "Cull cows and slaughter bulls, $/cwt" }),
+    if (cows) $("#week-slaughter").replaceChildren(el("caption", {}, [document.createTextNode("Cull cows and slaughter bulls, $/cwt"),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
       thead("Class", now, vs), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
@@ -976,16 +988,20 @@ details.method .card { margin-top: 10px; }
     const gw = sum("week"), gy = sum("ytd"), tw = gw.reduce((a, b) => a + b, 0), ty = gy.reduce((a, b) => a + b, 0);
     const lots = gm.lots || {}, va = o => o ? pc(o.va, o.va + o.plain) : null;
     const items = [];
-    const add = (k, v, sub) => items.push(el("div", {}, [el("dt", { text: k }), el("dd", {}, [document.createTextNode(v), sub ? el("small", { text: sub }) : null])]));
+    const add = (k, v, sub) => items.push(el("div", {}, [el("dt", { text: k }), el("dd", {}, [typeof v === "string" ? document.createTextNode(v) : v, sub ? el("small", { text: sub }) : null])]));
     const here = isState() ? weekWord(r) : "this sale";
     add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? reported(r).slice(2, -1)
-      : `Sale of ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
+      : `Sold on ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
     if (YTD) add(`Sold so far in ${YTD.yr}`, `${fmtN(YTD.n)} head`,
       YTD.pct != null ? `${Math.abs(YTD.pct).toFixed(1)}% ${YTD.pct >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "");
     if (cv.week && cv.week.receipts) add("Priced in the report", `${pc(cv.week.priced, cv.week.receipts)}% ${here} (${fmtN(cv.week.priced)} head)`,
       cv.ytd && cv.ytd.receipts ? `${pc(cv.ytd.priced, cv.ytd.receipts)}% so far in ${yr}` : "");
-    if (tw || ty) add("Feeder calves by grade", tw ? G.map((g, i) => `#${g} ${pc(gw[i], tw)}%`).join(" · ") : "None graded " + here,
-      ty ? `${yr}: ` + G.map((g, i) => `#${g} ${pc(gy[i], ty)}%`).join(" · ") : "");
+    if (tw || ty) {   // a small table, not one run-on line (Josh, 11/1/2026)
+      const cells = [el("span", { class: "lab" }), ...G.map(g => el("span", { class: "hd", text: `#${g}` }))];
+      if (tw) cells.push(el("span", { class: "lab", text: here[0].toUpperCase() + here.slice(1) }), ...G.map((g, i) => el("span", { text: `${pc(gw[i], tw)}%` })));
+      if (ty) cells.push(el("span", { class: "lab", text: yr }), ...G.map((g, i) => el("span", { class: "yr", text: `${pc(gy[i], ty)}%` })));
+      add("Feeder calves by grade", el("div", { class: "gr" }, cells), tw ? "" : "None graded " + here);
+    }
     if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "—",
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
@@ -1021,6 +1037,11 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
             text: !phAgo ? "—" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
           el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
+      // why dollars per head can step down at a class boundary (Josh, 11/1/2026): the reports price 50-lb classes
+      const nx = now.find(p => p[0] === lo + 50);
+      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class, so this is the ${lo}-${lo + 50} lb class price times ${w} lb. ` +
+        `At ${lo + 50} lb it switches to the ${lo + 50}-${lo + 100} lb class${nx ? ` (${fmt$(nx[1])}/cwt)` : ""}, and dollars per head can step down there. ` +
+        "That is how the reports work, not a real drop: heavier calves bring less per pound, and nothing is smoothed between classes." }));
       if (thinNow || thinAgo) {
         const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
           thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
