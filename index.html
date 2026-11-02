@@ -169,6 +169,7 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
         color: var(--warn-ink); border-left: 4px solid var(--warn-line); border-radius: 6px; padding: 10px 12px;
         font-size: 14px; font-weight: 600; }
 .warn::before { content: "⚠"; }
+.stale-row { padding-block: 14px 0; }
 .card.thin { border-color: var(--warn-line); box-shadow: inset 0 0 0 1px var(--warn-line); }
 .chart .fewpt { fill: var(--warn-bg); stroke: var(--warn-line); stroke-width: 2.5; }
 .chart .fewlab { fill: var(--warn-ink); font-weight: 700; }
@@ -326,6 +327,7 @@ details.method .card { margin-top: 10px; }
 <section class="tally" aria-label="Cattle sold">
   <div class="wrap" id="tally"></div>
 </section>
+<div class="wrap stale-row" id="stale-row" hidden><p class="warn" role="status" id="stale"></p></div>
 
 <nav class="tabs" aria-label="Questions">
   <div class="wrap" role="tablist" id="tablist">
@@ -602,6 +604,7 @@ details.method .card { margin-top: 10px; }
   const an = n => /^8\d\d$/.test(String(n)) || /^(11|18)\d$/.test(String(n)) ? "an" : "a";  // "an 800-lb", "a 550-lb"
   // dates counted from today on the calendar (not 24-hour blocks, which slip a day across a time change)
   const today = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+  const STALE_DAYS = 4;   // Friday's build is 3 days old on Monday morning; one missed weekday more shows the banner
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const lastDay = s => s > D.meta.through ? D.meta.through : s;      // a window's end, never after the latest sale
   const fmtN = v => v == null ? "—" : v.toLocaleString("en-US");
@@ -902,6 +905,12 @@ details.method .card { margin-top: 10px; }
   function renderHead() {
     const mk = market(), r = wk().report;
     $("#asof").textContent = `${stName()} sales through ${day(D.meta.through, true)}`;
+    // the page normally rebuilds each weekday morning; past STALE_DAYS (a long weekend plus a missed day) it says so
+    // (Josh, 11/1/2026), counted from when the page was built, not the last sale (holiday weeks have no sales)
+    const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
+    $("#stale-row").hidden = age <= STALE_DAYS;
+    if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${day(built, true)}, ${age} days ago, with sales through ` +
+      `${day(D.meta.through, true)}. It normally updates each weekday morning, so prices may be out of date. Check with your auction market before you buy or sell.`;
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
