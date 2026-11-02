@@ -910,7 +910,7 @@ details.method .card { margin-top: 10px; }
     const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
     $("#stale-row").hidden = age <= STALE_DAYS;
     if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${day(built, true)}, ${age} days ago, with sales through ` +
-      `${day(D.meta.through, true)}. It normally updates each weekday morning, so prices may be out of date. Check with your auction market before you buy or sell.`;
+      `${day(D.meta.through, true)}. It normally updates each weekday morning, so prices may be out of date.`;
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
