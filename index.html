@@ -230,6 +230,7 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
 .legend li { display: flex; align-items: center; gap: 7px; }
 .k1 { border-color: var(--line-1); } .k2 { border-color: var(--line-2); } .k3 { border-color: var(--line-3); }
+.key.kband { height: 12px; border: 0; border-radius: 2px; background: var(--band); opacity: .6; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips button { border: 1px solid var(--rule); background: var(--surface); border-radius: 999px; padding: 6px 12px;
                 font-weight: 600; font-size: 14px; color: var(--ink-2); cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -465,6 +466,7 @@ details.method .card { margin-top: 10px; }
         <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="buy-chart-title"></h3>
         <p class="note" id="buy-chart-sub"></p>
       </div>
+      <ul class="legend" id="buy-legend"></ul>
       <div class="chart" id="buy-chart"></div>
     </div>
     <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
@@ -674,7 +676,8 @@ details.method .card { margin-top: 10px; }
     const m = { t: 12, r: cfg.endLabels ? (small ? 74 : 104) : 14, b: 30, l: small ? 46 : 54 };
     const all = cfg.series.flatMap(s => s.pts);
     if (!all.length) { host.replaceChildren(el("p", { class: "none", text: cfg.empty || "No sales to chart." })); return; }
-    let ylo = Math.min(...all.map(p => p.y)), yhi = Math.max(...all.map(p => p.y));
+    const B = cfg.band ? cfg.band.pts : [];
+    let ylo = Math.min(...all.map(p => p.y), ...B.map(p => p.lo)), yhi = Math.max(...all.map(p => p.y), ...B.map(p => p.hi));
     if (cfg.marker && cfg.marker.y != null) { ylo = Math.min(ylo, cfg.marker.y); yhi = Math.max(yhi, cfg.marker.y); }
     const pad = (yhi - ylo) * 0.08 || 10; ylo -= pad; yhi += pad;
     const { ticks } = niceTicks(ylo, yhi, small ? 4 : 5);
@@ -694,6 +697,9 @@ details.method .card { margin-top: 10px; }
       svg.append(svgEl("path", { class: "axis", d: `M${x},${H - m.b} V${H - m.b + 4}` }));
       const tx = svgEl("text", { x, y: H - m.b + 18, "text-anchor": "middle" }); tx.textContent = t.t; svg.append(tx);
     }
+    if (B.length > 1) svg.append(svgEl("path", { class: "fband", opacity: .6,
+      d: "M" + B.map(p => `${X(p.x).toFixed(1)},${Y(p.hi).toFixed(1)}`).join("L") + "L" +
+         [...B].reverse().map(p => `${X(p.x).toFixed(1)},${Y(p.lo).toFixed(1)}`).join("L") + "Z" }));
     if (cfg.zero && ylo < 0 && yhi > 0) svg.append(svgEl("path", { class: "axis", d: `M${m.l},${Y(0)} H${W - m.r}` }));
     if (cfg.marker) {
       const x = X(cfg.marker.x);
@@ -749,9 +755,12 @@ details.method .card { margin-top: 10px; }
       const rows = cfg.series.map(s => ({ s, p: s.pts.find(p => p.x === best) })).filter(o => o.p);
       if (!rows.length) return;
       cross.setAttribute("d", `M${X(best)},${m.t} V${H - m.b}`); cross.setAttribute("visibility", "visible");
+      const bp = B.find(p => p.x === best);
       tip.replaceChildren(el("b", { text: cfg.xlab(best) }), ...rows.map(({ s, p }) => el("div", { class: "row" }, [
         el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }),
-        el("span", { text: `${s.name}: ${cfg.yfmt(p.y, true)}${p.head != null ? ` · ${fmtN(p.head)} hd` : ""}${p.head != null && p.head < FEW ? " ⚠ few sales" : ""}` })])));
+        el("span", { text: `${s.name}: ${cfg.yfmt(p.y, true)}${p.head != null ? ` · ${fmtN(p.head)} hd` : ""}${p.head != null && p.head < FEW ? " ⚠ few sales" : ""}` })])),
+        ...(bp ? [el("div", { class: "row" }, [el("span", { class: "key kband" }),
+          el("span", { text: `${cfg.band.name}: ${cfg.yfmt(bp.lo, true)} to ${cfg.yfmt(bp.hi, true)}` })])] : []));
       tip.hidden = false;
       const tw = tip.offsetWidth, cx = X(best) * r.width / W;
       tip.style.left = Math.max(0, Math.min(r.width - tw, cx + 12 > r.width - tw ? cx - tw - 12 : cx + 12)) + "px";
@@ -1124,24 +1133,25 @@ details.method .card { margin-top: 10px; }
   }
   // seasonal index for weight w, blended between the 100-lb groups' midpoints so
   // the estimate doesn't jump when a calf crosses from one group into the next
-  const groupIdx = (cls, lo, mo) => {
+  // f: "index" (the 5-year average), or "low"/"high" (that month's lowest and highest year)
+  const groupIdx = (cls, lo, mo, f = "index") => {
     const r = (D.season.series[`${cls} ${lo}-${lo + 100}`] || []).find(x => x.month === MON3[mo]);
-    return r ? r.index : null;
+    return r ? r[f] : null;
   };
-  const seasonIdx = (cls, w, mo) => {
+  const seasonIdx = (cls, w, mo, fld = "index") => {
     const x = Math.max(350, Math.min(850, w)), lo = Math.min(800, Math.floor((x - 350) / 100) * 100 + 300);
-    const a = groupIdx(cls, lo, mo), b = groupIdx(cls, Math.min(800, lo + 100), mo);
-    if (a == null && b == null) return groupIdx(cls, lo - 100, mo);   // heaviest group too thin for a pattern
+    const a = groupIdx(cls, lo, mo, fld), b = groupIdx(cls, Math.min(800, lo + 100), mo, fld);
+    if (a == null && b == null) return groupIdx(cls, lo - 100, mo, fld);   // heaviest group too thin for a pattern
     if (a == null || b == null) return a ?? b;
     const f = Math.min(1, (x - (lo + 50)) / 100);
     return a + (b - a) * f;
   };
   // the index on a given day: each month's value sits at mid-month, and days between are blended,
   // so a keep length that ends on the 1st doesn't jump to the next month's figure
-  const seasonIdxDay = (cls, w, d) => {
+  const seasonIdxDay = (cls, w, d, fld = "index") => {
     const mo = d.getMonth(), dim = new Date(d.getFullYear(), mo + 1, 0).getDate(), f = (d.getDate() - 0.5) / dim - 0.5;
     const other = (mo + (f < 0 ? 11 : 1)) % 12;
-    const a = seasonIdx(cls, w, mo), b = seasonIdx(cls, w, other);
+    const a = seasonIdx(cls, w, mo, fld), b = seasonIdx(cls, w, other, fld);
     if (a == null || b == null) return a ?? b;
     return a + (b - a) * Math.abs(f);
   };
@@ -1156,6 +1166,10 @@ details.method .card { margin-top: 10px; }
     const i0 = seasonIdxDay(cls, w2, t0), i1 = seasonIdxDay(cls, w2, t1);
     out.pSlide = out.p1 * s2 / s1;
     out.sea = i0 && i1 ? i1 / i0 : 1;
+    // the sale month at its lowest and highest year of the five (the whiskers on Seasonal trend), today held at
+    // the average: the range the purchase planner shades (Josh, 11/1/2026)
+    const lo1 = seasonIdxDay(cls, w2, t1, "low"), hi1 = seasonIdxDay(cls, w2, t1, "high");
+    out.seaLo = i0 && lo1 ? lo1 / i0 : out.sea; out.seaHi = i0 && hi1 ? hi1 / i0 : out.sea;
     out.p2 = out.pSlide * out.sea;
     out.gross = w2 * out.p2 / 100;
     return out;
@@ -1320,6 +1334,9 @@ details.method .card { margin-top: 10px; }
     P.margin = P.cost != null ? P.gross - P.loss - P.cost - P.buy : null;
     P.voG = P.gain > 0 ? (P.gross - P.loss - P.buy) / P.gain : null;          // break-even cost of gain, $/lb
     P.maxBuy = P.cost != null ? (P.gross - P.loss - P.cost) / S.pw * 100 : null; // break-even purchase price, $/cwt
+    const at = sea => { const g = R(P.w2 * P.pSlide * sea / 100), l = R(g * S.pdl / 100);
+      return P.cost != null ? g - l - P.cost - P.buy : P.gain > 0 ? (g - l - P.buy) / P.gain : null; };
+    P.rangeLo = at(P.seaLo); P.rangeHi = at(P.seaHi);
     return P;
   }
   function renderBuy() {
@@ -1388,30 +1405,40 @@ details.method .card { margin-top: 10px; }
     }
     build.replaceChildren(...rows);
     // how the answer changes with the keep length
-    const pts = [], ds = [];
-    for (let d = 30; d <= 300; d += 10) ds.push(d);
+    // 60-210 days (the keep lengths the planner offers, plus a month), with a band for how much the seasonal
+    // pattern has varied, so its rises and dips aren't read as precise (Josh, 11/1/2026)
+    const pts = [], band = [], ds = [];
+    for (let d = 60; d <= 210; d += 10) ds.push(d);   // from 60: shorter keeps spread a price swing over too few pounds
     if (!ds.includes(S.pdays)) ds.push(S.pdays);                 // a point at the chosen keep length
     for (const d of ds.sort((a, b) => a - b)) {
       const q = buyPlan(d);
       if (!q || q.over) break;
       const y = q.margin != null ? q.margin : q.voG;
-      if (y != null) pts.push({ x: d, y });
+      if (y == null) continue;
+      pts.push({ x: d, y });
+      if (q.rangeLo != null && q.rangeHi != null) band.push({ x: d, lo: Math.min(q.rangeLo, q.rangeHi), hi: Math.max(q.rangeLo, q.rangeHi) });
     }
-    const useM = P.margin != null;
+    const useM = P.margin != null, yrs = yrsLabel();
     $("#buy-chart-title").textContent = useM ? "Estimated margin by how long you keep them" : "Break-even cost of gain by how long you keep them";
     $("#buy-chart-sub").textContent = `At ${+buyAdg().toFixed(2)} lb/day` + (S.gmode === "total" ? ` (your ${fmtN(S.ptot)} lb over ${S.pdays} days)` : "") +
-      `, bought now, sold after each number of days. ${useM ? "$ per head." : "$ per lb of gain."} The seasonal pattern makes the line rise and fall.`;
-    const ticks = []; for (let v = 30; v <= 300; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
+      `, bought now, sold after each number of days, ${useM ? "$ per head" : "$ per lb of gain"}. ` +
+      `The ${useM ? "margin" : "break-even"} rises and dips with the usual seasonal pattern, and the shaded band shows how much that pattern has varied from year to year (${yrs}).`;
+    $("#buy-legend").replaceChildren(
+      el("li", {}, [el("span", { class: "key k1" }), el("span", { text: `Estimate (${yrs} average pattern)` })]),
+      el("li", {}, [el("span", { class: "key kband" }), el("span", { text: "Range across those years" })]));
+    const ticks = []; for (let v = 60; v <= 210; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
     lineChart($("#buy-chart"), {
-      series: [{ cls: 1, pts, name: useM ? "Margin" : "Break-even", width: 2.4 }],
-      x: { min: 30, max: Math.max(60, pts.length ? pts[pts.length - 1].x : 60), ticks },
+      band: band.length ? { pts: band, name: "Range" } : null,
+      series: [{ cls: 1, pts, name: useM ? "Estimate" : "Break-even", width: 2.4 }],
+      x: { min: 60, max: Math.max(90, pts.length ? pts[pts.length - 1].x : 90), ticks },
       yfmt: (v, full) => useM ? (full ? signedR(v) : (v < 0 ? "−$" : "$") + Math.abs(Math.round(v))) : (full ? fmt$(v) + "/lb" : "$" + v.toFixed(2)),
       xlab: d => { const t = addDays(today(), d); return `Keep ${d} days (sell ${MON[t.getMonth()]} ${t.getDate()})`; },
       marker: { x: Math.min(S.pdays, pts.length ? pts[pts.length - 1].x : S.pdays), t: `${S.pdays} days` }, zero: useM,
       aria: "Estimate by number of days kept", empty: "Too heavy to price at any keep length." });
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today.");
+    notes.push(`This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
+      `The chart's shaded band repeats the estimate with the month of sale at its lowest and highest level in ${yrsLabel()} (today's month held at its average).`);
     $("#buy-note").textContent = notes.join(" ");
   }
 
