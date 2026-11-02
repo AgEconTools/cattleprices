@@ -380,9 +380,11 @@ details.method .card { margin-top: 10px; }
       <ul class="legend" id="curve-legend"></ul>
       <div class="chart" id="curve-chart"></div>
     </div>
-    <details class="method"><summary>Calculation methods</summary><p class="note">The value is the average price of Medium and Large #1 and #2 calves in that 50-lb weight class
-      over the last two sale weeks, times the weight. Plain lots only. The year-ago figure uses the same class and the
-      same two weeks last year.</p></details>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Prices are the average for Medium and Large #1 and #2 calves by 50-lb weight class over the last
+      two sale weeks, plain lots only. A smooth line through the class averages (the statewide price-by-weight line) prices
+      the calf at its own weight instead of at the middle of its class; the value is that price times the weight. The
+      year-ago figure uses the same class, the same two weeks last year and last year's line. Sell or keep, Purchase
+      planner and Steer or bull price a calf the same way.</p></details>
   </section>
 
   <section class="panel" id="trend" role="tabpanel" aria-labelledby="t-trend" hidden>
@@ -1048,8 +1050,11 @@ details.method .card { margin-top: 10px; }
     const c = D.curve[S.market], now = c[S.vcls].now, ago = c[S.vcls].ago, w = S.weight;
     $("#value-weight").value = w; $("#value-weight-n").value = w;
     const lo = Math.floor(w / 50) * 50;
-    const cp = pts => { const r = pts.find(p => p[0] === lo); return r ? { price: r[1], cls: r[1], head: r[2] } : null; };
-    const a = cp(now), b = cp(ago);
+    // one price per calf across the page (review item B; Josh, 11/2/2026): the class average tilted along the
+    // smooth price-by-weight line, as Sell or keep, Purchase planner and Steer or bull price it; the year-ago
+    // figure uses last year's line. The class average stays underneath as the reported number.
+    const cp = (pts, at) => { const r = pts.find(p => p[0] === lo); return r ? { price: onLine(r[1], lo, w, at), cls: r[1], head: r[2] } : null; };
+    const a = cp(now, x => slideAt(S.vcls, x)), b = cp(ago, x => slideAgoAt(S.vcls, x));
     const ans = $("#value-answer");
     const cls = S.vcls.toLowerCase().replace(/s$/, "");
     if (!a) {
@@ -1060,21 +1065,21 @@ details.method .card { margin-top: 10px; }
       ans.replaceChildren(
         el("div", {}, [el("div", { class: "k", text: `${an(w) === "an" ? "An" : "A"} ${w}-lb ${cls} is worth about` }),
           el("div", { class: "v hero", text: fmt$(ph, false) }),
-          el("div", { class: "d", text: `${fmt$(a.price)}/cwt (${lo}-${lo + 50} lb, ${fmtN(a.head)} head)` })]),
+          el("div", { class: "d", text: `${fmt$(a.price)}/cwt at ${w} lb on the price-by-weight line` }),
+          // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
+          el("div", { class: "d", text: `Reported ${lo}-${lo + 50} lb class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` })]),
         el("div", {}, [el("div", { class: "k", text: "Same 2 weeks last year" }),
           el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "—" }),
-          el("div", { class: "d", text: b ? `${fmt$(b.price)}/cwt (${fmtN(b.head)} head)` : "None priced in that class a year ago" }),
+          el("div", { class: "d", text: b ? `${fmt$(b.price)}/cwt at ${w} lb on last year's line; class average ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head, ${fmt$(R(b.cls * w / 100), false)} at that price` : "None priced in that class a year ago" }),
           el("div", { class: "d", text: `Two-week average, ${span(c.now[0], lastDay(c.now[1]))}, vs. the same two weeks last year.` })]),
         el("div", {}, [el("div", { class: "k", text: "vs. last year" }),
           // a thin sample on either side makes the change meaningless, as on the cull cow cards
           el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
             text: !phAgo ? "—" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
           el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
-      // why dollars per head can step down at a class boundary (Josh, 11/1/2026): the reports price 50-lb classes
-      const nx = now.find(p => p[0] === lo + 50);
-      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class, so this is the ${lo}-${lo + 50} lb class price multiplied by ${w} lb. ` +
-        `At ${lo + 50} lb it switches to the ${lo + 50}-${lo + 100} lb class${nx ? ` (${fmt$(nx[1])}/cwt)` : ""}, and dollars per head can step down there. ` +
-        "That is how the reports work, not a real drop: heavier calves bring less per pound, and nothing is smoothed between classes." }));
+      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class. A smooth line through the class averages prices ${an(w)} ${w}-lb ${cls} at ${w} lb ` +
+        `rather than at the middle of the ${lo}-${lo + 50} lb class, so heavier calves bring a little less per pound within a class and the value doesn't jump at ${lo + 50} lb. ` +
+        "Sell or keep, Purchase planner and Steer or bull price a calf the same way." }));
       if (thinNow || thinAgo) {
         const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
           thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
@@ -1146,15 +1151,18 @@ details.method .card { margin-top: 10px; }
   function priceAt(pts, cls, w) {
     const lo = Math.floor(w / 50) * 50, row = pts.find(p => p[0] === lo);
     if (!row) return null;
-    const a = slideAt(cls, w), b = slideAt(cls, lo + 25);
-    return { lo, cls: row[1], price: a && b ? row[1] * a / b : row[1], head: row[2] };
+    return { lo, cls: row[1], price: onLine(row[1], lo, w, x => slideAt(cls, x)), head: row[2] };
   }
   const grpOf = w => { const lo = Math.max(300, Math.min(800, Math.floor(w / 100) * 100)); return `${lo}-${lo + 100}`; };
-  function slideAt(cls, w) {              // smooth statewide price line, 10-lb steps
-    const L = D.slide[cls]; if (w < L[0][0] || w > L[L.length - 1][0]) return null;
+  function slideOn(L, w) {                // a smooth statewide price line (10-lb steps) read at w lb
+    if (!L || !L.length || w < L[0][0] || w > L[L.length - 1][0]) return null;
     const i = Math.min(L.length - 2, Math.floor((w - L[0][0]) / 10)), [x0, y0] = L[i], [x1, y1] = L[i + 1];
     return y0 + (y1 - y0) * (w - x0) / (x1 - x0);
   }
+  const slideAt = (cls, w) => slideOn(D.slide[cls], w);                       // the last two weeks' line
+  const slideAgoAt = (cls, w) => slideOn((D.slide_ago || D.slide)[cls], w);  // the same two weeks a year ago
+  // a class average tilted along a line: the price at exactly w lb (the class sits at its midpoint)
+  const onLine = (price, lo, w, at) => { const a = at(w), b = at(lo + 25); return a && b ? price * a / b : price; };
   // seasonal index for weight w, blended between the 100-lb groups' midpoints so
   // the estimate doesn't jump when a calf crosses from one group into the next
   // f: "index" (the 5-year average), or "low"/"high" (that month's lowest and highest year)
