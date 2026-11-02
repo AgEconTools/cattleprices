@@ -611,6 +611,10 @@ details.method .card { margin-top: 10px; }
   const fmtN = v => v == null ? "—" : v.toLocaleString("en-US");
   const iso = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
   const day = (s, year) => { const d = iso(s); return `${MON[d.getMonth()]} ${d.getDate()}` + (year ? `, ${d.getFullYear()}` : ""); };
+  const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  // "Wednesday, Oct. 28": the weekday shows a Monday-Wednesday state is current on a Friday (Josh, 11/2/2026);
+  // non-breaking spaces keep a date on one line when the sentence wraps on a phone
+  const wday = (s, year) => `${DOW[iso(s).getDay()]}, ${day(s, year)}`.replace(/ /g, " ");
   const span = (a, b) => {
     const x = iso(a), y = iso(b);
     if (x.getMonth() === y.getMonth()) return `${MON[x.getMonth()]} ${x.getDate()}-${y.getDate()}`;
@@ -908,13 +912,16 @@ details.method .card { margin-top: 10px; }
   // ---------- views ----------
   function renderHead() {
     const mk = market(), r = wk().report;
-    $("#asof").textContent = `${stName()} sales through ${day(D.meta.through, true)}`;
-    // the page normally rebuilds each weekday morning; past STALE_DAYS (a long weekend plus a missed day) it says so
+    // "Updated Monday, Nov. 2. Latest sales: Wednesday, Oct. 28." (Josh, 11/2/2026): the latest sale is this
+    // state's, so it follows the state picker; the weekdays say why a Friday visit still shows Wednesday
+    const upd = (D.meta.generated || "").slice(0, 10);
+    $("#asof").textContent = `${/^\d{4}-\d\d-\d\d$/.test(upd) ? `Updated ${wday(upd)}. ` : ""}Latest sales: ${wday(D.meta.through)}.`;
+    // the page normally rebuilds every morning (weekends too since 11/2/2026); past STALE_DAYS (three missed mornings) it says so
     // (Josh, 11/1/2026), counted from when the page was built, not the last sale (holiday weeks have no sales)
     const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
     $("#stale-row").hidden = age <= STALE_DAYS;
-    if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${day(built, true)}, ${age} days ago, with sales through ` +
-      `${day(D.meta.through, true)}. It normally updates each weekday morning, so prices may be out of date.`;
+    if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${wday(built, true)}, ${age} days ago, with sales through ` +
+      `${wday(D.meta.through, true)}. It normally updates every morning, so prices may be out of date.`;
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
@@ -934,7 +941,7 @@ details.method .card { margin-top: 10px; }
     const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
     const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"}` : "";
     const ver = D.meta.build ? `version ${D.meta.build}, ` : "";   // commits to the page code; "+" = uncommitted edits (support)
-    $("#foot-gen").textContent = `Data through ${day(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? day(gd, true) + when : g}. Updates each weekday morning.`;
+    $("#foot-gen").textContent = `Latest sales ${wday(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? wday(gd, true) + when : g}. Updates every morning.`;
   }
   let YTD = null;                 // the year-to-date count, shown in the About box
 
