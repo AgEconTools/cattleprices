@@ -602,7 +602,8 @@ details.method .card { margin-top: 10px; }
     <details class="method"><summary>Calculation methods</summary><p class="note">Each bar is how far that month's price usually runs above or below that year's normal level
       (a centered 12-month average), averaged over the years shown. The long-run price trend is removed first, so a
       rising market doesn't make the late months look better than they were, and the grade mix is held fixed. Thin
-      lines on each bar show the lowest and highest year.</p></details>
+      lines on each bar show the lowest and highest year. Where the heaviest weight groups have too few sales for a pattern,
+      the nearest lighter group with a pattern is used.</p></details>
   </section>
 </main>
 
@@ -1384,7 +1385,9 @@ details.method .card { margin-top: 10px; }
   const seasonIdx = (cls, w, mo, fld = "index") => {
     const x = Math.max(350, Math.min(850, w)), lo = Math.min(800, Math.floor((x - 350) / 100) * 100 + 300);
     const a = groupIdx(cls, lo, mo, fld), b = groupIdx(cls, Math.min(800, lo + 100), mo, fld);
-    if (a == null && b == null) return groupIdx(cls, lo - 100, mo, fld);   // heaviest group too thin for a pattern
+    // heaviest groups too thin for a pattern: the nearest lighter group that has one (SC heifers have no 700-800 lb
+    // pattern; stepping down one group found nothing at 850 lb and up, and Sell or keep assumed no seasonal move; 11/3/2026)
+    if (a == null && b == null) { for (let g = lo - 100; g >= 300; g -= 100) { const v = groupIdx(cls, g, mo, fld); if (v != null) return v; } return null; }
     if (a == null || b == null) return a ?? b;
     const f = Math.min(1, (x - (lo + 50)) / 100);
     return a + (b - a) * f;
