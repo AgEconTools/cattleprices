@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cattle Auction Prices</title>
-<meta name="description" content="Weekly feeder calf and cull cow prices from USDA auction reports in Mississippi and Alabama.">
+<meta name="description" content="Weekly feeder calf and cull cow prices from USDA livestock auction reports, by state and auction.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -1045,7 +1045,7 @@ details.method .card { margin-top: 10px; }
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
       el("p", { class: "gmix" }, [document.createTextNode("Reporters apply grades differently at each barn, so prices here pool #1 and #2 calves: the pooled price is comparable across barns and states; the grade shares above are not. #3 and Value Added lots aren't in the averages. "), why]),
-      specialsNote());
+      ...[specialsNote()].filter(Boolean));   // null (no special sales, or a barn view) would print as "null" (bug 11/2/2026)
   }
   // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
   // report, and never in any figure on the page (Josh, 11/2/2026); in the About box, statewide view only
