@@ -315,7 +315,8 @@ details.method .card { margin-top: 10px; }
 @media (max-width: 640px) {
   .mast .wrap { grid-template-columns: 1fr; }
 
-  .pickers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }   /* "Mississippi" fits */
+  .pickers { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }   /* "North Carolina" and "South Carolina" fit (11/3/2026) */
+  .picker select { padding-right: 34px; background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%; }
   .picker select, .picker select.st { width: 100%; min-width: 0; }
   .card { padding: 14px 12px; }
   /* number fields two per row, so a planner's inputs fit one screen */
