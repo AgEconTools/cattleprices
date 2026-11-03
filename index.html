@@ -170,6 +170,10 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
         font-size: 14px; font-weight: 600; }
 .warn::before { content: "⚠"; }
 .stale-row { padding-block: 14px 0; }
+.state-note { padding-block: 14px 0; }
+.state-note p { margin: 0; max-width: 70ch; font-size: 14px; line-height: 1.5; color: var(--ink-2);
+                border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+.state-note a { color: inherit; }
 .facts .specials a { color: inherit; }
 .card.thin { border-color: var(--warn-line); box-shadow: inset 0 0 0 1px var(--warn-line); }
 .chart .fewpt { fill: var(--warn-bg); stroke: var(--warn-line); stroke-width: 2.5; }
@@ -328,6 +332,7 @@ details.method .card { margin-top: 10px; }
 <section class="tally" aria-label="Cattle sold">
   <div class="wrap" id="tally"></div>
 </section>
+<div class="wrap state-note" id="state-note" hidden><p id="state-note-p"></p></div>
 <div class="wrap stale-row" id="stale-row" hidden><p class="warn" role="status" id="stale"></p></div>
 
 <nav class="tabs" aria-label="Questions">
@@ -914,6 +919,25 @@ details.method .card { margin-top: 10px; }
   }
 
   // ---------- views ----------
+  // the state's note (Josh, 11/2/2026): one sentence written for the state, on every view of it, for what
+  // changes how its prices read; the export decides whether it applies (D.meta.note is null otherwise).
+  // "[About this week's sales]" links to the About box on This week, statewide, where the special sales are listed.
+  function renderNote() {
+    const txt = D.meta.note || "";
+    $("#state-note").hidden = !txt;
+    if (!txt) return;
+    $("#state-note-p").replaceChildren(...txt.split(/(\[[^\]]+\])/).filter(Boolean).map(part => {
+      if (!/^\[.*\]$/.test(part)) return document.createTextNode(part);
+      const a = el("a", { href: "#week", text: part.slice(1, -1) });
+      a.addEventListener("click", e => {
+        e.preventDefault();
+        if (!isState()) { S.market = "state"; $("#market").value = "state"; store.set("market." + D.meta.id, "state"); }
+        setTab("week", true);
+        $("#week-facts").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return a;
+    }));
+  }
   function renderHead() {
     const mk = market(), r = wk().report;
     // "Updated Monday, Nov. 2. Latest sales: Wednesday, Oct. 28." (Josh, 11/2/2026): the latest sale is this
@@ -926,6 +950,7 @@ details.method .card { margin-top: 10px; }
     $("#stale-row").hidden = age <= STALE_DAYS;
     if (age > STALE_DAYS) $("#stale").textContent = `This page last updated ${wday(built, true)}, ${age} days ago, with sales through ` +
       `${wday(D.meta.through, true)}. It normally updates every morning, so prices may be out of date.`;
+    renderNote();
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
     // change from last year over the barn-weeks reported in both years; left off when too few match
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
