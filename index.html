@@ -213,6 +213,8 @@ td.vacol.fewhead small { color: var(--warn-ink); font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .answer .v.hero { color: var(--line-1); } }
 .answer .d { font-size: 14px; color: var(--ink-2); }
 .answer .keep-assume { grid-column: 1 / -1; margin: -6px 0 0; }
+details.calc#keep-calc { max-width: none; }
+#keep-calc-notes p { margin: 8px 0 0; max-width: 72ch; }
 .answer details.calc { grid-column: 1 / -1; max-width: none; }
 .answer details.calc p { margin: 8px 0 0; max-width: 72ch; }
 .answer .v.up, .cow dd.up { color: var(--up); } .answer .v.down, .cow dd.down { color: var(--down); }
@@ -450,6 +452,13 @@ details.method .card { margin-top: 10px; }
           <input type="number" id="keep-dl" min="0" max="20" step="0.5" value="1"></label>
       </div>
       <div class="answer" id="keep-answer"></div>
+      <details class="method calc" id="keep-calc"><summary>How this estimate is calculated</summary>
+        <div id="keep-calc-notes"></div>
+        <div style="display:grid;gap:10px;max-width:640px">
+          <h3 style="margin:6px 0 0;font:700 16px/1.3 var(--body)" id="keep-build-title">How the estimate is built</h3>
+          <dl class="build" id="keep-build"></dl>
+        </div>
+      </details>
     </div>
     <div class="card tablewrap" style="display:grid;gap:8px">
       <table id="keep-table"></table>
@@ -464,10 +473,7 @@ details.method .card { margin-top: 10px; }
       <div class="chart" id="keep-vog-chart"></div>
       <p class="note" id="keep-vog-best"></p>
     </div>
-    <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
-      <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-build-title">How the estimate is built</h3>
-      <dl class="build" id="keep-build"></dl>
-    </div><p class="note" id="keep-note"></p></details>
+    <details class="method"><summary>Calculation methods</summary><p class="note" id="keep-note"></p></details>
   </section>
 
   <section class="panel" id="buy" role="tabpanel" aria-labelledby="t-buy" hidden>
@@ -1401,7 +1407,8 @@ details.method .card { margin-top: 10px; }
     out.beLo = a.be == null || b.be == null ? null : Math.min(a.be, b.be); out.beHi = a.be == null || b.be == null ? null : Math.max(a.be, b.be);
     return out;
   }
-  const signedR = v => (v >= 0 ? "+" : "−") + fmt$(Math.round(Math.abs(v)), false);
+  const signedR = v => { const r = Math.round(v); return (r > 0 ? "+" : r < 0 ? "−" : "") + fmt$(Math.abs(r), false); };
+  const upDown = v => Math.round(v) > 0 ? "up" : Math.round(v) < 0 ? "down" : "";
   const beText = be => be == null ? "" : be <= 0 ? "Keeping loses money even if the gain were free"
     : `Keeping pays if your cost of gain is under ${fmt$(be)}/lb`;
   const pct = v => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(1) + "%";
@@ -1416,8 +1423,9 @@ details.method .card { margin-top: 10px; }
     const ans = $("#keep-answer"), build = $("#keep-build");
     if (!P) {
       ans.replaceChildren(el("p", { class: "none", text: `No ${S.kcls.toLowerCase()} in that weight class sold statewide in the last two weeks.` }));
-      build.replaceChildren(); $("#keep-table").replaceChildren(); $("#keep-vog-card").hidden = true; return;
+      build.replaceChildren(); $("#keep-table").replaceChildren(); $("#keep-vog-card").hidden = true; $("#keep-calc").hidden = true; return;
     }
+    $("#keep-calc").hidden = !!P.over;
     const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
     const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
       el("div", { class: "v", text: fmt$(P.v1, false) }),
@@ -1425,26 +1433,30 @@ details.method .card { margin-top: 10px; }
     if (P.over) {
       ans.replaceChildren(sellNow, el("p", { class: "none", text: `At ${S.adg} lb/day the calf would weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try a shorter keep or a lighter weight.` }));
     } else {
-      // the estimated value if kept, beside Sell now, with what it assumes (Josh, 11/1/2026)
+      // four numbers in one row (Josh, 11/2/2026: less text up front); what they assume, their range across
+      // the seasonal patterns' years and the line-by-line build-up sit in "How this estimate is calculated"
       const keepVal = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: estimated value` }),
         el("div", { class: "v", text: fmt$(P.gross, false) }),
-        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}` }),
-        ...(P.grossLo < P.grossHi ? [el("div", { class: "d", text: `${fmt$(P.grossLo, false)} to ${fmt$(P.grossHi, false)} across the ${yrsLabel()} seasonal patterns` })] : [])]);
-      const assume = el("p", { class: "note keep-assume" }, [document.createTextNode(
-        `The estimated value assumes recent prices (the last two weeks' sales) adjusted for the normal month-to-month seasonal pattern: ` +
-        `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)]);
+        el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}` })]);
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: pays if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
-        el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` }),
-        ...(P.beLo != null && P.beLo < P.beHi ? [el("div", { class: "d", text: `${P.beLo <= 0 ? "never" : fmt$(P.beLo) + "/lb"} to ${P.beHi <= 0 ? "never" : fmt$(P.beHi) + "/lb"} across the ${yrsLabel()} seasonal patterns` })] : []),
-        el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
+        el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` })]);
+      const notes = [el("p", { class: "note" }, [document.createTextNode(
+        `The estimated value assumes recent prices (the last two weeks' sales) adjusted for the normal month-to-month seasonal pattern: ` +
+        `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)])];
+      // the range across the seasonal patterns' years (review item F1; Josh, 11/2/2026)
+      if (P.grossLo < P.grossHi || (P.beLo != null && P.beLo < P.beHi)) notes.push(el("p", { class: "note", text:
+        `Across the ${yrsLabel()} seasonal patterns: the value ranges ${fmt$(P.grossLo, false)} to ${fmt$(P.grossHi, false)}` +
+        (P.beLo != null && P.beLo < P.beHi ? `, and keeping pays if gain costs under ${P.beLo <= 0 ? "never" : fmt$(P.beLo) + "/lb"} to ${P.beHi <= 0 ? "never" : fmt$(P.beHi) + "/lb"}` : "") + `. The chart below shows the same range for each sale weight.` }));
+      notes.push(el("p", { class: "note", text: "The break-even doesn't include interest, commission, shrink or freight; add those to your cost of gain." }));
+      $("#keep-calc-notes").replaceChildren(...notes);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
-            el("div", { class: "v " + (P.diff >= 0 ? "up" : "down"), text: signedR(P.diff) + " a head" }),
+            el("div", { class: "v " + upDown(P.diff), text: signedR(P.diff) + " a head" }),
             el("div", { class: "d", text: `vs. selling now; ${fmt$(P.net, false)} after gain cost and death loss` })])
         : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
             el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it above to see dollars a head" })]);
-      ans.replaceChildren(sellNow, keepVal, assume, be, yours);
+      ans.replaceChildren(sellNow, keepVal, be, yours);
     }
     if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
     if (S.adg > 4) ans.append(warnBox(`${S.adg} lb a day is more than most calves gain; check the gain you entered.`));
@@ -1479,7 +1491,7 @@ details.method .card { margin-top: 10px; }
       tr.append(el("td", {}, [document.createTextNode(`${d} days`), el("span", { class: "headsm", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` })]),
         el("td", { class: "sm-hide", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` }),
         el("td", { text: q.be == null ? "—" : q.be <= 0 ? "never" : fmt$(q.be) }),
-        ...(S.cog != null ? [el("td", { class: "chg " + (q.diff >= 0 ? "up" : "down"), text: signedR(q.diff) })] : []));
+        ...(S.cog != null ? [el("td", { class: "chg " + upDown(q.diff), text: signedR(q.diff) })] : []));
       return tr;
     });
     $("#keep-table").replaceChildren(el("caption", { text: `Sell now: ${fmt$(P.v1, false)} a head` }),
@@ -1612,7 +1624,7 @@ details.method .card { margin-top: 10px; }
     }
     const third = P.margin != null
       ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
-          el("div", { class: "v " + (P.margin >= 0 ? "up" : "down"), text: signedR(P.margin) + " a head" }),
+          el("div", { class: "v " + upDown(P.margin), text: signedR(P.margin) + " a head" }),
           el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` }),
           el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })])
       : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
