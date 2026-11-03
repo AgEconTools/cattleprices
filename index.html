@@ -425,7 +425,7 @@ details.method .card { margin-top: 10px; }
       <div class="chart" id="curve-chart"></div>
     </div>
     <details class="method"><summary>Calculation methods</summary><p class="note" id="value-note">Prices are the average for Medium and Large #1 and #2 calves by 50-lb weight class over the last
-      two sale weeks, plain lots only. A smooth line through the class averages (the statewide price-by-weight line) prices
+      two sale weeks, regular lots only. A smooth line through the class averages (the statewide price-by-weight line) prices
       the calf at its own weight instead of at the middle of its class; the value is that price times the weight. The
       year-ago figure uses the same class, the same two weeks last year and last year's line. Sell or keep, Purchase
       planner and Steer or bull price a calf the same way.</p></details>
@@ -541,7 +541,7 @@ details.method .card { margin-top: 10px; }
       <h2>Does it pay to castrate? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="bull-sub"></p>
     </div>
-    <p class="vasame" hidden>This tab is the same for plain and Value Added lots: it compares plain-lot steers and bulls.</p>
+    <p class="vasame" hidden>This tab is the same for regular and Value Added lots: it compares regular-lot steers and bulls.</p>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
         <div class="weightrow" style="flex:1 1 320px">
@@ -574,7 +574,7 @@ details.method .card { margin-top: 10px; }
       <h2>What are cull cows bringing?</h2>
       <p class="sub" id="cows-sub"></p>
     </div>
-    <p class="vasame" hidden>This tab is the same for plain and Value Added lots: Value Added applies to feeder calves.</p>
+    <p class="vasame" hidden>This tab is the same for regular and Value Added lots: Value Added applies to feeder calves.</p>
     <div class="cows" id="cows-cards"></div>
     <p class="note" id="cows-note"></p>
     <details class="method"><summary>Calculation methods</summary><p class="note">Average dressing, all three cull grades, the last three sale weeks. Value per head is the price
@@ -624,7 +624,7 @@ details.method .card { margin-top: 10px; }
     <details class="method" id="foot-how"><summary>How these numbers are calculated</summary>
       <ul>
         <li id="foot-lots">Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
-          hundredweight (cwt). Only plain lots count: #3 and Value Added, fancy and fleshy lots are left out. Cull cows
+          hundredweight (cwt). Only regular lots count (lots USDA lists without a description such as Value Added, Fancy or Fleshy); #3 calves are left out too. Cull cows
           use Average dressing.</li>
         <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span> Pick one auction to see its own prices.
           Graded, special and board sales are not included.</li>
@@ -1025,7 +1025,7 @@ details.method .card { margin-top: 10px; }
       if (now.head < FEW) ans.append(warnBox(`Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
     }
     $("#bull-chart-sub").textContent = `Steer price minus bull price, ${day(C.start, true)} to ${day(C.end, true)}. The per-head answer above applies the percentage to the last two weeks' steer price. ` +
-      `Medium and Large #1 and #2, plain lots, matched within each sale. Head is the smaller of the steer and bull totals.`;
+      `Medium and Large #1 and #2, regular lots, matched within each sale. Head is the smaller of the steer and bull totals.`;
     premiumBars($("#bull-chart"), rows, Rw ? grp : null);
     // the same comparison each year, for the chosen weight group
     const Y = (C.years[grp] || []).filter(r => r[3] > 0 && r[4] > 0);
@@ -1172,8 +1172,8 @@ details.method .card { margin-top: 10px; }
       thead("Class", now, vs + same, same), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
-    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), ${vaOn() ? "Value Added lots only" : "plain lots"}, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
-    if (vaOn()) notes.push("Cull cow and bull prices, the head counts and the weeks compared are the same as for plain lots.");
+    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), ${vaOn() ? "Value Added lots only" : "regular lots"}, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    if (vaOn()) notes.push("Cull cow and bull prices, the head counts and the weeks compared are the same as for regular lots.");
     notes.push("Graded, special and board sales are reported separately by USDA and are never part of these figures or any other tab: graded sales sort calves into uniform, often weaned and vaccinated lots; board sales sell load lots for delivery weeks later. Any reported in the last three weeks are listed in the About box with links to their USDA reports.");
     $("#week-note").textContent = notes.join(" ");
   }
@@ -1206,7 +1206,7 @@ details.method .card { margin-top: 10px; }
     why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
-      el("p", { class: "gmix" }, [document.createTextNode("Reporters apply grades differently at each barn, so prices here pool #1 and #2 calves: the pooled price is comparable across barns and states; the grade shares above are not. " + (vaOn() ? "These are Value Added lots only; plain, #3, fancy and fleshy lots aren't in the averages. " : "#3 and Value Added lots aren't in the averages. ")), why]),
+      el("p", { class: "gmix" }, [document.createTextNode("Reporters apply grades differently at each barn, so prices here pool #1 and #2 calves: the pooled price is comparable across barns and states; the grade shares above are not. " + (vaOn() ? "These are Value Added lots only; regular, #3, fancy and fleshy lots aren't in the averages. " : "#3 and Value Added lots aren't in the averages. ")), why]),
       ...[specialsNote()].filter(Boolean));   // null (no special sales, or a barn view) would print as "null" (bug 11/2/2026)
   }
   // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
@@ -1747,7 +1747,7 @@ details.method .card { margin-top: 10px; }
   const VIEWS = { week: renderWeek, value: renderValue, trend: renderTrend, keep: renderKeep, buy: renderBuy, bull: renderBull, cows: renderCows, season: renderSeason };
   function setLots(v) { S.lots = v; store.set("lots", v); }
   function renderLots() {
-    seg($("#lots"), [{ v: "plain", t: "Plain lots" }, { v: "va", t: "Value Added" }], () => S.lots, setLots);
+    seg($("#lots"), [{ v: "plain", t: "Regular lots" }, { v: "va", t: "Value Added" }], () => S.lots, setLots);
     const P = B.va && B.va.pooled, band = $("#va-band");
     band.hidden = !vaReady();
     if (band.hidden) return;
@@ -1755,15 +1755,15 @@ details.method .card { margin-top: 10px; }
     const one = (c, first) => { const x = P && P[c]; if (!x) return null;
       return `${first ? `${stName()} Value Added ${c.toLowerCase()}` : c.toLowerCase()} brought about ${fmt$(Math.abs(x.premium))}/cwt (${Math.abs(x.pct).toFixed(1)}%) ${x.premium >= 0 ? "more" : "less"}`; };
     const st = one("Steers", true), hf = one("Heifers", !st);
-    const cmp = st || hf ? `Over the last ${P.weeks} sale weeks, ${[st, hf].filter(Boolean).join(" and ")} than plain lots of the same weight and grade at the same sales.`
-      : `Too few ${stName()} sales had Value Added and plain lots of the same weight and grade in the last ${P ? P.weeks : 13} sale weeks to compare them.`;
+    const cmp = st || hf ? `Over the last ${P.weeks} sale weeks, ${[st, hf].filter(Boolean).join(" and ")} than regular lots of the same weight and grade at the same sales.`
+      : `Too few ${stName()} sales had Value Added and regular lots of the same weight and grade in the last ${P ? P.weeks : 13} sale weeks to compare them.`;
     $("#va-band-p").replaceChildren(el("b", { text: "Value Added lots only. " }),
       document.createTextNode(`Value Added is the label USDA reporters give lots sold with extra management, usually weaned and often vaccinated; what qualifies varies by auction. ${cmp}`));
   }
   function renderCard() {
     const c = vaCov(), mk = market(), stc = B.va && B.va.markets.state, body = $("#va-card-body"), btns = $("#va-card-btns");
     const btn = (t, ghost, f) => { const b = el("button", { type: "button", class: "btn" + (ghost ? " ghost" : ""), text: t }); b.addEventListener("click", f); return b; };
-    const plainBtn = btn("Show plain lots", false, () => { setLots("plain"); render(); $("#lots").querySelector("button").focus(); });
+    const plainBtn = btn("Show regular lots", false, () => { setLots("plain"); render(); $("#lots").querySelector("button").focus(); });
     const loading = c && c.ok && !VAC[B.meta.id] && !VAERR[B.meta.id];
     $("#va-card-h").textContent = loading ? "Loading Value Added prices…" : VAERR[B.meta.id] && c && c.ok
       ? "Value Added prices didn't load" : "Too few Value Added sales to report here";
@@ -1819,10 +1819,10 @@ details.method .card { margin-top: 10px; }
     $("#keep-sub").textContent = KEEP_SUB + (va ? " Assumes the calf sells as a Value Added lot now and later." : "");
     $("#buy-sub").textContent = BUY_SUB + (va ? " Assumes the calves are bought and sold as Value Added lots." : "");
     VALUE_NOTE = VALUE_NOTE || $("#value-note").textContent; FOOT_LOTS = FOOT_LOTS || $("#foot-lots").textContent;
-    $("#value-note").textContent = va ? VALUE_NOTE.replace("plain lots only", "Value Added lots only") : VALUE_NOTE;
+    $("#value-note").textContent = va ? VALUE_NOTE.replace("regular lots only", "Value Added lots only") : VALUE_NOTE;
     $("#foot-lots").textContent = va ? "Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per " +
-      "hundredweight (cwt). With Value Added lots picked, only Value Added lots count; otherwise only plain lots: #3 and Value Added, fancy and " +
-      "fleshy lots are left out. Steer or bull and Cull cows use plain lots either way. Cull cows use Average dressing." : FOOT_LOTS;
+      "hundredweight (cwt). With Value Added lots picked, only Value Added lots count; otherwise only regular lots (no Value Added, fancy or " +
+      "fleshy lots). #3 calves are left out either way. Steer or bull and Cull cows use regular lots either way. Cull cows use Average dressing." : FOOT_LOTS;
   }
   // the fade at the strip's right edge goes away once the strip is scrolled to its end
   const tabFade = () => { const w = $("#tablist"); $(".tabs").classList.toggle("end", w.scrollLeft + w.clientWidth >= w.scrollWidth - 2); };
