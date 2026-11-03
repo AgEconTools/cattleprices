@@ -213,6 +213,8 @@ td.vacol.fewhead small { color: var(--warn-ink); font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .answer .v.hero { color: var(--line-1); } }
 .answer .d { font-size: 14px; color: var(--ink-2); }
 .answer .keep-assume { grid-column: 1 / -1; margin: -6px 0 0; }
+.answer details.calc { grid-column: 1 / -1; max-width: none; }
+.answer details.calc p { margin: 8px 0 0; max-width: 72ch; }
 .answer .v.up, .cow dd.up { color: var(--up); } .answer .v.down, .cow dd.down { color: var(--down); }
 .weightrow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .weightrow input[type=range] { flex: 1 1 220px; accent-color: var(--accent); min-width: 0; }
@@ -375,7 +377,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="value" role="tabpanel" aria-labelledby="t-value" hidden>
     <div>
       <h2>What's my calf worth?</h2>
-      <p class="sub">Based on M&L #1-2 calves sold the last 2 weeks.</p>
+      <p class="sub" id="value-sub">Based on M&L #1-2 calves sold the last 2 weeks.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
@@ -607,7 +609,7 @@ details.method .card { margin-top: 10px; }
     get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
   };
-  const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", vcls: "Steers", vlot: "plain", weight: 550,
+  const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", vcls: "Steers", vlot: "plain", calcOpen: false, weight: 550,
               tcls: "Steers", tgrp: "500-600", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
               bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 2 };   // 2% death loss for bought calves, 1% (dl) for home-raised (Josh, 11/2/2026)
@@ -1139,43 +1141,52 @@ details.method .card { margin-top: 10px; }
     const plainNow = a ? a.price : null, plainAgo = b ? b.price : null;
     if (vaOn) { a = { ...a, price: a.price + pN.premium }; b = vaAgo && b ? { ...b, price: b.price + pA.premium } : null; cls = "Value Added " + cls; }
     const pWhere = isState() ? `${stName()} sales` : `${stName()} sales statewide`;
+    // the subtitle carries the dates, so the answer doesn't repeat them
+    $("#value-sub").textContent = `Based on M&L #1-2 calves sold ${span(c.now[0], lastDay(c.now[1]))}, compared with the same two weeks last year.`;
     if (!a) {
       ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.vcls.toLowerCase()} were priced ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks. Try a nearby weight${isState() ? "" : " or the statewide view"}.` }));
     } else {
       const ph = R(a.price * w / 100), phAgo = b ? R(b.price * w / 100) : null;
       const thinNow = a.head < FEW, thinAgo = b && b.head < FEW;
+      // the answer: value, last year, change; how it's built sits one tap below (Josh, 11/2/2026: less text,
+      // still transparent), the line's effect and the reported class average included
       ans.replaceChildren(
         el("div", {}, [el("div", { class: "k", text: `${an(w) === "an" ? "An" : "A"} ${w}-lb ${cls} is worth about` }),
           el("div", { class: "v hero", text: fmt$(ph, false) }),
-          el("div", { class: "d", text: vaOn
-            ? `${fmt$(a.price)}/cwt at ${w} lb: ${fmt$(plainNow)} for plain lots on the price-by-weight line, plus the Value Added premium of ${fmt$(pN.premium)}/cwt (${pN.pct.toFixed(1)}%)`
-            : `${fmt$(a.price)}/cwt at ${w} lb on the price-by-weight line` }),
-          // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
-          el("div", { class: "d", text: `Reported ${lo}-${lo + 50} lb ${vaOn ? "plain-lot " : ""}class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` })]),
+          el("div", { class: "d", text: vaOn ? `${fmt$(a.price)}/cwt, with a ${fmt$(pN.premium)}/cwt Value Added premium` : `${fmt$(a.price)}/cwt` })]),
         el("div", {}, [el("div", { class: "k", text: "Same 2 weeks last year" }),
           el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "—" }),
           el("div", { class: "d", text: vaOn && !vaAgo ? `Too few matched sales a year earlier (${pA ? pA.cells : 0}) to price a Value Added calf at this weight`
             : !b ? "None priced in that class a year ago"
-            : vaOn ? `${fmt$(b.price)}/cwt at ${w} lb: ${fmt$(plainAgo)} on last year's line plus last year's premium of ${fmt$(pA.premium)}/cwt`
-            : `${fmt$(b.price)}/cwt at ${w} lb on last year's line; class average ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head, ${fmt$(R(b.cls * w / 100), false)} at that price` }),
-          el("div", { class: "d", text: `Two-week average, ${span(c.now[0], lastDay(c.now[1]))}, vs. the same two weeks last year.` })]),
+            : vaOn ? `${fmt$(b.price)}/cwt, with last year's ${fmt$(pA.premium)}/cwt premium` : `${fmt$(b.price)}/cwt` })]),
         el("div", {}, [el("div", { class: "k", text: "vs. last year" }),
           // a thin sample on either side makes the change meaningless, as on the cull cow cards
           el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
             text: !phAgo ? "—" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
           el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
-      if (vaOn) ans.append(el("p", { class: "note", text: `The Value Added premium compares Value Added and plain lots of the same grade and 50-lb class at the same sale, ` +
-        `${g100} lb ${S.vcls.toLowerCase()}, ${pWhere}, the last ${P.weeks} sale weeks (${span(P.now.dates[0], lastDay(P.now.dates[1]))}): ${fmtN(pN.cells)} matched sales. ` +
-        "It includes lot size and uniformity as well as weaning and vaccination." }));
-      ans.append(el("p", { class: "note", text: `Prices are reported by 50-lb class. A smooth line through the class averages prices ${an(w)} ${w}-lb ${cls} at ${w} lb ` +
+      const calc = [];
+      if (vaOn) calc.push(`${fmt$(a.price)}/cwt is ${fmt$(plainNow)} for plain lots on the price-by-weight line plus the Value Added premium of ${fmt$(pN.premium)}/cwt (${pN.pct.toFixed(1)}%)` +
+        (vaAgo && b ? `; a year ago, ${fmt$(plainAgo)} plus ${fmt$(pA.premium)}/cwt.` : "."));
+      // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
+      calc.push(`Reported ${lo}-${lo + 50} lb ${vaOn ? "plain-lot " : ""}class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` +
+        (b ? `; a year ago, ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head.` : "."));
+      calc.push(`Prices are reported by 50-lb class. A smooth line through the class averages prices ${an(w)} ${w}-lb calf at ${w} lb ` +
         `rather than at the middle of the ${lo}-${lo + 50} lb class, so heavier calves bring a little less per pound within a class and the value doesn't jump at ${lo + 50} lb. ` +
-        "Sell or keep, Purchase planner and Steer or bull price a calf the same way." }));
+        "Last year's figure uses last year's line. Sell or keep, Purchase planner and Steer or bull price a calf the same way.");
+      if (vaOn) calc.push(`The Value Added premium compares Value Added and plain lots of the same grade and 50-lb class at the same sale: ` +
+        `${g100} lb ${S.vcls.toLowerCase()}, ${pWhere}, the last ${P.weeks} sale weeks (${span(P.now.dates[0], lastDay(P.now.dates[1]))}), ${fmtN(pN.cells)} matched sales. ` +
+        "It includes lot size and uniformity as well as weaning and vaccination.");
+      // stays open across redraws (slider, class, resize) once the viewer opens it; added after any warnings
+      const det = el("details", { class: "method calc" }, [el("summary", { text: "How this value is calculated" }), ...calc.map(t => el("p", { class: "note", text: t }))]);
+      det.open = !!S.calcOpen;
+      det.addEventListener("toggle", () => { S.calcOpen = det.open; });
       if (vaAsk && !vaOn) ans.prepend(warnBox(`Too few matched sales (${pN ? pN.cells : 0}) of ${g100} lb Value Added and plain ${S.vcls.toLowerCase()} in the last ${P.weeks} sale weeks to estimate a premium at this weight. Showing the plain-lot value.`));
       if (thinNow || thinAgo) {
         const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
           thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
         ans.append(warnBox(`Few sales: ${which}${thinNow && thinAgo ? " on very few sales" : ""}. Treat it as a rough guide, or try a nearby weight${isState() ? "" : " or the statewide view"}.`));
       }
+      ans.append(det);
     }
     $("#curve-title").textContent = `${S.vcls}: price by weight`;
     $("#curve-sub").textContent = `${span(c.now[0], lastDay(c.now[1]))} vs. a year earlier, $/cwt. Tap a point for head counts.`;
