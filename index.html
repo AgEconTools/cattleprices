@@ -233,6 +233,12 @@ td.vacol.fewhead small { color: var(--warn-ink); font-weight: 700; }
 .chart .fband { fill: var(--band); }
 .chart .fsurf { fill: var(--surface); }
 .chart .fpos { fill: var(--up); } .chart .fneg { fill: var(--down); }
+.chart .whisk { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.chart .vlab { fill: var(--ink); font-weight: 700; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart text.sm { font-size: 11px; }
+.sqkey { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.wkey { display: inline-block; width: 2px; height: 14px; background: var(--ink-2); }
 .tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink);
        border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 13px;
        box-shadow: 0 4px 16px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
@@ -448,6 +454,15 @@ details.method .card { margin-top: 10px; }
     <div class="card tablewrap" style="display:grid;gap:8px">
       <table id="keep-table"></table>
       <p class="note" id="keep-season"></p>
+    </div>
+    <div class="card" id="keep-vog-card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-vog-title">How far to grow it</h3>
+        <p class="note" id="keep-vog-sub"></p>
+      </div>
+      <ul class="legend" id="keep-vog-legend"></ul>
+      <div class="chart" id="keep-vog-chart"></div>
+      <p class="note" id="keep-vog-best"></p>
     </div>
     <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
       <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-build-title">How the estimate is built</h3>
@@ -698,6 +713,57 @@ details.method .card { margin-top: 10px; }
     const step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= raw) || p * 10;
     const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
     return { ticks: out, step };
+  }
+  // value of gain by sale weight (James Mitchell's suggestion; Josh, 11/2/2026): bars = break-even cost of gain,
+  // whiskers = the range across the seasonal patterns' years, dashed line = the viewer's cost of gain.
+  // rows: [{w2, when, days, be, lo, hi}]; labels under each bar carry the weight, the date and the value
+  function vogChart(host, rows, cog) {
+    const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = small ? 250 : 270;
+    const m = { t: 14, r: cog != null ? (small ? 58 : 72) : 10, b: 52, l: small ? 44 : 52 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const top = Math.max(...rows.map(r => Math.max(r.hi ?? 0, r.be ?? 0)), cog ?? 0, 0.5) * 1.08;
+    const { ticks } = niceTicks(0, top, 4), ymax = Math.max(top, ticks[ticks.length - 1]);
+    const y = v => m.t + ih - Math.max(0, Math.min(v, ymax)) / ymax * ih, band = iw / rows.length;
+    const bw = Math.min(44, band * 0.56), cx = i => m.l + band * (i + 0.5);
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Break-even cost of gain by sale weight: ` +
+      rows.map(r => `${r.w2} lb ${r.be > 0 ? fmt$(r.be) : "never"}`).join(", ") });
+    for (const t of ticks) {
+      svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: y(t), y2: y(t), stroke: "var(--rule)", "stroke-width": 1 }));
+      const tx = svgEl("text", { x: m.l - 6, y: y(t) + 4, "text-anchor": "end" }); tx.textContent = "$" + t.toFixed(2); svg.append(tx);
+    }
+    svg.append(svgEl("line", { class: "axis", x1: m.l, x2: m.l + iw, y1: y(0), y2: y(0) }));
+    const tip = el("div", { class: "tip", hidden: "" });
+    rows.forEach((r, i) => {
+      const x = cx(i), h = r.be > 0 ? y(0) - y(r.be) : 0, ok = cog == null || r.be >= cog, rr = Math.min(4, h);
+      if (h > 0) svg.append(svgEl("path", { class: ok ? "f1" : "fband",
+        d: `M${x - bw / 2},${y(0)}V${y(r.be) + rr}q0,${-rr} ${rr},${-rr}H${x + bw / 2 - rr}q${rr},0 ${rr},${rr}V${y(0)}Z` }));
+      if (r.hi != null && r.lo != null && r.hi > r.lo) {
+        const a = y(Math.max(r.lo, 0)), b = y(r.hi);
+        svg.append(svgEl("path", { class: "whisk", d: `M${x},${a}V${b}M${x - 5},${b}H${x + 5}` + (r.lo > 0 ? `M${x - 5},${a}H${x + 5}` : "") }));
+      }
+      const lab = (t, dy, c) => { const e = svgEl("text", { x, y: y(0) + dy, "text-anchor": "middle", ...(c ? { class: c } : {}) }); e.textContent = t; svg.append(e); };
+      // a phone gets short labels so six bars fit: "550", "Dec", "1.98" (the subtitle gives the units; the tap shows the date)
+      const tight = band < 62;
+      lab(tight ? String(r.w2) : `${r.w2} lb`, 16, tight ? "sm" : ""); lab(tight ? r.short : r.when, 30, tight ? "sm" : "");
+      lab(r.be > 0 ? (tight ? r.be.toFixed(2) : fmt$(r.be)) : "never", 45, tight ? "vlab sm" : "vlab");
+      const hit = svgEl("rect", { class: "hit", x: x - band / 2, y: m.t, width: band, height: ih + m.b });
+      const show = () => {
+        tip.replaceChildren(el("b", { text: `Sell at ${r.w2} lb, about ${r.when} (${r.days} days)` }),
+          el("div", { class: "row", text: r.be > 0 ? `Pays if gain costs under ${fmt$(r.be)}/lb` : "Keeping loses money even if the gain were free" }),
+          ...(r.hi != null && r.lo != null && r.hi > r.lo ? [el("div", { class: "row", text: `${r.lo > 0 ? fmt$(r.lo) : "never"} to ${fmt$(r.hi)} across the ${yrsLabel()} patterns` })] : []));
+        tip.hidden = false;
+        const left = Math.min(Math.max(x - 110, 0), W - 230);
+        tip.style.left = left + "px"; tip.style.top = Math.max(0, y(r.hi ?? r.be ?? 0) - 64) + "px";
+      };
+      hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
+      hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
+      svg.append(hit);
+    });
+    if (cog != null) {
+      svg.append(svgEl("line", { class: "ref", x1: m.l, x2: m.l + iw, y1: y(cog), y2: y(cog) }));
+      const t = svgEl("text", { x: m.l + iw + 6, y: y(cog) + 4, class: "vlab" }); t.textContent = `Yours ${fmt$(cog)}`; svg.append(t);
+    }
+    host.replaceChildren(svg, tip);
   }
   // series: [{cls:"1|2|3", dash, width, pts:[{x,y,head,label}], end:"label", dot:bool, name}]
   function lineChart(host, cfg) {
@@ -1350,7 +1416,7 @@ details.method .card { margin-top: 10px; }
     const ans = $("#keep-answer"), build = $("#keep-build");
     if (!P) {
       ans.replaceChildren(el("p", { class: "none", text: `No ${S.kcls.toLowerCase()} in that weight class sold statewide in the last two weeks.` }));
-      build.replaceChildren(); $("#keep-table").replaceChildren(); return;
+      build.replaceChildren(); $("#keep-table").replaceChildren(); $("#keep-vog-card").hidden = true; return;
     }
     const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
     const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
@@ -1427,6 +1493,37 @@ details.method .card { margin-top: 10px; }
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
     notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, labor and marketing costs aren't included, so count them in your cost of gain. Dates count from today. The discount for a heavier calf comes from a smooth line through the last two weeks' statewide prices by weight.");
     $("#keep-note").textContent = notes.join(" ");
+    renderVog(cls);
+  }
+  // value of gain by sale weight: keepPlan() at each 50-lb sale weight up to 300 lb more (900 lb top, a year out),
+  // at the gain and death loss entered above, so every bar is the table's "pays if gain under" number
+  const VOG_STEP = 50, VOG_MAX_GAIN = 300;
+  function renderVog(cls) {
+    const rows = [];
+    for (let w2 = Math.ceil((S.kw + 1) / VOG_STEP) * VOG_STEP; w2 <= Math.min(S.kw + VOG_MAX_GAIN, 900); w2 += VOG_STEP) {
+      const days = Math.round((w2 - S.kw) / S.adg);
+      if (days < 1 || days > 365) continue;
+      const q = keepPlan(S.kcls, S.kw, days);
+      if (!q || q.over) continue;
+      rows.push({ w2, days, be: q.be, lo: q.beLo, hi: q.beHi, when: `${MON[q.t1.getMonth()]} ${q.t1.getDate()}`,
+        short: MON[q.t1.getMonth()].replace(".", "").slice(0, 3) });
+    }
+    $("#keep-vog-card").hidden = rows.length < 2;
+    if (rows.length < 2) return;
+    $("#keep-vog-title").textContent = `How far to grow ${an(S.kw)} ${S.kw}-lb ${cls}`;
+    $("#keep-vog-sub").textContent = `What each sale weight pays per pound of gain: at ${S.adg} lb a day and ${S.dl}% death loss, sold at the usual seasonal price for that month. ` +
+      "Sale weights in lb, values in $ per lb. Tap a bar for the date and the range across years.";
+    $("#keep-vog-legend").replaceChildren(
+      el("li", {}, [el("span", { class: "sqkey", style: "background:var(--line-1)" }), el("span", { text: "Pays if gain costs under ($/lb)" })]),
+      el("li", {}, [el("span", { class: "wkey" }), el("span", { text: `Range across ${yrsLabel()}` })]),
+      ...(S.cog != null ? [el("li", {}, [el("span", { class: "key dash", style: "border-top-color:var(--ink)" }), el("span", { text: "Your cost of gain" })]),
+        el("li", {}, [el("span", { class: "sqkey", style: "background:var(--band)" }), el("span", { text: "Doesn't cover it" })])] : []));
+    vogChart($("#keep-vog-chart"), rows, S.cog);
+    const best = rows.reduce((a, b) => (b.be ?? -1) > (a.be ?? -1) ? b : a);
+    let t = best.be > 0 ? `Most per pound of gain: selling at ${fmtN(best.w2)} lb, about ${best.when}, pays if gain costs under ${fmt$(best.be)}/lb.` : "Keeping loses money at every sale weight shown, even if the gain were free.";
+    if (S.cog != null) { const n = rows.filter(r => r.be >= S.cog).length; t += n ? ` At your ${fmt$(S.cog)}/lb, ${n} of ${rows.length} sale weights pay.` : ` At your ${fmt$(S.cog)}/lb, none of these sale weights pay.`; }
+    t += " Before interest, commission, shrink and freight.";
+    $("#keep-vog-best").textContent = t;
   }
 
   function renderCows() {
