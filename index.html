@@ -306,6 +306,7 @@ details.method .card { margin-top: 10px; }
 .sold span { font-weight: 400; color: var(--muted); }
 .fewhead { color: var(--warn-ink); font-weight: 700; }
 .chg.muted { color: var(--muted); font-weight: 500; }
+.legend-same { margin: 2px 0 6px; font-size: 13px; font-weight: 400; color: var(--muted); }
 .legend-few { margin: 0 0 6px; font-size: 13px; color: var(--warn-ink); font-weight: 600; }
 .short { margin: 0; font-size: 13.5px; color: var(--muted); }
 
@@ -402,7 +403,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="value" role="tabpanel" aria-labelledby="t-value" hidden>
     <div>
       <h2>What's my calf worth?</h2>
-      <p class="sub" id="value-sub">Based on M&L #1-2 calves sold the last 2 weeks.</p>
+      <p class="sub" id="value-sub">Based on Medium and Large #1 and #2 calves sold the last two weeks.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
@@ -1018,7 +1019,7 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "d", text: `About ${fmt$(sp)}/cwt` })]),
         el("div", {}, [el("div", { class: "k", text: `As ${an(w + extra)} ${fmtN(w + extra)}-lb bull` }),
           el("div", { class: "v", text: fmt$(bv, false) }),
-          el("div", { class: "d", text: `About ${fmt$(bp)}/cwt (${Rw.pct.toFixed(1)}% under steer prices)` })]));
+          el("div", { class: "d", text: `About ${fmt$(bp)}/cwt (${((1 - bp / sp) * 100).toFixed(1)}% under steer prices)` })]));   // Rw.pct is over the bull price (audit 11/3/2026)
       const mh = Math.min(Rw.steers, Rw.bulls);
       if (mh < FEW) ans.append(warnBox(`Few sales: only ${fmtN(mh)} head of ${grp} lb bulls or steers sold alongside each other in the last 12 months. Treat this as a rough guide.`));
       if (now.head < FEW) ans.append(warnBox(`Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
@@ -1050,7 +1051,8 @@ details.method .card { margin-top: 10px; }
   // changes how its prices read; the export decides whether it applies (D.meta.note is null otherwise).
   // "[About this week's sales]" links to the About box on This week, statewide, where the special sales are listed.
   function renderNote() {
-    const txt = (S.lots === "va" && vaReady() ? B.meta.note_va : D.meta.note) || "";
+    // with Value Added picked, the note without its "choose Value Added" sentence, on the card too (audit 11/3/2026)
+    const txt = (S.lots === "va" && B.va && B.va.markets.state.ok ? B.meta.note_va : D.meta.note) || "";
     $("#state-note").hidden = !txt;
     if (!txt) return;
     $("#state-note-p").replaceChildren(...txt.split(/(\[[^\]]+\])/).filter(Boolean).map(part => {
@@ -1092,7 +1094,7 @@ details.method .card { margin-top: 10px; }
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
       el("div", { class: "row" }, [item(rc.week, `head ${isState() ? weekWord(r) : "this sale"}`, true), " · ",
-        item(rc.prior, (prevWeek() ? "the week before" : "last week") + same), " · ", item(rc.year_ago, "a year ago" + same)]));
+        item(rc.prior, (prevWeek() || !isState() ? "the week before" : "last week") + same), " · ", item(rc.year_ago, "a year ago" + same)]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
     const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"}` : "";
@@ -1125,15 +1127,15 @@ details.method .card { margin-top: 10px; }
         changeCell(r.chg, null, r.chg_head), changeCell(r.chg_yr, r.pct_yr, r.chg_yr_head), head]);
     });
   }
-  const thead = (first, now, vs) => el("thead", {}, el("tr", {}, [el("th", { text: first }), el("th", { text: now }),
-    el("th", { text: vs }), el("th", { text: "vs. a year ago" }), el("th", { class: "headcol", text: "Head" })]));
+  const thead = (first, now, vs, same = "") => el("thead", {}, el("tr", {}, [el("th", { text: first }), el("th", { text: now }),
+    el("th", { text: vs }), el("th", { text: "vs. a year ago" + same }), el("th", { class: "headcol", text: "Head" })]));
 
   function renderWeek() {
     const r = wk().report, mk = market();
     $("#week-sub").textContent = (isState()
       ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}${reported(r)}. `
       : `${mk.name} sale on ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt). " +
-      `${prevWeek() ? "The week before" : "Last week"} is the week of ${day(r.prior)}; a year ago is the week of ${day(r.year_ago, true)}.`;
+      `${prevWeek() || !isState() ? "The week before" : "Last week"} is the week of ${day(r.prior)}; a year ago is the week of ${day(r.year_ago, true)}.`;
     // week picker: the latest week (marked "so far" while barns are still to report) or the one before
     $("#week-pick-row").hidden = !hasPrev();
     if (hasPrev()) {
@@ -1144,7 +1146,13 @@ details.method .card { margin-top: 10px; }
       sf.hidden = !soFar(r);
       if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts may change as more report. The week of ${day(P.week[0])} is complete.`;
     }
-    const now = prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week", vs = prevWeek() ? "vs. week before" : "vs. last week";
+    // a barn's columns name its sale and "the week before" it (audit 11/3/2026: Glasgow's Oct. 22 monthly sale read
+    // "This week" on Nov. 3); statewide, the changes say they compare the same barns, since flipping the week picker
+    // can show a different gap (TN 300-400 lb steers: $452.39 to $462.96, change −$15.99 on the barns in both weeks)
+    const now = !isState() ? `${day(r.sale)} sale` : prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week";
+    const vs = !isState() || prevWeek() ? "vs. week before" : "vs. last week";
+    const same = isState() ? ", same barns" : "";
+    const sameLine = isState() ? el("p", { class: "legend-same", text: "Changes compare only the auctions that sold that class both weeks." }) : null;
     // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
     seg($("#week-class"), [...CLS, { v: "Cows", t: "Cows & bulls" }], () => S.wcls, v => S.wcls = v);
     const cows = S.wcls === "Cows";
@@ -1154,14 +1162,14 @@ details.method .card { margin-top: 10px; }
     const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
     const anyThin = (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
-    if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`${vaOn() ? "Value Added feeder" : "Feeder"} ${S.wcls.toLowerCase()}, M&L #1-2, $/cwt`),
-      anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
-      thead("Weight (lb)", now, vs), el("tbody", {}, noFeeders
+    if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`${vaOn() ? "Value Added feeder" : "Feeder"} ${S.wcls.toLowerCase()}, #1 and #2, $/cwt`),
+      sameLine, anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
+      thead("Weight (lb)", now, vs + same, same), el("tbody", {}, noFeeders
         ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
         : reportRows(feed, x => x.item.split(" ")[1])));
     if (cows) $("#week-slaughter").replaceChildren(el("caption", {}, [document.createTextNode("Cull cows and slaughter bulls, $/cwt"),
-      anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
-      thead("Class", now, vs), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
+      sameLine, anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey changes compare with a thin week." }) : null]),
+      thead("Class", now, vs + same, same), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
     notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), ${vaOn() ? "Value Added lots only" : "plain lots"}, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
@@ -1229,7 +1237,7 @@ details.method .card { margin-top: 10px; }
     const ans = $("#value-answer");
     const cls = (vaOn() ? "Value Added " : "") + S.vcls.toLowerCase().replace(/s$/, "");
     // the subtitle carries the dates, so the answer doesn't repeat them
-    $("#value-sub").textContent = `Based on M&L #1-2 ${vaOn() ? "Value Added " : ""}calves sold ${span(c.now[0], lastDay(c.now[1]))}, compared with the same two weeks last year.`;
+    $("#value-sub").textContent = `Based on Medium and Large #1 and #2 ${vaOn() ? "Value Added " : ""}calves sold ${span(c.now[0], lastDay(c.now[1]))}, compared with the same two weeks last year.`;
     if (!a) {
       ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.vcls.toLowerCase()} were priced ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks. Try a nearby weight${isState() ? "" : " or the statewide view"}.` }));
     } else {
@@ -1316,7 +1324,11 @@ details.method .card { margin-top: 10px; }
     const near = (arr) => arr.reduce((b, p) => Math.abs(p.x - last.x) < Math.abs(b.x - last.x) ? p : b, arr[0]);
     const parts = [];
     const unit = weekly ? "week" : "month";
-    if (last) parts.push(`This ${unit} ${fmt$(Math.round(last.y), false)}`);
+    // name the week or month (audit 11/3/2026): the latest point is the last complete week, which the
+    // This week tab may call "last week", so "This week" here could name two different numbers
+    const when = x => { const d = new Date(Date.UTC(yr, 0, 1) + (weekly ? x - 4 : x) * 864e5);
+      return weekly ? `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}` : d.toLocaleString("en-US", { month: "long", timeZone: "UTC" }); };
+    if (last) parts.push(`${when(last.x)}: ${fmt$(Math.round(last.y), false)}`);
     if (last && ago.length) { const a = near(ago); if (Math.abs(a.x - last.x) <= (weekly ? 7 : 20)) parts.push(`same ${unit} last year ${fmt$(Math.round(a.y), false)}`); }
     // each value stays with its label; a narrow screen breaks the line at the dot
     const kids = parts.flatMap((p, i) => [i ? " · " : null, el("span", { style: "white-space:nowrap", text: p })]).filter(Boolean);
@@ -1759,8 +1771,12 @@ details.method .card { margin-top: 10px; }
     if (VAERR[B.meta.id] && c && c.ok) { body.replaceChildren(el("p", { text: "Refresh the page to try again." })); btns.replaceChildren(plainBtn); return; }
     const who = isState() ? `${stName()} auctions` : mk.name;
     const sh = c ? c.share : 0, share = sh < 0.005 ? "less than 1%" : `about ${R(sh * 100)}%`;
+    // the test is about steady sales of 500-700 lb steers, so a barn can sell thousands of Value Added calves
+    // and still fail it (audit 11/3/2026: Albany, 5,926 head); the card says which
+    const often = isState() ? "weeks" : "months";
     const p1 = !c || !c.head ? `${who} reported no Value Added feeder calves in the last 12 months.`
-      : `${who} reported ${fmtN(c.head)} head of Value Added feeder steers and heifers in the last 12 months, ${share} of the feeder steers and heifers USDA priced there.`;
+      : `${who} reported ${fmtN(c.head)} head of Value Added feeder steers and heifers in the last 12 months, ${share} of those USDA priced, ` +
+        `but too few 500-700 lb steers in most ${often} to report prices here.`;
     const kids = [el("p", { text: p1 })];
     if (!isState() && stc && stc.ok) kids.push(el("p", { text: `Statewide, ${stName()} has enough Value Added sales to show their prices.` }));
     body.replaceChildren(...kids);
