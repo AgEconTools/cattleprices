@@ -233,6 +233,10 @@ details.calc#keep-calc { max-width: none; }
 
 /* charts */
 .chart { position: relative; width: 100%; }
+/* the charts work from the keyboard (WCAG 2.1.1); a mouse click or tap focuses them too, and the ring is for the keyboard */
+.chart:focus:not(:focus-visible), .chart svg:focus:not(:focus-visible) { outline: none; }
+.chart svg:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.chart .kbox { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; pointer-events: none; }
 .chart svg { display: block; width: 100%; overflow: visible; }
 .chart text { fill: var(--ink-2); font: 500 12px var(--body); font-variant-numeric: tabular-nums; }
 .chart .endlab { fill: var(--ink); font-weight: 700; font-size: 12.5px; }
@@ -296,6 +300,13 @@ footer h2 { font-size: 18px; }
 footer ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 78ch; }
 footer p { margin: 0; max-width: 78ch; }
 footer .wrap > details.method { border-top: 0; padding-top: 0; }   /* the credit line sits right above it */
+/* official MSU Extension footer (as the drought dashboard): the Extension logo at MSU's minimum for the
+   horizontal mark, 300 px wide (about 56 px tall), never shrunk on a phone; ink color reads in light and dark */
+footer .legal { display: grid; gap: 8px; margin-top: 14px; }
+.legal .home { display: block; justify-self: start; width: 300px; color: var(--ink); line-height: 0; }
+.legal .logo { width: 300px; height: auto; display: block; margin: 0 0 14px; color: var(--ink); }
+.legal .note a { color: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 details.method { border-top: 1px solid var(--rule); padding-top: 10px; max-width: 72ch; }
 details.method > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink-2); list-style: none; }
@@ -639,7 +650,21 @@ details.method .card { margin-top: 10px; }
           left out.</li>
       </ul>
     </details>
-    <p class="note" id="foot-gen"></p>
+    <div class="legal">
+      <a class="home" href="https://extension.msstate.edu" aria-label="Mississippi State University Extension"><svg class="logo" viewBox="0 0 617 116" fill="currentColor" role="img" aria-label="Mississippi State University Extension" focusable="false"><g><path d="M32.8,53.7v20c12-6,26.1-9.4,39.3-9.4s27.3,3.4,39.3,9.4v-20c-12-6.2-26.1-9.7-39.3-9.7 C59,44,44.8,47.5,32.8,53.7z M49.4,53.4c-1,0.3-2,0.6-3.1,0.9v-1.1L42,54.8v3.3c0,0,4-1.5,5.7-2l1.8,1.2V62l-2.5,3.2 c-1.9,0.6-3.8,1.3-5.7,2c-0.7-0.5-1.5-0.9-2.2-1.4V64c1-0.4,2-0.8,3-1.2v1.7l0.4-0.2c1.2-0.5,4-1.4,4-1.4v-4.2c0,0-4.1,1.4-5.8,2 L39,59.7v-3.9l2.4-3.3c1.9-0.7,3.8-1.4,5.7-2c0.8,0.5,1.6,1,2.3,1.5V53.4z M59.6,50.2v9.6c0,0,1.2-0.2,1.2-0.2v2.5 c-1.9,0.2-3.7,0.6-5.6,0.9v-2.5l1.2-0.2c0,0,0-9.6,0-9.6l-2.6,0.5v1.7c-0.8,0.2-1.6,0.4-2.4,0.6v-4.2c4.4-1.1,8.8-1.8,13.3-2.2v4.2 c-0.8,0.1-1.6,0.2-2.5,0.2v-1.7L59.6,50.2z M93,61.6l1.2,0.3c0,0,0-9.6,0-9.6c0,0-1.2-0.3-1.2-0.3v-2.5c3.9,1,7.9,2.4,11.6,4v3.4 c-1-0.4-2-0.8-3-1.2v-0.9c0,0-4.4-1.5-4.4-1.5v3.5c0,0,2.8,0.9,4.1,1.4v2.2c-1.2-0.5-4.1-1.4-4.1-1.4v3.8l4.4,1.5v-1.1 c1,0.4,2,0.8,3,1.2V68c-3.8-1.6-7.7-2.9-11.6-3.9V61.6z M77.5,47c4.5,0.3,8.9,1,13.3,2v4.2c-0.8-0.2-1.6-0.4-2.4-0.5V51l-2.7-0.5 V60c0,0,1.2,0.2,1.2,0.2v2.5c-1.9-0.3-3.7-0.6-5.6-0.8v-2.5l1.2,0.1c0,0,0-9.6,0-9.6L80,49.7v1.7c-0.8-0.1-1.6-0.1-2.5-0.2V47z M77,59c0,0,0.9,0.1,1.3,0.1v2.5c-1.8-0.1-3.6-0.2-5.4-0.2v-2.5l1.2,0c0,0-0.8-2.3-0.8-2.3l-4.8,0.1L67.7,59c0,0,1.2,0,1.2,0v2.5 c-1.7,0.1-3.4,0.2-5.1,0.3v-2.5l1.2-0.1c0,0,4.4-12.3,4.4-12.3c1.1,0,2.3,0,3.5,0L77,59z"/><path d="M122.1,60.6l4.3-9.5c-7.1-5.3-17.8-9.6-17.8-9.6l3.7-6V24.9H85.1l-9.3,14.5c-1.2,0-2.4-0.1-3.7-0.1 c-1.2,0-2.4,0-3.7,0.1l-9.3-14.5H31.9v10.5l3.7,6c0,0-10.7,4.3-17.8,9.6l4.3,9.5l-6.3,20.2c0,0,5.5-3.8,12.2-7.8v8.9 c0,0,3.6-2.3,7-4L32,82.6v10.8h29.9V71.1l10.3,16.3l10.3-16.3v22.3h29.9V82.6l-3.2-4.8c3.5,1.7,7,4,7,4v-8.9 c6.7,4,12.2,7.8,12.2,7.8L122.1,60.6z M114.2,69.6l0,8.5c-2.5-1.5-5.1-2.8-7.9-4v3.6l3.7,5.7v7.8H84.8V68c-0.9-0.1-1.8-0.2-2.8-0.3 l-9.8,15.5l-9.8-15.5c-0.9,0.1-1.8,0.2-2.8,0.3v23.2H34.2v-7.8l3.7-5.7V74c-2.7,1.2-5.4,2.5-7.9,4v-8.5c-3.3,1.7-7,3.8-10.6,6.2 l4.8-15.4l-4-8.7c5.4-3.5,11.4-6.6,17.6-9v-1.9l-3.7-6v-7.6H58l9.2,14.3c1.7-0.1,3.3-0.2,5-0.2c1.7,0,3.3,0.1,5,0.2l9.2-14.3h23.7 v7.6l-3.7,6v1.9c6.2,2.4,12.2,5.4,17.6,9l-4,8.7l4.8,15.4C121.2,73.4,117.5,71.2,114.2,69.6z"/><path d="M38,45.4c-5.2,2-9.9,4.4-14.4,7.2l3.4,7.5L23.9,70c2-1.2,4.1-2.2,6.2-3.3V52.1c2.4-1.2,5.9-2.9,7.9-3.7V45.4z" /><polygon points="69.3,54.4 72.6,54.4 71,49.9 "/><path d="M117.3,60.1l3.4-7.5c-4.5-2.8-9.2-5.2-14.4-7.2v2.9c2,0.8,5.5,2.5,7.9,3.7v14.7c2.1,1,4.2,2.1,6.2,3.3 L117.3,60.1z"/></g><g><path d="M177,61.8h-7.6v4.7h7.3V70h-7.3v5.7h7.6v3.6h-11.7V58.2H177V61.8z"/><path d="M186.7,68.1l-6.3-10h4.9l3.7,6.5l3.9-6.5h4.9l-6.5,10l7.2,11.2h-4.8l-4.7-7.7l-4.9,7.7h-4.9L186.7,68.1z"/><path d="M208.3,79.3h-4.1V61.8h-4.7v-3.6H213v3.6h-4.7V79.3z"/><path d="M227.8,61.8h-7.6v4.7h7.3V70h-7.3v5.7h7.6v3.6h-11.7V58.2h11.7V61.8z"/><path d="M232.3,79.3V57.7h2.8L248,72.4V58.2h4.1v21.5h-2.8L236.4,65v14.3H232.3z"/><path d="M269.9,60.2l-2.1,2.8c-1-1.1-2.2-1.7-3.4-1.7c-0.8,0-1.5,0.2-2.1,0.7c-0.6,0.5-0.9,1-0.9,1.7 c0,0.6,0.2,1,0.7,1.4c0.4,0.4,1.3,0.8,2.5,1.2c2.3,0.8,3.8,1.7,4.6,2.5c1,1,1.5,2.4,1.5,4.1c0,2.1-0.7,3.7-2.1,5 c-1.4,1.3-3.1,1.9-5.3,1.9c-3,0-5.4-1.3-7.3-4l2.7-2.6c1,1.9,2.5,2.8,4.4,2.8c1,0,1.7-0.3,2.4-0.8c0.6-0.6,0.9-1.3,0.9-2.1 c0-0.8-0.3-1.4-0.8-1.8c-0.3-0.2-0.7-0.4-1.2-0.7c-0.6-0.3-1.3-0.6-2.1-0.9c-1.9-0.7-3.3-1.5-4-2.3c-0.8-0.9-1.2-2-1.2-3.4 c0-1.8,0.6-3.2,1.9-4.4c1.2-1.2,2.8-1.8,4.7-1.8C266,57.8,268.1,58.6,269.9,60.2z"/><path d="M278.8,58.2v21.1h-4.1V58.2H278.8z"/><path d="M283.1,68.6c0-3,1.1-5.6,3.3-7.7c2.2-2.1,4.9-3.2,8-3.2c3.2,0,5.8,1.1,8,3.2c2.2,2.1,3.3,4.7,3.3,7.8 c0,3.1-1.1,5.7-3.3,7.9c-2.2,2.1-4.9,3.2-8.1,3.2c-2.8,0-5.3-0.9-7.4-2.7C284.3,74.9,283.1,72.1,283.1,68.6z M287.3,68.6 c0,2.1,0.7,3.8,2.1,5.2c1.4,1.4,3,2.1,5,2.1c1.9,0,3.6-0.7,5-2.1c1.4-1.4,2.1-3.2,2.1-5.2c0-2-0.7-3.7-2.1-5.1 c-1.4-1.4-3-2.1-5-2.1c-1.9,0-3.6,0.7-5,2.1C288,65,287.3,66.7,287.3,68.6z"/><path d="M309.9,79.3V57.7h2.8l12.9,14.7V58.2h4.1v21.5h-2.8L314,65v14.3H309.9z"/></g><g><path d="M178.8,48.6v-8.8l-4.2,7.7l-4.2-7.7v8.8l1.3,0.9v2.6h-6.7v-2.6l1.3-0.9V36.1l-1.3-0.9v-2.6h5.8l3.7,6.9 l3.9-6.9h5.7v2.6l-1.3,0.9v12.5l1.3,0.9v2.6h-6.7v-2.6L178.8,48.6z"/><path d="M194.4,52.1h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M210.1,35.5l0.3,0.3V38H206v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8L202,40h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L210.1,35.5z"/><path d="M226,35.5l0.3,0.3V38h-4.4v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8l0.1,0.1h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L226,35.5z"/><path d="M236.5,52.1h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M252.2,35.5l0.3,0.3V38H248v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8L244,40h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L252.2,35.5z"/><path d="M268.1,35.5l0.3,0.3V38H264v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8L260,40h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L268.1,35.5z"/><path d="M278.6,52.1h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M295.4,35.6l0.3,0.3v6.3l-2.7,2.9l-0.3,0.3h-5.3v3.2l1.5,0.9v2.6h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h11.1 L295.4,35.6z M291.3,37.1l-0.5-0.5h-3.4v4.8h3.4l0.5-0.5V37.1z"/><path d="M312,35.6l0.3,0.3v6.3l-2.7,2.9l-0.3,0.3H304v3.2l1.5,0.9v2.6h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h11.1 L312,35.6z M307.9,37.1l-0.5-0.5H304v4.8h3.4l0.5-0.5V37.1z"/><path d="M321.9,52.1h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M348,35.5l0.3,0.3V38h-4.4v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8l0.1,0.1h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L348,35.5z"/><path d="M350.4,32.6h15.7v6.2h-3.6v-2.1h-2v12l1.4,0.9v2.6h-7.1v-2.6l1.4-0.9v-12h-2v2.1h-3.6V32.6z"/><path d="M381.4,49.6v2.6h-6.8v-2.6l1.3-0.8l-0.8-2.7h-4.5l-0.9,2.7l1.3,0.8v2.6h-6.5v-2.5l1.3-1l4.7-15.3l0.2-0.7h4.5 l4.7,15.9L381.4,49.6z M374,42.4l-1.1-3.9l-1.2,3.9H374z"/><path d="M379.7,32.6h15.7v6.2h-3.6v-2.1h-2v12l1.4,0.9v2.6H384v-2.6l1.4-0.9v-12h-2v2.1h-3.6V32.6z"/><path d="M397.6,32.6h14.2v6.1h-4.4v-2.1h-4.1v3.7h4.7v3.7h-4.7v4.1h4.1v-1.4h4.4v5.4h-14.2v-2.6l1.4-0.9V36.2l-1.4-0.9 V32.6z"/><path d="M434.1,32.6h6.9v2.7l-1.6,0.9v12.7l-2.7,2.9l-0.3,0.3h-6.9l-3-3.2V36.2l-1.4-0.9v-2.6h6.6v2.5L431,36v11.6 l0.5,0.5h3l0.5-0.5V36l-0.9-0.9V32.6z"/><path d="M450.7,49.5v2.6h-6.6v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h5.9l5.7,10.8v-7.3l-1.2-0.9v-2.6h6.4v2.6l-1.3,0.9v16 h-4.1l-6.2-11.9v8.3L450.7,49.5z"/><path d="M471.2,52.1H464v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M483.3,32.6h7.4v2.7l-2,1L484,52.1h-3.8l-4.9-15.9l-1.8-1v-2.7h7.1v2.6l-1.2,0.8l2.6,8.5l2.6-8.5l-1.3-0.8 V32.6z"/><path d="M492.8,32.6h14.2v6.1h-4.4v-2.1h-4.1v3.7h4.7v3.7h-4.7v4.1h4.1v-1.4h4.4v5.4h-14.2v-2.6l1.4-0.9V36.2l-1.4-0.9 V32.6z"/><path d="M525.7,49.6v2.5h-6.5v-2.6l0.9-0.7l-2-4.5h-2.2v4.3l1,0.9v2.5h-6.7v-2.6l1.3-0.9V36.1l-1.3-0.9v-2.6h11l3,3.2 v5.4l-2,2.1l2.3,5.2L525.7,49.6z M519.8,37.1l-0.6-0.5h-3.3v3.8h3.2l0.6-0.7V37.1z"/><path d="M540.8,35.5l0.3,0.3V38h-4.4v-0.9l-0.5-0.5h-3l-0.5,0.5v2.8l0.1,0.1h6.1l2.1,2.2l0.3,0.3v6.3l-3,3.3h-6.9 l-2.7-3.1l-0.2-0.3v-2.7h4.4v1.5l0.6,0.7h2.9l0.6-0.7v-3.8l-0.1-0.1h-6.2l-2.2-2.6v-5.3l2.6-2.9l0.3-0.3h7L540.8,35.5z"/><path d="M551.3,52.1h-7.2v-2.6l1.4-0.9V36.2l-1.4-0.9v-2.6h7.2v2.6l-1.4,0.9v12.5l1.4,0.9V52.1z"/><path d="M553.5,32.6h15.7v6.2h-3.6v-2.1h-2v12l1.4,0.9v2.6h-7.1v-2.6l1.4-0.9v-12h-2v2.1h-3.6V32.6z"/><path d="M580.4,32.6h6.4v2.5l-1.3,1.1l-4.3,8.5v3.9l1.4,0.9v2.6h-7.1v-2.6l1.3-0.9v-3.9l-4.3-8.5l-1.2-1.1v-2.5h6.3 v2.5l-0.8,0.7l2.2,4.2l2.1-4.2l-0.8-0.7V32.6z"/></g><g><polyline points="144.4,17.7 144.4,98.6 147.1,98.6 147.1,17.7 "/></g><g><path d="M593.8,45.3v1.1h-2.2v5.7h-1.4v-5.7h-2.2v-1.1H593.8z M601.1,52.1l-0.3-4c0-0.5,0-1.2,0-1.9h-0.1 c-0.2,0.6-0.4,1.4-0.6,2L599,52h-1.4l-1.2-3.9c-0.1-0.5-0.3-1.3-0.5-1.9h-0.1c0,0.6,0,1.3-0.1,1.9l-0.2,4h-1.3l0.5-6.8h2l1.2,3.3 c0.1,0.5,0.3,1,0.5,1.7h0c0.2-0.6,0.3-1.2,0.5-1.7l1.2-3.4h2l0.5,6.8H601.1z"/></g></svg></a>
+      <p class="note">Josh Maples, Department of Agricultural Economics, MSU Extension.
+        <a href="mailto:josh.maples@msstate.edu">josh.maples@msstate.edu</a>. <span id="foot-gen"></span></p>
+      <!-- MSU's full nondiscrimination statement, word for word from extension.msstate.edu/about-extension/
+           extension-statements-disclaimer (revised March 2025; checked 11/4/2026): recheck it if MSU revises it -->
+      <p class="note">Mississippi State University is an equal opportunity institution. Discrimination is prohibited in
+        university employment, programs, or activities based on race, color, ethnicity, sex, pregnancy, religion, national
+        origin, disability, age, sexual orientation, genetic information, status as a U.S. veteran, or any other status to
+        the extent protected by applicable law. Questions about equal opportunity programs or compliance should be directed
+        to the <a href="https://www.civilrights.msstate.edu/">Office of Civil Rights Compliance</a>, 231 Famous Maroon Band
+        Street, P.O. 6044, Mississippi State, MS 39762.</p>
+      <p class="note">Copyright <span id="foot-year"></span> by Mississippi State University. All rights reserved.
+        <a href="https://www.msstate.edu">www.msstate.edu</a></p>
+    </div>
   </div>
 </footer>
 
@@ -650,6 +675,7 @@ details.method .card { margin-top: 10px; }
   const NS = "http://www.w3.org/2000/svg";
   const MON = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
   const MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const MON_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const store = {
     get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
@@ -667,7 +693,7 @@ details.method .card { margin-top: 10px; }
   const fewLegend = () => el("li", {}, [el("span", { class: "fewkey" }), el("span", { text: `Fewer than ${FEW} head` })]);
 
   // ---------- formatting ----------
-  const fmt$ = (v, cents = true) => v == null ? "—" : (v < 0 ? "−" : "") +
+  const fmt$ = (v, cents = true) => v == null ? "–" : (v < 0 ? "−" : "") +
     "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 });
   const R = Math.round;
   const pctS = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) + "%";   // signed %, true minus sign
@@ -677,7 +703,7 @@ details.method .card { margin-top: 10px; }
   const STALE_DAYS = 4;   // Friday's build is 3 days old on Monday morning; one missed weekday more shows the banner
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const lastDay = s => s > D.meta.through ? D.meta.through : s;      // a window's end, never after the latest sale
-  const fmtN = v => v == null ? "—" : v.toLocaleString("en-US");
+  const fmtN = v => v == null ? "–" : v.toLocaleString("en-US");
   const iso = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
   const day = (s, year) => { const d = iso(s); return `${MON[d.getMonth()]} ${d.getDate()}` + (year ? `, ${d.getFullYear()}` : ""); };
   const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -689,7 +715,7 @@ details.method .card { margin-top: 10px; }
     if (x.getMonth() === y.getMonth()) return `${MON[x.getMonth()]} ${x.getDate()}-${y.getDate()}`;
     return `${day(a)}-${day(b)}`;
   };
-  const signed$ = v => v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v));
+  const signed$ = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v));
   const el = (tag, attrs = {}, kids = []) => {
     const e = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -768,6 +794,28 @@ details.method .card { margin-top: 10px; }
     const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
     return { ticks: out, step };
   }
+  // the charts work from the keyboard too (WCAG 2.1.1; as the drought dashboard): tab to a chart, then the arrow keys,
+  // Home and End move the same readout the pointer does; a mouse click or tap that focuses it shows nothing extra
+  function keyNav(node, n, at, show, hide) {
+    node.setAttribute("tabindex", "0");
+    node.addEventListener("focus", () => { let kb = true; try { kb = node.matches(":focus-visible"); } catch (e) { /* old browser */ } if (kb) show(at(), true); });
+    node.addEventListener("blur", hide);
+    node.addEventListener("keydown", ev => {
+      const i = { ArrowLeft: at() - 1, ArrowRight: at() + 1, Home: 0, End: n - 1 }[ev.key];
+      if (i == null) return;
+      ev.preventDefault(); show(Math.max(0, Math.min(n - 1, i)), true);
+    });
+  }
+  // and the chart's values as a table for screen readers (WCAG 1.1.1), captioned with the chart's label, inside a
+  // hidden wrapper (a table won't shrink to 1px, and a wide one widens the page even when clipped)
+  const srTable = (label, head, rows) => el("div", { class: "sr-only" }, el("table", {}, [el("caption", { text: label }),
+    el("thead", {}, el("tr", {}, head.map(h => el("th", { scope: "col", text: h })))),
+    el("tbody", {}, rows.map(([r, ...cells]) => el("tr", {}, [el("th", { scope: "row", text: r }), ...cells.map(v => el("td", { text: v }))])))]));
+  // a dashed box around the bar the keyboard is on (bars have no hover marker)
+  const kbox = svg => { const b = svgEl("rect", { class: "kbox", visibility: "hidden" }); svg.append(b);
+    return { at: (x, y, w, h) => { for (const [k, v] of Object.entries({ x, y, width: w, height: h })) b.setAttribute(k, v); b.setAttribute("visibility", "visible"); },
+             off: () => b.setAttribute("visibility", "hidden") }; };
+
   // value of gain by sale weight (James Mitchell's suggestion; Josh, 11/2/2026): bars = break-even cost of gain,
   // whiskers = the range across the seasonal patterns' years, dashed line = the viewer's cost of gain.
   // rows: [{w2, when, days, be, lo, hi}]; labels under each bar carry the weight, the date and the value
@@ -786,7 +834,8 @@ details.method .card { margin-top: 10px; }
       const tx = svgEl("text", { x: m.l - 6, y: y(t) + 4, "text-anchor": "end" }); tx.textContent = "$" + t.toFixed(2); svg.append(tx);
     }
     svg.append(svgEl("line", { class: "axis", x1: m.l, x2: m.l + iw, y1: y(0), y2: y(0) }));
-    const tip = el("div", { class: "tip", hidden: "" });
+    const tip = el("div", { class: "tip", hidden: "", "aria-live": "polite" });
+    const shows = []; let cur = rows.length - 1;
     rows.forEach((r, i) => {
       const x = cx(i), h = r.be > 0 ? y(0) - y(r.be) : 0, ok = cog == null || r.be >= cog, rr = Math.min(4, h);
       if (h > 0) svg.append(svgEl("path", { class: ok ? "f1" : "fband",
@@ -809,6 +858,7 @@ details.method .card { margin-top: 10px; }
         const left = Math.min(Math.max(x - 110, 0), W - 230);
         tip.style.left = left + "px"; tip.style.top = Math.max(0, y(r.hi ?? r.be ?? 0) - 64) + "px";
       };
+      shows.push(show);
       hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
       hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
       svg.append(hit);
@@ -817,7 +867,13 @@ details.method .card { margin-top: 10px; }
       svg.append(svgEl("line", { class: "ref", x1: m.l, x2: m.l + iw, y1: y(cog), y2: y(cog) }));
       const t = svgEl("text", { x: m.l + iw + 6, y: y(cog) + 4, class: "vlab" }); t.textContent = `Yours ${fmt$(cog)}`; svg.append(t);
     }
-    host.replaceChildren(svg, tip);
+    const box = kbox(svg);
+    keyNav(svg, rows.length, () => cur, i => { cur = i; shows[i](); box.at(cx(i) - band / 2 + 2, m.t, band - 4, ih + m.b - 2); },
+      () => { tip.hidden = true; box.off(); });
+    const label = `How far to grow it: break-even cost of gain by sale weight, ${S.kcls.toLowerCase()} from ${S.kw} lb`;
+    host.replaceChildren(svg, tip, srTable(label, ["Sale weight", "Sell about", "Days kept", "Pays if gain costs under", `Range across ${yrsLabel()}`],
+      rows.map(r => [`${r.w2} lb`, r.when, String(r.days), r.be > 0 ? `${fmt$(r.be)}/lb` : "never",
+        r.hi != null && r.lo != null && r.hi > r.lo ? `${r.lo > 0 ? fmt$(r.lo) : "never"} to ${fmt$(r.hi)}` : "–"])));
   }
   // series: [{cls:"1|2|3", dash, width, pts:[{x,y,head,label}], end:"label", dot:bool, name}]
   function lineChart(host, cfg) {
@@ -900,18 +956,26 @@ details.method .card { margin-top: 10px; }
     const cross = svgEl("path", { class: "cross", d: "", visibility: "hidden" });
     const hit = svgEl("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: "transparent" });
     svg.append(cross, hit);
-    const tip = el("div", { class: "tip", hidden: "" });
+    const tip = el("div", { class: "tip", hidden: "", "aria-live": "polite" });
+    // the keyboard starts at the first line's latest point (this year's latest week), not last year's December
+    const p0 = cfg.series[0] && cfg.series[0].pts.length ? cfg.series[0].pts[cfg.series[0].pts.length - 1].x : null;
+    let cur = p0 != null ? xs.indexOf(p0) : xs.length - 1;
     const move = ev => {
       const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
       let best = xs[0];
       for (const x of xs) if (Math.abs(X(x) - px) < Math.abs(X(best) - px)) best = x;
+      showX(best);
+    };
+    const showX = best => {
+      const r = svg.getBoundingClientRect();
+      cur = xs.indexOf(best);
       const rows = cfg.series.map(s => ({ s, p: s.pts.find(p => p.x === best) })).filter(o => o.p);
       if (!rows.length) return;
       cross.setAttribute("d", `M${X(best)},${m.t} V${H - m.b}`); cross.setAttribute("visibility", "visible");
       const bp = B.find(p => p.x === best);
       tip.replaceChildren(el("b", { text: cfg.xlab(best) }), ...rows.map(({ s, p }) => el("div", { class: "row" }, [
         el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }),
-        el("span", { text: `${s.name}: ${cfg.yfmt(p.y, true)}${p.head != null ? ` · ${fmtN(p.head)} hd` : ""}${p.head != null && p.head < FEW ? " ⚠ few sales" : ""}` })])),
+        el("span", { text: `${s.name}: ${cfg.yfmt(p.y, true)}${p.head != null ? ` · ${fmtN(p.head)} head` : ""}${p.head != null && p.head < FEW ? " ⚠ few sales" : ""}` })])),
         ...(bp ? [el("div", { class: "row" }, [el("span", { class: "key kband" }),
           el("span", { text: `${cfg.band.name}: ${cfg.yfmt(bp.lo, true)} to ${cfg.yfmt(bp.hi, true)}` })])] : []));
       tip.hidden = false;
@@ -922,12 +986,17 @@ details.method .card { margin-top: 10px; }
     const leave = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); };
     hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
     hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") leave(); });
-    host.replaceChildren(svg, tip);
+    keyNav(svg, xs.length, () => cur, i => showX(xs[i]), leave);
+    // the hidden table: one row per x, one column per series (and the band), the readout's values
+    const cell = (s, x) => { const p = s.pts.find(q => q.x === x); return p ? `${cfg.yfmt(p.y, true)}${p.head != null ? ` (${fmtN(p.head)} head${p.head < FEW ? ", few sales" : ""})` : ""}` : "–"; };
+    host.replaceChildren(svg, tip, srTable(cfg.aria || "Chart", [cfg.xname || "", ...cfg.series.map(s => s.name), ...(cfg.band ? [cfg.band.name] : [])],
+      xs.map(x => { const bp = B.find(p => p.x === x);
+        return [cfg.xlab(x), ...cfg.series.map(s => cell(s, x)), ...(cfg.band ? [bp ? `${cfg.yfmt(bp.lo, true)} to ${cfg.yfmt(bp.hi, true)}` : "–"] : [])]; })));
     return thin;
   }
 
   // seasonal index bars around 100
-  function monthBars(host, rows) {
+  function monthBars(host, rows, label) {
     const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = small ? 250 : 300;
     const m = { t: 14, r: 10, b: 30, l: small ? 40 : 46 };
     const vals = rows.flatMap(r => [r.low, r.high, r.index]);
@@ -936,13 +1005,14 @@ details.method .card { margin-top: 10px; }
     const bw = (W - m.l - m.r) / 12;
     const Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
     const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
-      "aria-label": "Seasonal price index by month" });
+      "aria-label": label || "Seasonal price index by month" });
     svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b}` }));
     for (const t of ticks) {
       const tx = svgEl("text", { x: m.l - 7, y: Y(t) + 4, "text-anchor": "end" }); tx.textContent = t === 100 ? "0%" : (t > 100 ? "+" : "−") + Math.abs(t - 100) + "%"; svg.append(tx);
       svg.append(svgEl("path", { class: "axis", d: `M${m.l - 4},${Y(t)} H${m.l}` }));
     }
-    const tip = el("div", { class: "tip", hidden: "" });
+    const tip = el("div", { class: "tip", hidden: "", "aria-live": "polite" });
+    const shows = []; let cur = new Date().getMonth();      // the keyboard starts at this month
     rows.forEach((r, i) => {
       const x = m.l + i * bw, w = bw * 0.62, cx = x + bw / 2;
       const y0 = Y(100), y1 = Y(r.index);
@@ -953,7 +1023,7 @@ details.method .card { margin-top: 10px; }
       tx.textContent = small ? (i % 2 ? "" : MON3[i]) : MON3[i]; svg.append(tx);   // every other month on a phone
       const hit = svgEl("rect", { x, y: m.t, width: bw, height: H - m.t - m.b, fill: "transparent" });
       const show = () => {
-        tip.replaceChildren(el("b", { text: MON[i].replace(".", "") }),
+        tip.replaceChildren(el("b", { text: MON_FULL[i] }),
           el("div", { text: `${r.index >= 100 ? "+" : "−"}${Math.abs(r.index - 100).toFixed(1)}% vs. a typical month` }),
           el("div", { text: `Range across years: ${r.low.toFixed(0)}-${r.high.toFixed(0)}` }),
           el("div", { text: `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]} average price: ${fmt$(r.price)}/cwt` }));
@@ -961,12 +1031,19 @@ details.method .card { margin-top: 10px; }
         const rr = svg.getBoundingClientRect(), px = cx * rr.width / W, tw = tip.offsetWidth;
         tip.style.left = Math.max(0, Math.min(rr.width - tw, px - tw / 2)) + "px"; tip.style.top = "6px";
       };
+      shows.push(show);
       hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
       hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
       svg.append(hit);
     });
     svg.append(svgEl("path", { class: "ref", d: `M${m.l},${Y(100)} H${W - m.r}` }));
-    host.replaceChildren(svg, tip);
+    const box = kbox(svg);
+    keyNav(svg, rows.length, () => cur, i => { cur = i; shows[i](); box.at(m.l + i * bw + 1, m.t, bw - 2, H - m.t - m.b); },
+      () => { tip.hidden = true; box.off(); });
+    const sg = v => `${v >= 100 ? "+" : "−"}${Math.abs(v - 100).toFixed(1)}%`;
+    host.replaceChildren(svg, tip, srTable(label || "Seasonal price index by month", ["Month", "vs. a typical month", "Range across years",
+      `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]} average price`],
+      rows.map((r, i) => [MON_FULL[i], sg(r.index), `${r.low.toFixed(0)}-${r.high.toFixed(0)}`, `${fmt$(r.price)}/cwt`])));
   }
 
   // steer premium over bulls by weight group: horizontal bars, $/cwt, with % and $/head
@@ -977,7 +1054,8 @@ details.method .card { margin-top: 10px; }
     const max = Math.max(...rows.map(r => r.premium), 1) * (small ? 1.02 : 1.0);
     const lab = small ? 118 : 140;                       // room for the value label
     const X = v => m.l + Math.max(0, v) / max * (W - m.l - m.r - lab);
-    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Steer premium over bulls by weight group" });
+    const label = `How much more steers bring than bulls, by weight, ${stName()}, last 12 months`;
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": label });
     rows.forEach((r, i) => {
       const y = m.t + i * rowH, bh = 20, by = y + (rowH - bh) / 2;
       const on = r.group === pick;
@@ -997,7 +1075,8 @@ details.method .card { margin-top: 10px; }
       svg.append(tv);
     });
     svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b}` }));
-    host.replaceChildren(svg);
+    host.replaceChildren(svg, srTable(label, ["Weight", "Steers bring more", "Steers", "Bulls"],
+      rows.map(r => [`${r.group} lb`, `${fmt$(r.premium)}/cwt (${r.pct.toFixed(1)}%)`, fmtN(r.steers), fmtN(r.bulls)])));
   }
 
   function renderBull() {
@@ -1111,15 +1190,21 @@ details.method .card { margin-top: 10px; }
         item(rc.prior, (prevWeek() || !isState() ? "the week before" : "last week") + (sold("prior") || same)), " · ",
         item(rc.year_ago, "a year ago" + (sold("year_ago") || same))]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
-    const g = D.meta.generated || "", gd = g.slice(0, 10), gt = g.slice(11, 16);
-    const [gh, gm] = gt.split(":").map(Number), when = gt ? `, ${(gh % 12) || 12}:${gt.slice(3)} ${gh < 12 ? "am" : "pm"} CT` : "";   // built on a Mac in Mississippi
+    const g = D.meta.generated || "", gd = g.slice(0, 10);   // ISO with offset, written in Central time
     const ver = D.meta.build ? `version ${D.meta.build}, ` : "";   // commits to the page code; "+" = uncommitted edits (support)
-    $("#foot-gen").textContent = `Latest sales ${wday(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(gd) ? wday(gd, true) + when : g}. Updates every morning.`;
+    // the maintainer line's last sentence (official footer, 11/4/2026): latest sales, the page version, the build in
+    // Central time ("3:35 p.m. CT") and the schedule; the copyright year follows the build date in Central time
+    const bt = new Date(g), okB = !isNaN(bt), ct = o => bt.toLocaleString("en-US", { timeZone: "America/Chicago", ...o });
+    const hm = okB ? ct({ hour: "numeric", minute: "2-digit" }).replace(/\s?([AP])M$/, (_, x) => ` ${x.toLowerCase()}.m.`) : "";
+    const bday = okB ? bt.toLocaleDateString("en-CA", { timeZone: "America/Chicago" }) : gd;
+    $("#foot-gen").textContent = `Sales through ${wday(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(bday) ? wday(bday, true) : g}` +
+      (hm ? `, ${hm} CT` : "") + ". Updates every morning with the USDA auction reports posted since the last update.";
+    $("#foot-year").textContent = okB ? ct({ year: "numeric" }) : gd.slice(0, 4);
   }
   let YTD = null;                 // the year-to-date count, shown in the About box
 
   function changeCell(v, pct, heads) {
-    if (v == null) return el("td", { class: "none", text: "—" });
+    if (v == null) return el("td", { class: "none", text: "–" });
     const cls = v > 0 ? "up" : v < 0 ? "down" : "";
     const arrow = v > 0 ? "▲ " : v < 0 ? "▼ " : "";
     const p = pct != null ? el("span", { class: "pct", text: ` (${pctS(pct)})` }) : null;
@@ -1216,7 +1301,7 @@ details.method .card { margin-top: 10px; }
       if (ty) cells.push(el("span", { class: "lab", text: yr }), ...G.map((g, i) => el("span", { class: "yr", text: `${pc(gy[i], ty)}%` })));
       add(vaOn() ? "Value Added calves by grade" : "Feeder calves by grade", el("div", { class: "gr" }, cells), tw ? "" : "None graded " + here, true);
     }
-    if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "—",
+    if (va(lots.week) != null || va(lots.ytd) != null) add("Value Added lots", va(lots.week) != null ? `${va(lots.week)}% of feeder head` : "–",
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
     why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
@@ -1269,12 +1354,12 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "v hero", text: fmt$(ph, false) }),
           el("div", { class: "d", text: `${fmt$(a.price)}/cwt` })]),
         el("div", {}, [el("div", { class: "k", text: "Same 2 weeks last year" }),
-          el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "—" }),
+          el("div", { class: "v", text: phAgo ? fmt$(phAgo, false) : "–" }),
           el("div", { class: "d", text: !b ? "None priced in that class a year ago" : `${fmt$(b.price)}/cwt` })]),
         el("div", {}, [el("div", { class: "k", text: "vs. last year" }),
           // a thin sample on either side makes the change meaningless, as on the cull cow cards
           el("div", { class: "v" + (phAgo && !thinNow && !thinAgo ? (ph >= phAgo ? " up" : " down") : ""),
-            text: !phAgo ? "—" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
+            text: !phAgo ? "–" : thinNow || thinAgo ? "too few sales" : (ph >= phAgo ? "+" : "−") + fmt$(Math.abs(ph - phAgo), false) + " a head" }),
           el("div", { class: "d", text: phAgo && !thinNow && !thinAgo ? `${pctS((ph / phAgo - 1) * 100)}` : "" })]));
       const calc = [];
       // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
@@ -1306,7 +1391,8 @@ details.method .card { margin-top: 10px; }
                { cls: 1, pts: toPts(ago), name: "Year ago", dash: "6 5", width: 1.8 }],
       x: { min: 250, max: 950, ticks }, gap: 60, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
       xlab: x => `${x - 25}-${x + 25} lb`, marker: { x: w, t: `${w} lb` },
-      aria: `${S.vcls} price by weight, last two weeks and a year ago`, empty: "No sales to chart for this auction." });
+      xname: "Weight class",
+      aria: `${vaOn() ? "Value Added " : ""}${S.vcls.toLowerCase()} price by weight, last two weeks and a year ago, ${isState() ? stName() : market().name}`, empty: "No sales to chart for this auction." });
     if (thinC) $("#curve-legend").append(fewLegend());
   }
 
@@ -1337,8 +1423,9 @@ details.method .card { margin-top: 10px; }
       series, x: { min: 0, max: 365, ticks: window.innerWidth < 520 ? ticks.filter((_, i) => i % 2 === 0) : ticks },
       gap: weekly ? 20 : 45, endLabels: true, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
       // weekly points are labeled by the week's Friday; the week starts that Monday
-      xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (weekly ? x - 4 : x) * 864e5); return weekly ? `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}` : MON[d.getUTCMonth()].replace(".", ""); },
-      aria: `${S.tgrp} lb ${S.tcls.toLowerCase()} price this year, last year and the ${base} average` });
+      xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (weekly ? x - 4 : x) * 864e5); return weekly ? `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}` : MON_FULL[d.getUTCMonth()]; },
+      xname: weekly ? "Week" : "Month",
+      aria: `${S.tgrp} lb ${vaOn() ? "Value Added " : ""}${S.tcls.toLowerCase()} price this year, last year and the ${base} average, ${isState() ? stName() : mk.name}` });
     if (thinT) $("#trend-legend").append(fewLegend());
     const last = cur[cur.length - 1];
     const near = (arr) => arr.reduce((b, p) => Math.abs(p.x - last.x) < Math.abs(b.x - last.x) ? p : b, arr[0]);
@@ -1531,7 +1618,7 @@ details.method .card { margin-top: 10px; }
       if (!q || q.over) return tr.append(el("td", { text: `${d} days` }), el("td", { class: "none", colspan: "4", text: "past 900 lb" })), tr;
       tr.append(el("td", {}, [document.createTextNode(`${d} days`), el("span", { class: "headsm", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` })]),
         el("td", { class: "sm-hide", text: `${sellDay(q.t1)} · ${fmtN(q.w2)} lb` }),
-        el("td", { text: q.be == null ? "—" : q.be <= 0 ? "never" : fmt$(q.be) }),
+        el("td", { text: q.be == null ? "–" : q.be <= 0 ? "never" : fmt$(q.be) }),
         ...(S.cog != null ? [el("td", { class: "chg " + upDown(q.diff), text: signedR(q.diff) })] : []));
       return tr;
     });
@@ -1670,7 +1757,7 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` }),
           el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })])
       : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
-          el("div", { class: "v", text: P.voG == null ? "—" : P.voG <= 0 ? "None" : fmt$(P.voG) + "/lb" }),
+          el("div", { class: "v", text: P.voG == null ? "–" : P.voG <= 0 ? "None" : fmt$(P.voG) + "/lb" }),
           el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "Loses money even if the gain were free." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." }),
           el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
     ans.replaceChildren(buyCard,
@@ -1702,7 +1789,7 @@ details.method .card { margin-top: 10px; }
       add("Estimated margin", "", signedR(P.margin), "tot");
     } else {
       add("Left to pay for the gain", `${fmtN(Math.round(P.gain))} lb`, fmt$(P.gross - P.loss - P.buy, false), "tot");
-      add("Break-even cost of gain", "", P.voG == null ? "—" : P.voG <= 0 ? "none" : `${fmt$(P.voG)}/lb`);
+      add("Break-even cost of gain", "", P.voG == null ? "–" : P.voG <= 0 ? "none" : `${fmt$(P.voG)}/lb`);
     }
     build.replaceChildren(...rows);
     // how the answer changes with the keep length
@@ -1735,7 +1822,8 @@ details.method .card { margin-top: 10px; }
       yfmt: (v, full) => useM ? (full ? signedR(v) : (v < 0 ? "−$" : "$") + Math.abs(Math.round(v))) : (full ? fmt$(v) + "/lb" : "$" + v.toFixed(2)),
       xlab: d => { const t = addDays(today(), d); return `Keep ${d} days (sell ${MON[t.getMonth()]} ${t.getDate()})`; },
       marker: { x: Math.min(S.pdays, pts.length ? pts[pts.length - 1].x : S.pdays), t: `${S.pdays} days` }, zero: useM,
-      aria: "Estimate by number of days kept", empty: "Too heavy to price at any keep length." });
+      xname: "Days kept",
+      aria: `Purchase planner: ${useM ? "estimated margin" : "break-even cost of gain"} by days kept, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stName()}`, empty: "Too heavy to price at any keep length." });
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
     notes.push(`Death loss starts at 2% for bought calves, which are hauled and mixed with others; Sell or keep starts at 1% for home-raised calves. Change it to fit your experience. ` +
@@ -1766,7 +1854,7 @@ details.method .card { margin-top: 10px; }
       return gap === 1 ? `${nm(x)}-${nm(y)}` : gap === 11 ? `${nm(y)}-${nm(x)}` : `${nm(x)} and ${nm(y)}`; };
     $("#season-summary").textContent = `Highest: ${pair(by[0], by[1])} (about +${(by[0].index - 100).toFixed(0)}%). ` +
       `Lowest: ${pair(by[by.length - 1], by[by.length - 2])} (about −${(100 - by[by.length - 1].index).toFixed(0)}%).`;
-    monthBars($("#season-chart"), rows);
+    monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal price index by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
   const VIEWS = { week: renderWeek, value: renderValue, trend: renderTrend, keep: renderKeep, buy: renderBuy, bull: renderBull, cows: renderCows, season: renderSeason };
