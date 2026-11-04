@@ -1169,7 +1169,8 @@ details.method .card { margin-top: 10px; }
     const same = isState() ? ", same barns" : "";
     const sameLine = isState() ? el("p", { class: "legend-same", text: "Changes compare only the auctions that sold that class both weeks." }) : null;
     // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
-    seg($("#week-class"), [...CLS, { v: "Cows", t: "Cows & bulls" }], () => S.wcls, v => S.wcls = v);
+    if (B.meta.no_cows && S.wcls === "Cows") S.wcls = "Steers";       // no cull cow sales in this state's reports
+    seg($("#week-class"), [...CLS, ...(B.meta.no_cows ? [] : [{ v: "Cows", t: "Cows & bulls" }])], () => S.wcls, v => S.wcls = v);
     const cows = S.wcls === "Cows";
     $("#week-feeders").parentElement.hidden = cows;
     $("#week-slaughter").parentElement.hidden = !cows;
@@ -1584,6 +1585,7 @@ details.method .card { margin-top: 10px; }
     $("#cows-sub").textContent = `${isState() ? `All reporting ${stName()} auctions` : mk.name}, last three sale weeks` +
       (w ? ` (${span(w.now.dates[0], lastDay(w.now.dates[1]))})` : "") + ".";
     const names = { "Breaker 75-80%": ["Breakers", "75-80% lean · fleshier cows"], "Boner 80-85%": ["Boners", "80-85% lean · the most common grade"], "Lean 85-90%": ["Leans", "85-90% lean · thinner cows"] };
+    if (B.meta.no_cows) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: `The ${stName()} sales used here report feeder cattle only, so there are no cull cow prices for ${stName()}.` })); return; }
     if (!rows.length) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: "No cull cows priced in the last three weeks." })); return; }
     $("#cows-cards").replaceChildren(...rows.map(r => {
       const [n, g] = names[r.grade] || [r.grade, ""];
@@ -1744,7 +1746,9 @@ details.method .card { margin-top: 10px; }
 
   function renderSeason() {
     const Sx = D.season;
-    seg($("#season-class"), [...CLS, { v: "Cows", t: "Cull cows" }], () => S.scls, v => S.scls = v);
+    const hasCows = !!Sx.series["Cull cows"];                          // none where the state reports no cull cows
+    if (!hasCows && S.scls === "Cows") S.scls = "Steers";
+    seg($("#season-class"), [...CLS, ...(hasCows ? [{ v: "Cows", t: "Cull cows" }] : [])], () => S.scls, v => S.scls = v);
     const cows = S.scls === "Cows";
     const groups = cows ? [] : Object.keys(Sx.series).filter(k => k.startsWith(S.scls + " ")).map(k => k.split(" ")[1]);
     if (!cows && !groups.includes(S.sgrp))       // nearest group with a pattern (AL heavy heifers have none)
