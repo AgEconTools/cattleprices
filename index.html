@@ -681,6 +681,7 @@ details.method .card { margin-top: 10px; }
   // a ?state= link (from a state's Extension page) opens on that state's statewide view, This week and
   // regular lots, not on the barn, tab or lots this viewer last picked (Fable, 11/5/2026)
   let LINKED = false;
+  let AUTO_COWS = null, WCLS_BEFORE = null;   // This week's class, switched to Cows & bulls for a barn with no feeder sale
   try { LINKED = !!new URLSearchParams(location.search).get("state"); } catch (e) { /* no query */ }
   const store = {
     get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
@@ -1263,14 +1264,23 @@ details.method .card { margin-top: 10px; }
     const sameLine = isState() ? el("p", { class: "legend-same", text: "Changes compare only the auctions that sold that class both weeks." }) : null;
     // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
     if (B.meta.no_cows && S.wcls === "Cows") S.wcls = "Steers";       // no cull cow sales in this state's reports
-    seg($("#week-class"), [...CLS, ...(B.meta.no_cows ? [] : [{ v: "Cows", t: "Cows & bulls" }])], () => S.wcls, v => S.wcls = v);
+    // a barn whose sale had no feeder cattle (Missouri's cow sales) opens on Cows & bulls, not an empty feeder
+    // table; the viewer's class comes back at the next barn (Fable, version 38)
+    const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
+    if (noFeeders && !B.meta.no_cows && AUTO_COWS !== S.market) {
+      if (S.wcls !== "Cows") { WCLS_BEFORE = S.wcls; S.wcls = "Cows"; }
+      AUTO_COWS = S.market;
+    } else if (!noFeeders) {
+      if (WCLS_BEFORE && S.wcls === "Cows") S.wcls = WCLS_BEFORE;
+      WCLS_BEFORE = null; AUTO_COWS = null;
+    }
+    seg($("#week-class"), [...CLS, ...(B.meta.no_cows ? [] : [{ v: "Cows", t: "Cows & bulls" }])], () => S.wcls, v => { S.wcls = v; WCLS_BEFORE = null; });   // the viewer's own pick stays
     const cows = S.wcls === "Cows";
     $("#week-feeders").parentElement.hidden = cows;
     $("#week-slaughter").parentElement.hidden = !cows;
     const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
-    const noFeeders = !isState() && r.groups && !r.groups.includes("Feeder Cattle");
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
-    const anyThin = (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
+    const anyThin = !cows && noFeeders ? false : (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
     if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`${vaOn() ? "Value Added feeder" : "Feeder"} ${S.wcls.toLowerCase()}, #1 and #2, $/cwt`),
       sameLine, anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey prices rest on 1 or 2 head; grey changes compare with a thin week." }) : null]),
       thead("Weight (lb)", now, vs + same, same), el("tbody", {}, noFeeders
@@ -1532,7 +1542,9 @@ details.method .card { margin-top: 10px; }
     const lo = Math.floor(P.w2 / 50) * 50, row = D.curve.state[cls].now.find(p => p[0] === lo), head = row ? row[2] : 0;
     if (head >= FEW || lo === P.lo) return null;      // the same class as the starting price has its own warning
     const what = `${lo}-${lo + 50} lb ${vaOn() ? "Value Added " : ""}${cls.toLowerCase()}`;
-    return warnBox(`Few sales: ${head ? `only ${fmtN(head)} head of ${what}` : `no ${what}`} sold in ${stName()} the last two weeks. Treat the ${fmtN(P.w2)}-lb price as a rough guide.`);
+    // with no sales in the class, say where the price comes from (Fable, version 38: "no sales" next to a price)
+    return warnBox(head ? `Few sales: only ${fmtN(head)} head of ${what} sold in ${stName()} the last two weeks. Treat the ${fmtN(P.w2)}-lb price as a rough guide.`
+      : `Few sales: no ${what} sold in ${stName()} the last two weeks, so the ${fmtN(P.w2)}-lb price is estimated from the prices at other weights. Treat it as a rough guide.`);
   }
   const yrsLabel = () => `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]}`;
   // link to the seasonal tab, opened on the weight group the estimate used (nearest one with a pattern)
