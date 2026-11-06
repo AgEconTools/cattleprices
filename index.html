@@ -172,12 +172,15 @@ td.price.tiny { font-weight: 400; color: var(--muted); }   /* 1 or 2 head: shown
 .pbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
 .rtip { position: absolute; z-index: 30; background: var(--surface); color: var(--ink); border: 1px solid var(--rule);
         border-radius: 8px; padding: 10px 40px 10px 12px; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14); }
+.rtip .rt-h { display: block; font-weight: 700; margin-bottom: 6px; }
 .rtip dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px 14px; font-variant-numeric: tabular-nums; }
 .rtip dt { color: var(--muted); }
 .rtip dd { margin: 0; font-weight: 700; text-align: right; }
 .rtip .x { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; background: none;
            color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; border-radius: 6px; }
 .rtip .x:hover { color: var(--ink); background: var(--accent-soft); }
+tr.rsel td { background: var(--accent-soft); }   /* the row whose range is open */
+.pbtn[aria-expanded="true"] { border-bottom: 1.5px solid var(--accent); }
 .chg { font-weight: 600; }
 .chg.up { color: var(--up); } .chg.down { color: var(--down); }
 .few { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: 11.5px; font-weight: 700;
@@ -1248,31 +1251,40 @@ details.method .card { margin-top: 10px; }
     clearTimeout(RT_HIDE);
     if (!RT_BTN) return;
     RT.hidden = true; RT_BTN.setAttribute("aria-expanded", "false");
+    const tr = RT_BTN.closest("tr"); if (tr) tr.classList.remove("rsel");
     if (focusBack) RT_BTN.focus();
     RT_BTN = null; RT_PIN = false;
   }
-  function openRange(btn, r, pin) {
+  function openRange(btn, r, pin, title) {
     clearTimeout(RT_HIDE);
     if (RT_BTN && RT_BTN !== btn) closeRange();
     const x = el("button", { type: "button", class: "x", "aria-label": "Close", tabindex: "-1", text: "×" });
     x.addEventListener("click", () => closeRange(true));
-    RT.replaceChildren(x, el("dl", {}, [
+    // the row it belongs to, named at the top (Josh, 11/6/2026: "600-700 lb steers")
+    RT.replaceChildren(x, el("b", { class: "rt-h", text: title }), el("dl", {}, [
       ...(r.most && r.head >= FEW ? [el("dt", { text: "Most sold" }), el("dd", { text: span$(r.most) })] : []),
       el("dt", { text: "Full range" }), el("dd", { text: span$(r.range) })]));
     if (!RT.isConnected) document.body.append(RT);
     RT.hidden = false; RT_BTN = btn; RT_PIN = RT_PIN || !!pin; RT_Y = window.scrollY;
     btn.setAttribute("aria-expanded", "true");
+    const tr = btn.closest("tr"); if (tr) tr.classList.add("rsel");
+    // beside its own price, level with it, so it can't be read as the next row's (Josh, 11/6/2026); where the
+    // screen is too narrow, below or above it, with the row highlighted either way
     const b = btn.getBoundingClientRect(), tw = RT.offsetWidth, th = RT.offsetHeight;
-    const left = Math.max(8, Math.min(window.innerWidth - tw - 8, b.left + b.width / 2 - tw / 2));
-    const top = b.bottom + th + 8 > window.innerHeight && b.top - th - 8 > 0 ? b.top - th - 6 : b.bottom + 6;
+    let left, top;
+    if (b.right + 10 + tw <= window.innerWidth - 8) { left = b.right + 10; top = b.top + b.height / 2 - th / 2; }
+    else {
+      left = Math.max(8, Math.min(window.innerWidth - tw - 8, b.left + b.width / 2 - tw / 2));
+      top = b.bottom + th + 8 > window.innerHeight && b.top - th - 8 > 0 ? b.top - th - 6 : b.bottom + 6;
+    }
     RT.style.left = left + window.scrollX + "px"; RT.style.top = top + window.scrollY + "px";
   }
-  function priceButton(r) {
+  function priceButton(r, title) {
     const b = el("button", { type: "button", class: "pbtn", "aria-expanded": "false", "aria-haspopup": "dialog",
-      "aria-label": `${fmt$(r.price)}. ${rangeText(r).join("; ")}`, text: fmt$(r.price) });
-    b.addEventListener("click", () => { if (RT_BTN === b && RT_PIN) closeRange(); else openRange(b, r, true); });
+      "aria-label": `${title}, ${fmt$(r.price)}. ${rangeText(r).join("; ")}`, text: fmt$(r.price) });
+    b.addEventListener("click", () => { if (RT_BTN === b && RT_PIN) closeRange(); else openRange(b, r, true, title); });
     // a mouse opens it on hover; leaving closes it unless it was clicked open (or the pointer moves into it)
-    b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse" && !(RT_PIN && RT_BTN !== b)) openRange(b, r, false); });
+    b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse" && !(RT_PIN && RT_BTN !== b)) openRange(b, r, false, title); });
     b.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !RT_PIN) RT_HIDE = setTimeout(() => closeRange(), 200); });
     return b;
   }
@@ -1283,6 +1295,9 @@ details.method .card { margin-top: 10px; }
   window.addEventListener("scroll", () => { if (RT_BTN && Math.abs(window.scrollY - RT_Y) > 40) closeRange(); }, { passive: true });
   window.addEventListener("resize", () => closeRange());
 
+  // "600-700 lb steers", "600-700 lb Value Added heifers", "Cows, Boner": what the range box is for
+  const rowTitle = (r, label) => /^(Steers|Heifers) /.test(r.item)
+    ? `${label(r)} lb ${vaOn() ? "Value Added " : ""}${r.item.split(" ")[0].toLowerCase()}` : label(r);
   function reportRows(rows, label) {
     return rows.map(r => {
       const few = r.head > 0 && r.head < FEW;
@@ -1292,7 +1307,7 @@ details.method .card { margin-top: 10px; }
         el("span", { class: "headsm" + (few ? " fewhead" : ""), text: `${fmtN(r.head)} head${few ? " ⚠" : ""}` })]);
       if (r.price == null) return el("tr", {}, [first, el("td", { class: "none", style: "text-align:left", text: "Not priced", colspan: "3" }),
         el("td", { class: "headcol", text: "0" })]);
-      return el("tr", { class: few ? "thin" : "" }, [first, el("td", { class: "price" + (r.head <= 2 ? " tiny" : "") }, r.range ? priceButton(r) : fmt$(r.price)),
+      return el("tr", { class: few ? "thin" : "" }, [first, el("td", { class: "price" + (r.head <= 2 ? " tiny" : "") }, r.range ? priceButton(r, rowTitle(r, label)) : fmt$(r.price)),
         changeCell(r.chg, null, r.chg_head), changeCell(r.chg_yr, r.pct_yr, r.chg_yr_head), head]);
     });
   }
