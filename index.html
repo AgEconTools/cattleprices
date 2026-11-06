@@ -166,6 +166,18 @@ th:last-child, td:last-child { padding-right: 0; }
 thead th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 td.price { font-weight: 700; font-size: 17px; }
 td.price.tiny { font-weight: 400; color: var(--muted); }   /* 1 or 2 head: shown as reported, not set like a market price */
+/* a price that opens its range (Josh, 11/6/2026): looks like the number, with a dotted underline */
+.pbtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
+        border-bottom: 1.5px dotted var(--muted); font-variant-numeric: tabular-nums; }
+.pbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+.rtip { position: absolute; z-index: 30; background: var(--surface); color: var(--ink); border: 1px solid var(--rule);
+        border-radius: 8px; padding: 10px 40px 10px 12px; font-size: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14); }
+.rtip dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px 14px; font-variant-numeric: tabular-nums; }
+.rtip dt { color: var(--muted); }
+.rtip dd { margin: 0; font-weight: 700; text-align: right; }
+.rtip .x { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; background: none;
+           color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; border-radius: 6px; }
+.rtip .x:hover { color: var(--ink); background: var(--accent-soft); }
 .chg { font-weight: 600; }
 .chg.up { color: var(--up); } .chg.down { color: var(--down); }
 .few { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; font-size: 11.5px; font-weight: 700;
@@ -1224,6 +1236,53 @@ details.method .card { margin-top: 10px; }
       [document.createTextNode((v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v))), p]);
     return el("td", { class: `chg ${cls}` }, [document.createTextNode(arrow + fmt$(Math.abs(v))), p]);
   }
+  // ---------- price range box (Josh, 11/6/2026) ----------
+  // tap (or hover with a mouse) on a This week price: where most head sold and the full range reported.
+  // One box at a time; it closes on a tap anywhere else, a second tap on the price, the ×, Escape, or scrolling.
+  const RT = el("div", { class: "rtip", hidden: "", role: "dialog", "aria-label": "Price range" });
+  let RT_BTN = null, RT_PIN = false, RT_Y = 0, RT_HIDE = null;
+  const lo$ = v => "$" + Math.floor(v).toLocaleString(), hi$ = v => "$" + Math.ceil(v).toLocaleString();
+  const span$ = ([a, b]) => Math.floor(a) === Math.ceil(b) ? lo$(a) : `${lo$(a)}-${hi$(b)}`;
+  const rangeText = r => [r.most && r.head >= FEW ? `Most sold ${span$(r.most)}` : null, r.range ? `Full range ${span$(r.range)}` : null].filter(Boolean);
+  function closeRange(focusBack) {
+    clearTimeout(RT_HIDE);
+    if (!RT_BTN) return;
+    RT.hidden = true; RT_BTN.setAttribute("aria-expanded", "false");
+    if (focusBack) RT_BTN.focus();
+    RT_BTN = null; RT_PIN = false;
+  }
+  function openRange(btn, r, pin) {
+    clearTimeout(RT_HIDE);
+    if (RT_BTN && RT_BTN !== btn) closeRange();
+    const x = el("button", { type: "button", class: "x", "aria-label": "Close", tabindex: "-1", text: "×" });
+    x.addEventListener("click", () => closeRange(true));
+    RT.replaceChildren(x, el("dl", {}, [
+      ...(r.most && r.head >= FEW ? [el("dt", { text: "Most sold" }), el("dd", { text: span$(r.most) })] : []),
+      el("dt", { text: "Full range" }), el("dd", { text: span$(r.range) })]));
+    if (!RT.isConnected) document.body.append(RT);
+    RT.hidden = false; RT_BTN = btn; RT_PIN = RT_PIN || !!pin; RT_Y = window.scrollY;
+    btn.setAttribute("aria-expanded", "true");
+    const b = btn.getBoundingClientRect(), tw = RT.offsetWidth, th = RT.offsetHeight;
+    const left = Math.max(8, Math.min(window.innerWidth - tw - 8, b.left + b.width / 2 - tw / 2));
+    const top = b.bottom + th + 8 > window.innerHeight && b.top - th - 8 > 0 ? b.top - th - 6 : b.bottom + 6;
+    RT.style.left = left + window.scrollX + "px"; RT.style.top = top + window.scrollY + "px";
+  }
+  function priceButton(r) {
+    const b = el("button", { type: "button", class: "pbtn", "aria-expanded": "false", "aria-haspopup": "dialog",
+      "aria-label": `${fmt$(r.price)}. ${rangeText(r).join("; ")}`, text: fmt$(r.price) });
+    b.addEventListener("click", () => { if (RT_BTN === b && RT_PIN) closeRange(); else openRange(b, r, true); });
+    // a mouse opens it on hover; leaving closes it unless it was clicked open (or the pointer moves into it)
+    b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse" && !(RT_PIN && RT_BTN !== b)) openRange(b, r, false); });
+    b.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !RT_PIN) RT_HIDE = setTimeout(() => closeRange(), 200); });
+    return b;
+  }
+  RT.addEventListener("pointerenter", () => clearTimeout(RT_HIDE));
+  RT.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !RT_PIN) RT_HIDE = setTimeout(() => closeRange(), 200); });
+  document.addEventListener("pointerdown", e => { if (RT_BTN && !RT.contains(e.target) && !RT_BTN.contains(e.target)) closeRange(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && RT_BTN) closeRange(true); });
+  window.addEventListener("scroll", () => { if (RT_BTN && Math.abs(window.scrollY - RT_Y) > 40) closeRange(); }, { passive: true });
+  window.addEventListener("resize", () => closeRange());
+
   function reportRows(rows, label) {
     return rows.map(r => {
       const few = r.head > 0 && r.head < FEW;
@@ -1233,7 +1292,7 @@ details.method .card { margin-top: 10px; }
         el("span", { class: "headsm" + (few ? " fewhead" : ""), text: `${fmtN(r.head)} head${few ? " ⚠" : ""}` })]);
       if (r.price == null) return el("tr", {}, [first, el("td", { class: "none", style: "text-align:left", text: "Not priced", colspan: "3" }),
         el("td", { class: "headcol", text: "0" })]);
-      return el("tr", { class: few ? "thin" : "" }, [first, el("td", { class: "price" + (r.head <= 2 ? " tiny" : ""), text: fmt$(r.price) }),
+      return el("tr", { class: few ? "thin" : "" }, [first, el("td", { class: "price" + (r.head <= 2 ? " tiny" : "") }, r.range ? priceButton(r) : fmt$(r.price)),
         changeCell(r.chg, null, r.chg_head), changeCell(r.chg_yr, r.pct_yr, r.chg_yr_head), head]);
     });
   }
@@ -1241,6 +1300,7 @@ details.method .card { margin-top: 10px; }
     el("th", { text: vs }), el("th", { text: "vs. a year ago" + same }), el("th", { class: "headcol", text: "Head" })]));
 
   function renderWeek() {
+    closeRange();
     const r = wk().report, mk = market();
     // no subtitle or note under the week toggle: the pickers, the strip at the top, the toggle's "(so far)"
     // and the table titles already say where, which week and $/cwt (Josh, 11/5/2026)
@@ -1289,6 +1349,7 @@ details.method .card { margin-top: 10px; }
     renderFacts(r);
     const notes = [];
     notes.push(`Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    notes.push("Tap or hover on a price for its range. Most sold is where the middle 80% of head sold, by each lot's average price (shown at 20 head or more); full range is the lowest to highest price reported.");
     if (vaOn()) notes.push("Cull cow and bull prices, the head counts and the weeks compared are the same as for regular lots.");
     // graded, special and board sales: the footer says they're out and the About box lists any recent ones; Virginia,
     // whose prices are graded sales, says which aren't in (Fable, 11/5/2026; Josh, 11/5/2026)
