@@ -319,7 +319,6 @@ details.method .card { margin-top: 10px; }
 .sold span { font-weight: 400; color: var(--muted); }
 .fewhead { color: var(--warn-ink); font-weight: 700; }
 .chg.muted { color: var(--muted); font-weight: 500; }
-.legend-same { margin: 2px 0 6px; font-size: 13px; font-weight: 400; color: var(--muted); }
 .legend-few { margin: 0 0 6px; font-size: 13px; color: var(--warn-ink); font-weight: 600; }
 .short { margin: 0; font-size: 13.5px; color: var(--muted); }
 
@@ -403,10 +402,9 @@ details.method .card { margin-top: 10px; }
   </section>
   <section class="panel" id="week" role="tabpanel" aria-labelledby="t-week">
     <div>
-      <h2>What are cattle prices?</h2>
-      <p class="sub" id="week-sub"></p>
+      <h2>Cattle Prices</h2>
     </div>
-    <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div><p class="note" id="week-sofar"></p></div>
+    <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div></div>
     <div class="controls"><div class="seg" id="week-class"></div></div>
     <div class="card tablewrap"><table id="week-feeders"></table></div>
     <div class="card tablewrap"><table id="week-slaughter"></table></div>
@@ -417,7 +415,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="value" role="tabpanel" aria-labelledby="t-value" hidden>
     <div>
       <h2>What's my calf worth?</h2>
-      <p class="sub" id="value-sub">Based on Medium and Large #1 and #2 calves sold the last two weeks.</p>
+      <p class="sub" id="value-sub">#1 and #2 calves sold the last two weeks.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
@@ -438,11 +436,6 @@ details.method .card { margin-top: 10px; }
       <ul class="legend" id="curve-legend"></ul>
       <div class="chart" id="curve-chart"></div>
     </div>
-    <details class="method"><summary>Calculation methods</summary><p class="note" id="value-note">Prices are the average for Medium and Large #1 and #2 calves by 50-lb weight class over the last
-      two sale weeks, regular lots only. A smooth line through the class averages (the statewide price-by-weight line) prices
-      the calf at its own weight instead of at the middle of its class; the value is that price times the weight. The
-      year-ago figure uses the same class, the same two weeks last year and last year's line. Sell or keep, Purchase
-      planner and Steer or bull price a calf the same way.</p></details>
   </section>
 
   <section class="panel" id="trend" role="tabpanel" aria-labelledby="t-trend" hidden>
@@ -465,7 +458,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
     <div>
       <h2>Sell now, or keep and add weight? <span class="chip-scope">Statewide</span></h2>
-      <p class="sub" id="keep-sub">Sell this week, or keep 30, 60 or 90 days? Estimate, not a forecast.</p>
+      <p class="sub" id="keep-sub">Estimate, not a forecast.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
@@ -510,7 +503,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="buy" role="tabpanel" aria-labelledby="t-buy" hidden>
     <div>
       <h2>Thinking of buying calves? <span class="chip-scope">Statewide</span></h2>
-      <p class="sub" id="buy-sub">What calves you'd buy, how long you'd keep them, what they'd bring. Estimate, not a forecast.</p>
+      <p class="sub" id="buy-sub">Estimate, not a forecast.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
@@ -591,10 +584,9 @@ details.method .card { margin-top: 10px; }
     <p class="vasame" hidden>This tab is the same for regular and Value Added lots: Value Added applies to feeder calves.</p>
     <div class="cows" id="cows-cards"></div>
     <p class="note" id="cows-note"></p>
-    <details class="method"><summary>Calculation methods</summary><p class="note">Average dressing, all three cull grades, the last three sale weeks. Value per head is the price
-      times the average weight sold. The change from a year ago is calculated at today's average weight, so a lighter or
-      heavier mix of cows isn't counted as a price change. Slaughter bulls (Yield Grade 1 and 1-2, Average dressing) pool the
-      same three sale weeks.</p></details>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Value per head is the price times the average weight
+      sold. The change from a year ago is figured at today's average weight, so a lighter or heavier mix of cows isn't
+      counted as a price change.</p></details>
   </section>
 
   <section class="panel" id="season" role="tabpanel" aria-labelledby="t-season" hidden>
@@ -640,16 +632,14 @@ details.method .card { margin-top: 10px; }
     <p id="foot-src">Prices come from USDA Agricultural Marketing Service auction reports.</p>
     <details class="method" id="foot-how"><summary>How these numbers are calculated</summary>
       <ul>
-        <li id="foot-lots">Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per
-          hundredweight (cwt). Only regular lots count (lots USDA lists without a description such as Value Added, Fancy or Fleshy); #3 calves are left out too. Cull cows
-          use Average dressing. Averages are weighted by head; USDA's own report averages are weighted by pounds, so the two
-          can differ by a few cents.</li>
-        <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span> Pick one auction to see its own prices.
+        <li id="foot-lots">Feeder prices are Medium and Large frame calves graded #1, #1-2 and #2, in dollars per hundredweight
+          (cwt). Only regular lots count: Value Added, Fancy, Fleshy and other described lots, and #3 calves, are left out.
+          Cull cows and slaughter bulls are Average dressing. Prices are averaged by head; USDA's report averages are weighted
+          by pounds, so the two can differ by a few cents.</li>
+        <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span>
           <span id="foot-specials">Graded, special and board sales are not included.</span></li>
-        <li>Market reporters grade and price part of each sale (often 40-90%, depending on the auction). Prices here come
-          only from the cattle they priced; the "About this sale" box on This week gives that share for the market you pick.
-          Small weight classes can rest on a handful of head, so head counts are shown. Likely data-entry errors are
-          left out.</li>
+        <li>Market reporters grade and price part of each sale (often 40-90%), and prices here come only from the cattle
+          they priced; the About box on This week gives that share. Likely data-entry errors are left out.</li>
       </ul>
     </details>
     <div class="legal">
@@ -1120,8 +1110,9 @@ details.method .card { margin-top: 10px; }
       if (mh < FEW) ans.append(warnBox(`Few sales: only ${fmtN(mh)} head of ${grp} lb bulls or steers sold alongside each other in the last 12 months. Treat this as a rough guide.`));
       if (now.head < FEW) ans.append(warnBox(`Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
     }
-    $("#bull-chart-sub").textContent = `Steer price minus bull price, ${day(C.start, true)} to ${day(C.end, true)}. The per-head answer above applies the percentage to the last two weeks' steer price. ` +
-      `Medium and Large #1 and #2, regular lots, matched within each sale. A group is flagged when either count is under ${FEW} head.`;
+    $("#bull-chart-sub").textContent = `Steer price minus bull price, ${day(C.start, true)} to ${day(C.end, true)}, comparing only steers and bulls of the same 50-lb class and grade at the same sale. ` +
+      `The per-head answer applies that percentage gap to the last two weeks' steer price. A group is flagged when either count is under ${FEW} head. ` +
+      "It doesn't count differences in gain, health or death loss after castration.";
     premiumBars($("#bull-chart"), rows, Rw ? grp : null);
     // the same comparison each year, for the chosen weight group
     const Y = (C.years[grp] || []).filter(r => r[3] > 0 && r[4] > 0);
@@ -1137,8 +1128,6 @@ details.method .card { margin-top: 10px; }
       })));
     const notes = [];
     if (!isState()) notes.push("Shown statewide so enough matched lots are compared.");
-    notes.push("Only sales where steers and bulls of the same 50-lb class and grade both sold are compared, so differences in weight, grade or barn don't creep in. " +
-      "The per-head figures use the last two weeks' steer price and the last 12 months' gap. They don't count differences in gain, health or death loss after castration; the extra-weight box is there for a bull's added gain.");
     $("#bull-note").textContent = notes.join(" ");
   }
 
@@ -1241,19 +1230,14 @@ details.method .card { margin-top: 10px; }
 
   function renderWeek() {
     const r = wk().report, mk = market();
-    $("#week-sub").textContent = (isState()
-      ? `All reporting ${stName()} auctions, week of ${span(r.week[0], r.week[1])}${reported(r)}. `
-      : `${mk.name} sale on ${day(r.sale, true)}. `) + "Dollars per hundredweight (cwt). " +
-      `${prevWeek() || !isState() ? "The week before" : "Last week"} is the week of ${day(r.prior)}; a year ago is the week of ${day(r.year_ago, true)}.`;
+    // no subtitle or note under the week toggle: the pickers, the strip at the top, the toggle's "(so far)"
+    // and the table titles already say where, which week and $/cwt (Josh, 11/5/2026)
     // week picker: the latest week (marked "so far" while barns are still to report) or the one before
     $("#week-pick-row").hidden = !hasPrev();
     if (hasPrev()) {
       const L = D.report.state, P = D.prev.state.report;
       seg($("#week-pick"), [{ v: "latest", t: `Week of ${day(L.week[0])}${soFar(L) ? " (so far)" : ""}` },
                             { v: "prev", t: `Week of ${day(P.week[0])}` }], () => S.week, v => S.week = v);
-      const sf = $("#week-sofar");
-      sf.hidden = !soFar(r);
-      if (soFar(r)) sf.textContent = `${r.reports} of ${r.expected} auctions have reported so far this week; prices and head counts may change as more report. The week of ${day(P.week[0])} is complete.`;
     }
     // a barn's columns name its sale and "the week before" it (audit 11/3/2026: Glasgow's Oct. 22 monthly sale read
     // "This week" on Nov. 3); statewide, the changes say they compare the same barns, since flipping the week picker
@@ -1261,7 +1245,8 @@ details.method .card { margin-top: 10px; }
     const now = !isState() ? `${day(r.sale)} sale` : prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week";
     const vs = !isState() || prevWeek() ? "vs. week before" : "vs. last week";
     const same = isState() ? ", same barns" : "";
-    const sameLine = isState() ? el("p", { class: "legend-same", text: "Changes compare only the auctions that sold that class both weeks." }) : null;
+    // no "same auctions" line under the table title: the column headings ("same barns") and the note under
+    // the tables say it; the legend says only what the ⚠ and grey mean (Josh, 11/5/2026)
     // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
     if (B.meta.no_cows && S.wcls === "Cows") S.wcls = "Steers";       // no cull cow sales in this state's reports
     // a barn whose sale had no feeder cattle (Missouri's cow sales) opens on Cows & bulls, not an empty feeder
@@ -1282,19 +1267,20 @@ details.method .card { margin-top: 10px; }
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
     const anyThin = !cows && noFeeders ? false : (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
     if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`${vaOn() ? "Value Added feeder" : "Feeder"} ${S.wcls.toLowerCase()}, #1 and #2, $/cwt`),
-      sameLine, anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey prices rest on 1 or 2 head; grey changes compare with a thin week." }) : null]),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. Gray means few sales." }) : null]),
       thead("Weight (lb)", now, vs + same, same), el("tbody", {}, noFeeders
         ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
         : reportRows(feed, x => x.item.split(" ")[1])));
     if (cows) $("#week-slaughter").replaceChildren(el("caption", {}, [document.createTextNode("Cull cows and slaughter bulls, $/cwt"),
-      sameLine, anyThin ? el("p", { class: "legend-few", text: "⚠ under 20 head: one or two lots can swing the price. Grey prices rest on 1 or 2 head; grey changes compare with a thin week." }) : null]),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. Gray means few sales." }) : null]),
       thead("Class", now, vs + same, same), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
-    notes.push(`Prices are Medium and Large frame #1 and #2 calves (#1-2 lots too), ${vaOn() ? "Value Added lots only" : "regular lots"}, weighted by head; cull cows Average dressing. Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
+    notes.push(`Each change compares only auctions that priced that class in both weeks. "${vs[4].toUpperCase() + vs.slice(5)}" is the week of ${day(r.prior)}; "a year ago" is the week of ${day(r.year_ago, true)}.`);
     if (vaOn()) notes.push("Cull cow and bull prices, the head counts and the weeks compared are the same as for regular lots.");
-    notes.push(D.meta.graded ? "Board sales and other graded sales aren't in these prices. Any reported in the last three weeks are listed in the About box with links to their USDA reports."   // Virginia (Fable, 11/5/2026)
-      : "Graded, special and board sales are reported separately by USDA and are never part of these figures or any other tab: graded sales sort calves into uniform, often weaned and vaccinated lots; board sales sell load lots for delivery weeks later. Any reported in the last three weeks are listed in the About box with links to their USDA reports.");
+    // graded, special and board sales: the footer says they're out and the About box lists any recent ones; Virginia,
+    // whose prices are graded sales, says which aren't in (Fable, 11/5/2026; Josh, 11/5/2026)
+    if (D.meta.graded) notes.push("Board sales and other graded sales aren't in these prices.");
     $("#week-note").textContent = notes.join(" ");
   }
 
@@ -1308,7 +1294,7 @@ details.method .card { margin-top: 10px; }
     const items = [];
     const add = (k, v, sub, wide) => items.push(el("div", wide ? { class: "wide" } : {}, [el("dt", { text: k }), el("dd", {}, [typeof v === "string" ? document.createTextNode(v) : v, sub ? el("small", { text: sub }) : null])]));
     const here = isState() ? weekWord(r) : "this sale";
-    add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? reported(r).slice(2, -1)
+    add("Cattle sold", `${fmtN(r.receipts.week)} head`, isState() ? (soFar(r) ? "" : reported(r).slice(2, -1))   // "so far" count only in the top strip
       : `Sold on ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
     if (YTD) add(`Sold so far in ${YTD.yr}`, `${fmtN(YTD.n)} head`,
       YTD.pct != null ? `${Math.abs(YTD.pct).toFixed(1)}% ${YTD.pct >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "");
@@ -1334,7 +1320,7 @@ details.method .card { margin-top: 10px; }
     why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
       el("dl", {}, items),
-      el("p", { class: "gmix" }, [document.createTextNode("Reporters grade differently from barn to barn, so prices here combine #1 and #2 calves. " + (vaOn() ? "These are Value Added lots only; regular, #3, fancy and fleshy lots aren't in the averages. " : "#3 and Value Added lots aren't in the averages. ")), why]),
+      el("p", { class: "gmix" }, [document.createTextNode("Reporters grade differently from barn to barn, so prices here combine #1 and #2 calves. " + (vaOn() ? "These are Value Added lots only. " : "")), why]),
       ...[specialsNote()].filter(Boolean));   // null (no special sales, or a barn view) would print as "null" (bug 11/2/2026)
   }
   // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
@@ -1365,7 +1351,7 @@ details.method .card { margin-top: 10px; }
     const ans = $("#value-answer");
     const cls = (vaOn() ? "Value Added " : "") + S.vcls.toLowerCase().replace(/s$/, "");
     // the subtitle carries the dates, so the answer doesn't repeat them
-    $("#value-sub").textContent = `Based on Medium and Large #1 and #2 ${vaOn() ? "Value Added " : ""}calves sold ${span(c.now[0], lastDay(c.now[1]))}, compared with the same two weeks last year.`;
+    $("#value-sub").textContent = `#1 and #2 ${vaOn() ? "Value Added " : ""}calves sold ${span(c.now[0], lastDay(c.now[1]))} vs. the same two weeks last year.`;
     if (!a) {
       // no sales at this 50-lb class: say so; the page never prices a class from its neighbor (Josh, 11/3/2026:
       // "I want to be sure I'm not creating prices"); This week's 100-lb row can still show sales from the other half
@@ -1392,9 +1378,9 @@ details.method .card { margin-top: 10px; }
       // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
       calc.push(`Reported ${lo}-${lo + 50} lb ${vaOn() ? "Value Added " : ""}class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` +
         (b ? `; a year ago, ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head.` : "."));
-      calc.push(`Prices are reported by 50-lb class. A smooth line through the class averages prices ${an(w)} ${w}-lb calf at ${w} lb ` +
-        `rather than at the middle of the ${lo}-${lo + 50} lb class, so heavier calves bring a little less per pound within a class and the value doesn't jump at ${lo + 50} lb. ` +
-        "Last year's figure uses last year's line. Sell or keep, Purchase planner and Steer or bull price a calf the same way.");
+      calc.push(`A smooth line through the class averages prices ${an(w)} ${w}-lb calf at ${w} lb, not at the middle of the ${lo}-${lo + 50} lb class, ` +
+        `so heavier calves bring a little less per pound and the value doesn't jump at ${lo + 50} lb. ` +
+        "The year-ago figure uses last year's line. Sell or keep, Purchase planner and Steer or bull price a calf the same way.");
       // stays open across redraws (slider, class, resize) once the viewer opens it; added after any warnings
       const det = el("details", { class: "method calc" }, [el("summary", { text: "How this value is calculated" }), ...calc.map(t => el("p", { class: "note", text: t }))]);
       det.open = !!S.calcOpen;
@@ -1430,7 +1416,7 @@ details.method .card { margin-top: 10px; }
     if (!groups.includes(S.tgrp)) S.tgrp = groups.includes("500-600") ? "500-600" : groups[0];
     chips($("#trend-weight"), groups.map(g => ({ v: g, t: `${g} lb` })), () => S.tgrp, v => S.tgrp = v);
     const weekly = Y.by === "week", yr = Y.year, base = D.meta.base_years;
-    $("#trend-sub").textContent = `${S.tgrp} lb ${vaOn() ? "Value Added " : ""}feeder ${S.tcls.toLowerCase()}, Medium and Large #1 and #2, ${isState() ? `all reporting ${stName()} auctions` : mk.name}. ` +
+    $("#trend-sub").textContent = `${S.tgrp} lb ${vaOn() ? "Value Added " : ""}feeder ${S.tcls.toLowerCase()}, #1 and #2, ${isState() ? `all reporting ${stName()} auctions` : mk.name}. ` +
       `${weekly ? "Weekly" : "Monthly"} average, $/cwt.`;
     const g = Y[S.tcls] && Y[S.tcls][S.tgrp];
     if (!g) { $("#trend-chart").replaceChildren(el("p", { class: "none", text: "No sales in this weight group this year." }));
@@ -1614,7 +1600,7 @@ details.method .card { margin-top: 10px; }
       if (P.grossLo < P.grossHi || (P.beLo != null && P.beLo < P.beHi)) notes.push(el("p", { class: "note", text:
         `Across the ${yrsLabel()} seasonal patterns: the value ranges ${fmt$(P.grossLo, false)} to ${fmt$(P.grossHi, false)}` +
         (P.beLo != null && P.beLo < P.beHi ? `, and keeping comes out ahead if gain costs under ${P.beLo <= 0 ? "never" : fmt$(P.beLo) + "/lb"} to ${P.beHi <= 0 ? "never" : fmt$(P.beHi) + "/lb"}` : "") + `. The chart below shows the same range for each sale weight.` }));
-      notes.push(el("p", { class: "note", text: "The break-even doesn't include interest, commission, shrink or freight; add those to your cost of gain." }));
+      notes.push(el("p", { class: "note", text: "The break-even doesn't include interest, labor, commission, shrink or freight; add those to your cost of gain." }));
       $("#keep-calc-notes").replaceChildren(...notes);
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb` }),
@@ -1669,7 +1655,7 @@ details.method .card { margin-top: 10px; }
     $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push("This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, labor and marketing costs aren't included, so count them in your cost of gain. Death loss starts at 1% here for calves you raised; Purchase planner starts at 2% for bought calves. Dates count from today. The discount for a heavier calf comes from a smooth line through the last two weeks' statewide prices by weight.");
+    notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Death loss starts at 1% for calves you raised (Purchase planner uses 2% for bought calves). Dates count from today.");
     $("#keep-note").textContent = notes.join(" ");
     renderVog(cls);
   }
@@ -1699,8 +1685,7 @@ details.method .card { margin-top: 10px; }
     vogChart($("#keep-vog-chart"), rows, S.cog);
     const best = rows.reduce((a, b) => (b.be ?? -1) > (a.be ?? -1) ? b : a);
     let t = best.be > 0 ? `Most per pound of gain: selling at ${fmtN(best.w2)} lb, about ${best.when}, comes out ahead if gain costs under ${fmt$(best.be)}/lb.` : "Keeping loses money at every sale weight shown, even if the gain were free.";
-    if (S.cog != null) { const n = rows.filter(r => r.be >= S.cog).length; t += n ? ` At your ${fmt$(S.cog)}/lb, ${n} of ${rows.length} sale weights pay.` : ` At your ${fmt$(S.cog)}/lb, none of these sale weights pay.`; }
-    t += " Before interest, commission, shrink and freight.";
+    if (S.cog != null) { const n = rows.filter(r => r.be >= S.cog).length; t += n ? ` At your ${fmt$(S.cog)}/lb, ${n} of ${rows.length} sale weights come out ahead.` : ` At your ${fmt$(S.cog)}/lb, none of these sale weights come out ahead.`; }
     $("#keep-vog-best").textContent = t;
   }
 
@@ -1715,8 +1700,8 @@ details.method .card { margin-top: 10px; }
     const bull = B.meta.no_cows ? {} : (D.bulls || {})[S.market] || {}, bn = bull.now;
     const cowSeason = D.season.series["Cull cows"] ? el("button", { type: "button", class: "linkish", text: "See the seasonal trend for cull cows" }) : null;
     if (cowSeason) cowSeason.addEventListener("click", () => { S.scls = "Cows"; setTab("season", true); window.scrollTo({ top: 0 }); });
-    const bullAgo = bull.ago && bn && Math.min(bn.head, bull.ago.head) >= FEW ? `, ${fmt$(bull.ago.price)}/cwt in the same weeks a year ago` : "";
-    $("#cows-note").replaceChildren(...(bn && bn.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1 and 1-2) brought ${fmt$(bn.price)}/cwt over the same three sale weeks on ${fmtN(bn.head)} head${bullAgo}. `), bn.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), ...(cowSeason ? [cowSeason] : []));
+    const bullAgo = bull.ago && bn && Math.min(bn.head, bull.ago.head) >= FEW ? `, ${fmt$(bull.ago.price)}/cwt a year ago` : "";
+    $("#cows-note").replaceChildren(...(bn && bn.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1 and 1-2) brought ${fmt$(bn.price)}/cwt on ${fmtN(bn.head)} head${bullAgo}. `), bn.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), ...(cowSeason ? [cowSeason] : []));
     if (B.meta.no_cows) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: `The ${stName()} sales used here report feeder cattle only, so there are no cull cow prices for ${stName()}.` })); return; }
     if (!rows.length) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: "No cull cows priced in the last three weeks." })); return; }
     $("#cows-cards").replaceChildren(...rows.map(r => {
@@ -1865,8 +1850,8 @@ details.method .card { margin-top: 10px; }
       aria: `Purchase planner: ${useM ? "estimated margin" : "break-even cost of gain"} by days kept, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stName()}`, empty: "Too heavy to price at any keep length." });
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push(`Death loss starts at 2% for bought calves, which are hauled and mixed with others; Sell or keep starts at 1% for home-raised calves. Change it to fit your experience. ` +
-      `This is an estimate, not a forecast. It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
+    notes.push(`Death loss starts at 2% for bought calves, which are hauled and mixed with others; Sell or keep uses 1% for home-raised calves. Change it to fit your experience. ` +
+      `It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
       `The chart's shaded band repeats the estimate with the month of sale at its lowest and highest level in ${yrsLabel()} (today's month held at its average).`);
     $("#buy-note").textContent = notes.join(" ");
   }
@@ -1882,7 +1867,6 @@ details.method .card { margin-top: 10px; }
       S.sgrp = groups.reduce((b, g) => Math.abs(parseInt(g) - parseInt(S.sgrp)) < Math.abs(parseInt(b) - parseInt(S.sgrp)) ? g : b, groups[0]);
     chips($("#season-weight"), groups.map(g => ({ v: g, t: `${g} lb` })), () => S.sgrp, v => S.sgrp = v);
     const yrs = Sx.used_years;
-    const what = cows ? "Cull cows (Boner, Average dressing)" : `${S.sgrp} lb feeder ${S.scls.toLowerCase()}, Medium and Large #1 and #2`;
     $("#season-sub").textContent = `${cows ? "Boner cows (Average dressing)" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: % above or below a typical month, ${yrs[0]}-${yrs[yrs.length - 1]}, ${stName()}.`;
     const rows = Sx.series[cows ? "Cull cows" : `${S.scls} ${S.sgrp}`];
     const by = [...rows].sort((a, b) => b.index - a.index);
@@ -1964,19 +1948,18 @@ details.method .card { margin-top: 10px; }
     VIEWS[S.tab]();
   }
   // wording that names the lots, for the tabs that change with the view
-  const KEEP_SUB = "Sell this week, or keep 30, 60 or 90 days? Estimate, not a forecast.";
-  const BUY_SUB = "What calves you'd buy, how long you'd keep them, what they'd bring. Estimate, not a forecast.";
-  let VALUE_NOTE = null, FOOT_LOTS = null;
+  const KEEP_SUB = "Estimate, not a forecast.";
+  const BUY_SUB = "Estimate, not a forecast.";
+  let FOOT_LOTS = null;
   function lotTexts() {
     const va = vaOn() || (S.lots === "va" && PLAIN_TABS.has(S.tab) && vaReady());
     $("#keep-sub").textContent = KEEP_SUB + (va ? " Assumes the calf sells as a Value Added lot now and later." : "");
     $("#buy-sub").textContent = BUY_SUB + (va ? " Assumes the calves are bought and sold as Value Added lots." : "");
-    VALUE_NOTE = VALUE_NOTE || $("#value-note").textContent; FOOT_LOTS = FOOT_LOTS || $("#foot-lots").textContent;
-    $("#value-note").textContent = va ? VALUE_NOTE.replace("regular lots only", "Value Added lots only") : VALUE_NOTE;
-    $("#foot-lots").textContent = va ? "Feeder prices pool Medium and Large frame calves graded #1, #1-2 and #2, weighted by head, in dollars per " +
-      "hundredweight (cwt). With Value Added lots picked, only Value Added lots count; otherwise only regular lots (no Value Added, fancy or " +
-      "fleshy lots). #3 calves are left out either way. Steer or bull and Cull cows use regular lots either way. Cull cows use Average dressing. " +
-      "Averages are weighted by head; USDA's own report averages are weighted by pounds, so the two can differ by a few cents." : FOOT_LOTS;
+    FOOT_LOTS = FOOT_LOTS || $("#foot-lots").textContent;
+    $("#foot-lots").textContent = va ? "Feeder prices are Medium and Large frame calves graded #1, #1-2 and #2, in dollars per hundredweight " +
+      "(cwt). With Value Added picked, only Value Added lots count; otherwise only regular lots. #3 calves are left out either way, and Steer or " +
+      "bull and Cull cows use regular lots either way. Cull cows and slaughter bulls are Average dressing. Prices are averaged by head; USDA's " +
+      "report averages are weighted by pounds, so the two can differ by a few cents." : FOOT_LOTS;
   }
   // the fade at the strip's right edge goes away once the strip is scrolled to its end
   const tabFade = () => { const w = $("#tablist"); $(".tabs").classList.toggle("end", w.scrollLeft + w.clientWidth >= w.scrollWidth - 2); };
