@@ -698,7 +698,7 @@ details.method .card { margin-top: 10px; }
   const an = n => /^8\d\d$/.test(String(n)) || /^(11|18)\d$/.test(String(n)) ? "an" : "a";  // "an 800-lb", "a 550-lb"
   // dates counted from today on the calendar (not 24-hour blocks, which slip a day across a time change)
   const today = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
-  const STALE_DAYS = 4;   // Friday's build is 3 days old on Monday morning; one missed weekday more shows the banner
+  const STALE_DAYS = 2;   // builds run every day (weekends too since 11/2/2026): two missed mornings show the banner (Josh, 11/6/2026; was 4)
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const lastDay = s => s > D.meta.through ? D.meta.through : s;      // a window's end, never after the latest sale
   const fmtN = v => v == null ? "–" : v.toLocaleString("en-US");
@@ -1160,7 +1160,7 @@ details.method .card { margin-top: 10px; }
     // state's, so it follows the state picker; the weekdays say why a Friday visit still shows Wednesday
     const upd = (D.meta.generated || "").slice(0, 10);
     $("#asof").textContent = `${/^\d{4}-\d\d-\d\d$/.test(upd) ? `Updated ${wday(upd)}. ` : ""}Latest sales: ${wday(D.meta.through)}.`;
-    // the page normally rebuilds every morning (weekends too since 11/2/2026); past STALE_DAYS (three missed mornings) it says so
+    // the page normally rebuilds every morning (weekends too since 11/2/2026); past STALE_DAYS (two missed mornings) it says so
     // (Josh, 11/1/2026), counted from when the page was built, not the last sale (holiday weeks have no sales)
     const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
     $("#stale-row").hidden = age <= STALE_DAYS;
@@ -1469,8 +1469,8 @@ details.method .card { margin-top: 10px; }
 
   // ---------- sell now or keep ----------
   const KEEP = [30, 60, 90];
-  // price at exactly w lb: the 50-lb class average (centered on the class midpoint), moved along the
-  // statewide slide to w, so the value doesn't jump at each 50-lb line
+  // price at exactly w lb: the last two weeks' 50-lb class average (centered on the class midpoint), moved along
+  // the statewide slide (its shape fit on 8 weeks of sales) to w, so the value doesn't jump at each 50-lb line
   function priceAt(pts, cls, w) {
     const lo = Math.floor(w / 50) * 50, row = pts.find(p => p[0] === lo);
     if (!row) return null;
@@ -1482,8 +1482,8 @@ details.method .card { margin-top: 10px; }
     const i = Math.min(L.length - 2, Math.floor((w - L[0][0]) / 10)), [x0, y0] = L[i], [x1, y1] = L[i + 1];
     return y0 + (y1 - y0) * (w - x0) / (x1 - x0);
   }
-  const slideAt = (cls, w) => slideOn(D.slide[cls], w);                       // the last two weeks' line
-  const slideAgoAt = (cls, w) => slideOn((D.slide_ago || D.slide)[cls], w);  // the same two weeks a year ago
+  const slideAt = (cls, w) => slideOn(D.slide[cls], w);                       // shape: the last 8 weeks' sales (export slide())
+  const slideAgoAt = (cls, w) => slideOn((D.slide_ago || D.slide)[cls], w);  // the same 8 weeks a year ago
   // a class average tilted along a line: the price at exactly w lb (the class sits at its midpoint)
   const onLine = (price, lo, w, at) => { const a = at(w), b = at(lo + 25); return a && b ? price * a / b : price; };
   // seasonal index for weight w, blended between the 100-lb groups' midpoints so
