@@ -361,7 +361,7 @@ details.method .card { margin-top: 10px; }
         <select id="state" class="st"></select>
       </div>
       <div class="picker">
-        <label for="market">Market</label>
+        <label for="market">Auction</label>
         <select id="market"></select>
       </div>
       <div class="picker lots-pick">
@@ -602,11 +602,11 @@ details.method .card { margin-top: 10px; }
       <p style="margin:0;font-weight:600" id="season-summary"></p>
       <div class="chart" id="season-chart"></div>
     </div>
-    <details class="method"><summary>Calculation methods</summary><p class="note">Each bar is how far that month's price usually runs above or below that year's normal level
-      (a centered 12-month average), averaged over the years shown. The long-run price trend is removed first, so a
-      rising market doesn't make the late months look better than they were, and the grade mix is held fixed. Thin
-      lines on each bar show the lowest and highest year. Where the heaviest weight groups have too few sales for a pattern,
-      the nearest lighter group with a pattern is used.</p></details>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Each bar shows how far that month's price usually runs above or below the average of the 12
+      months around it, averaged over the years shown. Measuring against the months around it keeps a rising market
+      from making the late months look better than they were. Changes in the grade mix are taken out too. Thin lines
+      on each bar show the lowest and highest year. A heavy weight group with too few sales for a pattern uses the
+      nearest lighter group's pattern.</p></details>
   </section>
 </main>
 
@@ -639,7 +639,8 @@ details.method .card { margin-top: 10px; }
         <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span>
           <span id="foot-specials">Graded, special and board sales are not included.</span></li>
         <li>Market reporters grade and price part of each sale (often 40-90%), and prices here come only from the cattle
-          they priced; the About box on This week gives that share. Likely data-entry errors are left out.</li>
+          they priced; the About box on This week gives that share. Likely reporting errors are left out, such as a price more
+          than three times, or less than a fifth of, the national typical price for similar cattle that month.</li>
       </ul>
     </details>
     <div class="legal">
@@ -1002,7 +1003,7 @@ details.method .card { margin-top: 10px; }
     const bw = (W - m.l - m.r) / 12;
     const Y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
     const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
-      "aria-label": label || "Seasonal price index by month" });
+      "aria-label": label || "Seasonal pattern by month" });
     svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${H - m.b}` }));
     for (const t of ticks) {
       const tx = svgEl("text", { x: m.l - 7, y: Y(t) + 4, "text-anchor": "end" }); tx.textContent = t === 100 ? "0%" : (t > 100 ? "+" : "−") + Math.abs(t - 100) + "%"; svg.append(tx);
@@ -1010,6 +1011,7 @@ details.method .card { margin-top: 10px; }
     }
     const tip = el("div", { class: "tip", hidden: "", "aria-live": "polite" });
     const shows = []; let cur = new Date().getMonth();      // the keyboard starts at this month
+    const rg = v => { const d = Math.round(v - 100); return `${d >= 0 ? "+" : "−"}${Math.abs(d)}%`; };   // a year's index as % vs. a typical month
     rows.forEach((r, i) => {
       const x = m.l + i * bw, w = bw * 0.62, cx = x + bw / 2;
       const y0 = Y(100), y1 = Y(r.index);
@@ -1022,7 +1024,7 @@ details.method .card { margin-top: 10px; }
       const show = () => {
         tip.replaceChildren(el("b", { text: MON_FULL[i] }),
           el("div", { text: `${r.index >= 100 ? "+" : "−"}${Math.abs(r.index - 100).toFixed(1)}% vs. a typical month` }),
-          el("div", { text: `Range across years: ${r.low.toFixed(0)}-${r.high.toFixed(0)}` }),
+          el("div", { text: `Range across years: ${rg(r.low)} to ${rg(r.high)}` }),
           el("div", { text: `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]} average price: ${fmt$(r.price)}/cwt` }));
         tip.hidden = false;
         const rr = svg.getBoundingClientRect(), px = cx * rr.width / W, tw = tip.offsetWidth;
@@ -1038,9 +1040,9 @@ details.method .card { margin-top: 10px; }
     keyNav(svg, rows.length, () => cur, i => { cur = i; shows[i](); box.at(m.l + i * bw + 1, m.t, bw - 2, H - m.t - m.b); },
       () => { tip.hidden = true; box.off(); });
     const sg = v => `${v >= 100 ? "+" : "−"}${Math.abs(v - 100).toFixed(1)}%`;
-    host.replaceChildren(svg, tip, srTable(label || "Seasonal price index by month", ["Month", "vs. a typical month", "Range across years",
+    host.replaceChildren(svg, tip, srTable(label || "Seasonal pattern by month", ["Month", "vs. a typical month", "Range across years",
       `${D.season.used_years[0]}-${D.season.used_years[D.season.used_years.length - 1]} average price`],
-      rows.map((r, i) => [MON_FULL[i], sg(r.index), `${r.low.toFixed(0)}-${r.high.toFixed(0)}`, `${fmt$(r.price)}/cwt`])));
+      rows.map((r, i) => [MON_FULL[i], sg(r.index), `${rg(r.low)} to ${rg(r.high)}`, `${fmt$(r.price)}/cwt`])));
   }
 
   // steer premium over bulls by weight group: horizontal bars, $/cwt, with % and $/head
@@ -1116,7 +1118,7 @@ details.method .card { margin-top: 10px; }
     premiumBars($("#bull-chart"), rows, Rw ? grp : null);
     // the same comparison each year, for the chosen weight group
     const Y = (C.years[grp] || []).filter(r => r[3] > 0 && r[4] > 0);
-    $("#bull-years").replaceChildren(el("caption", { text: `${grp} lb: steer premium each year` }),
+    $("#bull-years").replaceChildren(el("caption", { text: `${grp} lb: how much more steers brought, by year` }),
       el("thead", {}, el("tr", {}, [el("th", { text: "Year" }), el("th", { text: "$/cwt" }), el("th", { text: "%" }),
         el("th", { class: "sm-hide", text: "Steers / bulls (head)" })])),
       el("tbody", {}, Y.map(r => {
@@ -1182,11 +1184,14 @@ details.method .card { margin-top: 10px; }
     // 6,073 head vs. 2,710 "same auctions" when 4 of the 8 hadn't sold the week before)
     const sold = t => isState() && r.sold && r.sold[t] != null && r.sold[t] < r.reports ? ` (${r.sold[t]} of these ${r.reports} auctions sold)` : null;
     const same = isState() && r.held_out && r.held_out.length ? ", same auctions" : "";
+    // said once at the end when both comparisons cover all of this week's auctions (plain-language pass,
+    // 11/6/2026); when either covers fewer, each keeps its own "(4 of these 8 auctions sold)"
+    const sp = sold("prior"), sy = sold("year_ago"), once = same && !sp && !sy;
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
       el("div", { class: "row" }, [item(rc.week, `head ${isState() ? weekWord(r) : "this sale"}`, true), " · ",
-        item(rc.prior, (prevWeek() || !isState() ? "the week before" : "last week") + (sold("prior") || same)), " · ",
-        item(rc.year_ago, "a year ago" + (sold("year_ago") || same))]));
+        item(rc.prior, (prevWeek() || !isState() ? "the week before" : "last week") + (once ? "" : sp || same)), " · ",
+        item(rc.year_ago, "a year ago" + (once ? ` (same ${r.reports} auctions)` : sy || same))]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10);   // ISO with offset, written in Central time
     const ver = D.meta.build ? `version ${D.meta.build}, ` : "";   // commits to the page code; "+" = uncommitted edits (support)
@@ -1196,7 +1201,7 @@ details.method .card { margin-top: 10px; }
     const hm = okB ? ct({ hour: "numeric", minute: "2-digit" }).replace(/\s?([AP])M$/, (_, x) => ` ${x.toLowerCase()}.m.`) : "";
     const bday = okB ? bt.toLocaleDateString("en-CA", { timeZone: "America/Chicago" }) : gd;
     $("#foot-gen").textContent = `Sales through ${wday(D.meta.through, true)}. Page ${ver}built ${/^\d{4}-\d\d-\d\d$/.test(bday) ? wday(bday, true) : g}` +
-      (hm ? `, ${hm} CT` : "") + ". Updates every morning with the USDA auction reports posted since the last update.";
+      (hm ? `, ${hm} CT` : "") + ". Updates every morning as USDA posts new reports.";
     $("#foot-year").textContent = okB ? ct({ year: "numeric" }) : gd.slice(0, 4);
   }
   let YTD = null;                 // the year-to-date count, shown in the About box
@@ -1244,7 +1249,7 @@ details.method .card { margin-top: 10px; }
     // can show a different gap (TN 300-400 lb steers: $452.39 to $462.96, change −$15.99 on the barns in both weeks)
     const now = !isState() ? `${day(r.sale)} sale` : prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week";
     const vs = !isState() || prevWeek() ? "vs. week before" : "vs. last week";
-    const same = isState() ? ", same barns" : "";
+    const same = isState() ? ", same auctions" : "";   // the rule sits in the closed methods box; keep it in the heads
     // no "same auctions" line under the table title: the column headings ("same barns") and the note under
     // the tables say it; the legend says only what the ⚠ and grey mean (Josh, 11/5/2026)
     // Steers, Heifers, or Cows & bulls: one table at a time (Josh, 11/1/2026)
@@ -1298,7 +1303,7 @@ details.method .card { margin-top: 10px; }
       : `Sold on ${day(r.sale, true)}` + (r.groups && !r.groups.includes("Feeder Cattle") ? "; feeder cattle not in the report" : ""));
     if (YTD) add(`Sold so far in ${YTD.yr}`, `${fmtN(YTD.n)} head`,
       YTD.pct != null ? `${Math.abs(YTD.pct).toFixed(1)}% ${YTD.pct >= 0 ? "more" : "fewer"} than last year, same sale weeks` : "");
-    if (cv.week && cv.week.receipts) add("Priced in the report", `${pc(cv.week.priced, cv.week.receipts)}% ${here} (${fmtN(cv.week.priced)} head)`,
+    if (cv.week && cv.week.receipts) add("Priced in USDA's report", `${pc(cv.week.priced, cv.week.receipts)}% ${here} (${fmtN(cv.week.priced)} head)`,
       cv.ytd && cv.ytd.receipts ? `${pc(cv.ytd.priced, cv.ytd.receipts)}% so far in ${yr}` : "");
     // one grade holding over 95% of head this week and this year (every Kentucky Value Added lot is #1-2;
     // Forest, MS, grades nearly all #1) reads as one line, not a grid of 0%s (Fable, 11/5/2026)
@@ -1378,9 +1383,14 @@ details.method .card { margin-top: 10px; }
       // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
       calc.push(`Reported ${lo}-${lo + 50} lb ${vaOn() ? "Value Added " : ""}class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` +
         (b ? `; a year ago, ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head.` : "."));
-      calc.push(`A smooth line through the class averages prices ${an(w)} ${w}-lb calf at ${w} lb, not at the middle of the ${lo}-${lo + 50} lb class, ` +
-        `so heavier calves bring a little less per pound and the value doesn't jump at ${lo + 50} lb. ` +
-        "The year-ago figure uses last year's line. Sell or keep, Purchase planner and Steer or bull price a calf the same way.");
+      // plain words for the line (Josh, 11/6/2026): the class average fits the class middle; onLine() moves it
+      // to w along the statewide price-by-weight line (8 weeks of sales; export slide())
+      const mid = lo + 25, many = `${vaOn() ? "Value Added " : ""}${S.vcls.toLowerCase()}`;
+      calc.push(`That average covers all ${many} from ${lo} to ${lo + 50} lb, so it fits a ${fmtN(mid)}-lb calf best` +
+        (w === mid ? `, and a ${fmtN(mid)}-lb calf gets that price. For other weights` : `. For a ${fmtN(w)}-lb calf`) +
+        `, the page adjusts it by how price changed with weight in ${stName()} sales over the past 8 weeks ` +
+        `(lighter calves usually bring a little more per pound), so the value doesn't jump when a calf crosses ${lo + 50} lb. ` +
+        "Last year's value is figured the same way, and Sell or keep, Purchase planner and Steer or bull price calves this way too.");
       // stays open across redraws (slider, class, resize) once the viewer opens it; added after any warnings
       const det = el("details", { class: "method calc" }, [el("summary", { text: "How this value is calculated" }), ...calc.map(t => el("p", { class: "note", text: t }))]);
       det.open = !!S.calcOpen;
@@ -1593,9 +1603,8 @@ details.method .card { margin-top: 10px; }
       const be = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: ahead if gain costs under` }),
         el("div", { class: "v hero", text: P.be > 0 ? fmt$(P.be) + "/lb" : "never" }),
         el("div", { class: "d", text: `on ${fmtN(Math.round(P.gain))} lb gained, after ${S.dl}% death loss` })]);
-      const notes = [el("p", { class: "note" }, [document.createTextNode(
-        `The estimated value assumes recent prices (the last two weeks' sales) adjusted for the normal month-to-month seasonal pattern: ` +
-        `${pct(P.sea - 1)} from ${sellDay(P.t0)} to ${sellDay(P.t1)} for ${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}. `), seasonLink(S.kcls, P.w2)])];
+      // the seasonal move and its link sit in the build-up just below; the assumption is in Calculation methods
+      const notes = [];
       // the range across the seasonal patterns' years (review item F1; Josh, 11/2/2026)
       if (P.grossLo < P.grossHi || (P.beLo != null && P.beLo < P.beHi)) notes.push(el("p", { class: "note", text:
         `Across the ${yrsLabel()} seasonal patterns: the value ranges ${fmt$(P.grossLo, false)} to ${fmt$(P.grossHi, false)}` +
@@ -1655,7 +1664,7 @@ details.method .card { margin-top: 10px; }
     $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Death loss starts at 1% for calves you raised (Purchase planner uses 2% for bought calves). Dates count from today.");
+    notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Death loss starts at 1% for calves you raised. Dates count from today.");
     $("#keep-note").textContent = notes.join(" ");
     renderVog(cls);
   }
@@ -1675,8 +1684,8 @@ details.method .card { margin-top: 10px; }
     $("#keep-vog-card").hidden = rows.length < 2;
     if (rows.length < 2) return;
     $("#keep-vog-title").textContent = `How far to grow ${an(S.kw)} ${S.kw}-lb ${cls}`;
-    $("#keep-vog-sub").textContent = `What each sale weight pays per pound of gain: at ${S.adg} lb a day and ${S.dl}% death loss, sold at the usual seasonal price for that month. ` +
-      "Sale weights in lb, values in $ per lb. Tap a bar for the date and the range across years.";
+    $("#keep-vog-sub").textContent = `Keeping comes out ahead if gain costs less than the bar, at ${S.adg} lb a day and ${S.dl}% death loss, ` +
+      "sold at the usual seasonal price for that month. Tap a bar for the date and the range across years.";
     $("#keep-vog-legend").replaceChildren(
       el("li", {}, [el("span", { class: "sqkey", style: "background:var(--line-1)" }), el("span", { text: "Ahead if gain costs under ($/lb)" })]),
       el("li", {}, [el("span", { class: "wkey" }), el("span", { text: `Range across ${yrsLabel()}` })]),
@@ -1779,11 +1788,11 @@ details.method .card { margin-top: 10px; }
       ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
           el("div", { class: "v " + upDown(P.margin), text: signedR(P.margin) + " a head" }),
           el("div", { class: "d", text: `After gain cost and death loss. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` }),
-          el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })])
+          el("div", { class: "d", text: "Doesn't include interest, labor, commission, shrink or freight; add those to your cost of gain." })])
       : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
           el("div", { class: "v", text: P.voG == null ? "–" : P.voG <= 0 ? "None" : fmt$(P.voG) + "/lb" }),
           el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "Loses money even if the gain were free." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." }),
-          el("div", { class: "d", text: "Doesn't include interest, commission, shrink or freight; add those to your cost of gain." })]);
+          el("div", { class: "d", text: "Doesn't include interest, labor, commission, shrink or freight; add those to your cost of gain." })]);
     ans.replaceChildren(buyCard,
       el("div", {}, [el("div", { class: "k", text: `Estimated value when sold, about ${when}` }),
         el("div", { class: "v hero", text: fmt$(P.gross, false) }),
@@ -1834,7 +1843,7 @@ details.method .card { margin-top: 10px; }
     $("#buy-chart-title").textContent = useM ? "Estimated margin by how long you keep them" : "Break-even cost of gain by how long you keep them";
     $("#buy-chart-sub").textContent = `At ${+buyAdg().toFixed(2)} lb/day` + (S.gmode === "total" ? ` (your ${fmtN(S.ptot)} lb over ${S.pdays} days)` : "") +
       `, bought now, sold after each number of days, ${useM ? "$ per head" : "$ per lb of gain"}. ` +
-      `The ${useM ? "margin" : "break-even"} rises and dips with the usual seasonal pattern, and the shaded band shows how much that pattern has varied from year to year (${yrs}).`;
+      `The shaded band is the range across the ${yrs} seasonal patterns.`;
     $("#buy-legend").replaceChildren(
       el("li", {}, [el("span", { class: "key k1" }), el("span", { text: `Estimate (${yrs} average pattern)` })]),
       el("li", {}, [el("span", { class: "key kband" }), el("span", { text: "Range across those years" })]));
@@ -1850,9 +1859,9 @@ details.method .card { margin-top: 10px; }
       aria: `Purchase planner: ${useM ? "estimated margin" : "break-even cost of gain"} by days kept, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stName()}`, empty: "Too heavy to price at any keep length." });
     const notes = [];
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
-    notes.push(`Death loss starts at 2% for bought calves, which are hauled and mixed with others; Sell or keep uses 1% for home-raised calves. Change it to fit your experience. ` +
-      `It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Interest, freight, commission and other costs aren't included unless you count them in your cost of gain. Dates count from today. ` +
-      `The chart's shaded band repeats the estimate with the month of sale at its lowest and highest level in ${yrsLabel()} (today's month held at its average).`);
+    notes.push(`Death loss starts at 2% because bought calves are hauled and mixed with others; change it to fit your experience. ` +
+      `It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Dates count from today. ` +
+      `The shaded band shows the estimate if the sale month's price ran as high or as low as in any year, ${yrsLabel()}, with today's month held at its average.`);
     $("#buy-note").textContent = notes.join(" ");
   }
 
@@ -1877,7 +1886,7 @@ details.method .card { margin-top: 10px; }
       return gap === 1 ? `${nm(x)}-${nm(y)}` : gap === 11 ? `${nm(y)}-${nm(x)}` : `${nm(x)} and ${nm(y)}`; };
     $("#season-summary").textContent = `Highest: ${pair(by[0], by[1])} (about +${(by[0].index - 100).toFixed(0)}%). ` +
       `Lowest: ${pair(by[by.length - 1], by[by.length - 2])} (about −${(100 - by[by.length - 1].index).toFixed(0)}%).`;
-    monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal price index by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
+    monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal pattern by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
   const VIEWS = { week: renderWeek, value: renderValue, trend: renderTrend, keep: renderKeep, buy: renderBuy, bull: renderBull, cows: renderCows, season: renderSeason };
@@ -1892,10 +1901,10 @@ details.method .card { margin-top: 10px; }
       return `${first ? `${stName()} Value Added ${c.toLowerCase()}` : c.toLowerCase()} brought about ${fmt$(Math.abs(x.premium))}/cwt (${Math.abs(x.pct).toFixed(1)}%) ${x.premium >= 0 ? "more" : "less"}`; };
     const st = one("Steers", true), hf = one("Heifers", !st);
     const cmp = st || hf ? `Over the last ${P.weeks} sale weeks, ${[st, hf].filter(Boolean).join(" and ")} than regular lots of the same weight and grade at the same sales.`
-      : `Too few ${stName()} sales had Value Added and regular lots of the same weight and grade in the last ${P ? P.weeks : 13} sale weeks to compare them.` +
+      : `Too few ${stName()} sales had both kinds of lots at the same weight and grade in the last ${P ? P.weeks : 13} sale weeks to compare them.` +
         (B.meta.va_why ? " " + B.meta.va_why : "");   // the state's reason, in Josh's words (MS); no premium from other grades
-    $("#va-band-p").replaceChildren(el("b", { text: "Value Added lots only. " }),
-      document.createTextNode(`Value Added is the label USDA reporters give lots sold with extra management, usually weaned and often vaccinated; what qualifies varies by auction. ${cmp}`));
+    $("#va-band-p").replaceChildren(el("b", { text: "Value Added lots only: " }),
+      document.createTextNode(`lots USDA reporters label as sold with extra management, usually weaned and often vaccinated. What qualifies varies by auction. ${cmp}`));
   }
   function renderCard() {
     const c = vaCov(), mk = market(), stc = B.va && B.va.markets.state, body = $("#va-card-body"), btns = $("#va-card-btns");
