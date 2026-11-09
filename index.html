@@ -481,9 +481,9 @@ details.method .card { margin-top: 10px; }
 
   <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
     <!-- Calf value and Sell or keep, one tab since 11/9/2026 (Josh): one class and weight (300-800 lb) for both;
-         the calf's value now (the picked market) on top, the sell-or-keep estimate (statewide) under it -->
+         the calf's value now on top, the sell-or-keep estimate under it, both statewide -->
     <div>
-      <h2>What's my calf worth?</h2>
+      <h2>What's my calf worth? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="value-sub">#1 and #2 calves sold the last two weeks.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
@@ -1442,10 +1442,11 @@ details.method .card { margin-top: 10px; }
       document.createTextNode(".")]);
   }
 
-  // the calf's value now, top of Sell or keep (Calf value's own tab until 11/9/2026): the picked market's
-  // last two weeks, at the class and weight the whole tab shares (S.kcls, S.kw; 300-800 lb, Josh)
+  // the calf's value now, top of Sell or keep (Calf value's own tab until 11/9/2026): statewide, the last two
+  // weeks, like the keep estimate under it (Josh, 11/9/2026; it followed the picked barn until then), at the
+  // class and weight the whole tab shares (S.kcls, S.kw; 300-800 lb, Josh)
   function renderValue() {
-    const c = D.curve[S.market], now = c[S.kcls].now, ago = c[S.kcls].ago, w = S.kw;
+    const c = D.curve.state, now = c[S.kcls].now, ago = c[S.kcls].ago, w = S.kw;
     const lo = Math.floor(w / 50) * 50;
     // one price per calf across the page (review item B; Josh, 11/2/2026): the class average tilted along the
     // smooth price-by-weight line, as Sell or keep, Purchase planner and Steer or bull price it; the year-ago
@@ -1459,8 +1460,8 @@ details.method .card { margin-top: 10px; }
     if (!a) {
       // no sales at this 50-lb class: say so; the page never prices a class from its neighbor (Josh, 11/3/2026:
       // "I want to be sure I'm not creating prices"); This week's 100-lb row can still show sales from the other half
-      ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.kcls.toLowerCase()} sold ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks, so there's no price for this weight. ` +
-        `This week groups calves by 100 lb, so its ${Math.floor(w / 100) * 100}-${Math.floor(w / 100) * 100 + 100} lb row can include other weights. Try a nearby weight${isState() ? "" : " or the statewide view"}.` }));
+      ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.kcls.toLowerCase()} sold at ${stName()} auctions in the last two sale weeks, so there's no price for this weight. ` +
+        `This week groups calves by 100 lb, so its ${Math.floor(w / 100) * 100}-${Math.floor(w / 100) * 100 + 100} lb row can include other weights. Try a nearby weight.` }));
     } else {
       const ph = R(a.price * w / 100), phAgo = b ? R(b.price * w / 100) : null;
       const thinNow = a.head < FEW, thinAgo = b && b.head < FEW;
@@ -1497,7 +1498,7 @@ details.method .card { margin-top: 10px; }
       if (thinNow || thinAgo) {
         const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
           thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
-        ans.append(warnBox(`Few sales: ${which}${thinNow && thinAgo ? " on very few sales" : ""}. Treat it as a rough guide, or try a nearby weight${isState() ? "" : " or the statewide view"}.`));
+        ans.append(warnBox(`Few sales: ${which}${thinNow && thinAgo ? " on very few sales" : ""}. Treat it as a rough guide, or try a nearby weight.`));
       }
       ans.append(det);
     }
@@ -1514,7 +1515,7 @@ details.method .card { margin-top: 10px; }
       x: { min: 250, max: 950, ticks }, gap: 60, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
       xlab: x => `${x - 25}-${x + 25} lb`, marker: { x: w, t: `${w} lb` },
       xname: "Weight class",
-      aria: `${vaOn() ? "Value Added " : ""}${S.kcls.toLowerCase()} price by weight, last two weeks and a year ago, ${isState() ? stName() : market().name}`, empty: "No sales to chart for this auction." });
+      aria: `${vaOn() ? "Value Added " : ""}${S.kcls.toLowerCase()} price by weight, last two weeks and a year ago, ${stName()}`, empty: "No sales to chart." });
     if (thinC) $("#curve-legend").append(fewLegend());
   }
 
@@ -1723,7 +1724,7 @@ details.method .card { margin-top: 10px; }
     }
     $("#keep-calc").hidden = !!P.over;
     const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
-    const sellNow = el("div", {}, [el("div", { class: "k", text: isState() ? "Sell now" : "Sell now, statewide price" }),
+    const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
       el("div", { class: "v", text: fmt$(P.v1, false) }),
       el("div", { class: "d", text: `${S.kw} lb at about ${fmt$(P.p1)}/cwt` })]);
     if (P.over) {
@@ -1797,7 +1798,7 @@ details.method .card { margin-top: 10px; }
     const sea = KEEP.map(d => { const q = keepPlan(S.kcls, S.kw, d); return q && !q.over ? `${d} days ${pct(q.sea - 1)}` : null; }).filter(Boolean);
     $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
-    if (!isState()) notes.push(`The value at the top is ${market().name}'s; the sell-or-keep estimate uses statewide prices so every weight is covered.`);
+    if (!isState()) notes.push("This tab uses statewide prices so every weight is covered.");
     notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Death loss starts at 1% for calves you raised. Dates count from today.");
     $("#keep-note").textContent = notes.join(" ");
     renderVog(cls);
