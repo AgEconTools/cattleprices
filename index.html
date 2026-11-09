@@ -314,8 +314,8 @@ tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 
 /* cows */
 /* This week's cull cow cards (the Cull cows tab until 11/9/2026) and Price trend's cull chart: set here, not
    inline, so the hidden attribute still hides them */
-#week-cows { display: grid; gap: 14px; } #cull-card { display: grid; gap: 10px; }
-#week-cows[hidden], #cull-card[hidden] { display: none; }
+#week-cows { display: grid; gap: 14px; } #cull-card, #keep-vog-card { display: grid; gap: 10px; }
+#week-cows[hidden], #cull-card[hidden], #keep-vog-card[hidden] { display: none; }   /* the vog card's inline grid kept it showing when hidden (11/9/2026) */
 .cows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
 .cow h3 { margin: 0 0 2px; font: 700 18px/1.25 var(--display); }
 .cow .grade { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
@@ -416,7 +416,6 @@ details.method .card { margin-top: 10px; }
   <div class="wrap" role="tablist" id="tablist">
     <button class="tab" role="tab" id="t-week" aria-controls="week" data-tab="week">This week</button>
     <button class="tab" role="tab" id="t-trend" aria-controls="trend" data-tab="trend">Price trend</button>
-    <button class="tab" role="tab" id="t-value" aria-controls="value" data-tab="value">Calf value</button>
     <button class="tab" role="tab" id="t-keep" aria-controls="keep" data-tab="keep">Sell or keep</button>
     <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
     <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
@@ -453,32 +452,6 @@ details.method .card { margin-top: 10px; }
     <details class="method"><summary>Calculation methods</summary><p class="note" id="week-note"></p></details>
   </section>
 
-  <section class="panel" id="value" role="tabpanel" aria-labelledby="t-value" hidden>
-    <div>
-      <h2>What's my calf worth?</h2>
-      <p class="sub" id="value-sub">#1 and #2 calves sold the last two weeks.</p>
-    </div>
-    <div class="card" style="display:grid;gap:18px">
-      <div class="controls">
-        <div class="seg" id="value-class"></div>
-        <div class="weightrow" style="flex:1 1 320px">
-          <label class="field" for="value-weight-n" style="flex:0 0 auto"><span>Weight (lb)</span>
-            <input type="number" id="value-weight-n" min="250" max="950" step="5" value="550"></label>
-          <input type="range" id="value-weight" min="250" max="950" step="5" value="550" aria-label="Calf weight in pounds">
-        </div>
-      </div>
-      <div class="answer" id="value-answer"></div>
-    </div>
-    <div class="card" style="display:grid;gap:10px">
-      <div>
-        <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="curve-title">Price by weight</h3>
-        <p class="note" id="curve-sub"></p>
-      </div>
-      <ul class="legend" id="curve-legend"></ul>
-      <div class="chart" id="curve-chart"></div>
-    </div>
-  </section>
-
   <section class="panel" id="trend" role="tabpanel" aria-labelledby="t-trend" hidden>
     <div>
       <h2>How do prices this year compare?</h2>
@@ -507,18 +480,32 @@ details.method .card { margin-top: 10px; }
   </section>
 
   <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
+    <!-- Calf value and Sell or keep, one tab since 11/9/2026 (Josh): one class and weight (300-800 lb) for both;
+         the calf's value now (the picked market) on top, the sell-or-keep estimate (statewide) under it -->
+    <div>
+      <h2>What's my calf worth?</h2>
+      <p class="sub" id="value-sub">#1 and #2 calves sold the last two weeks.</p>
+    </div>
+    <div class="card" style="display:grid;gap:18px">
+      <div class="controls">
+        <div class="seg" id="keep-class"></div>
+        <div class="weightrow" style="flex:1 1 320px">
+          <label class="field" for="keep-w" style="flex:0 0 auto"><span>Weight (lb)</span>
+            <input type="number" id="keep-w" min="300" max="800" step="5" value="500"></label>
+          <input type="range" id="keep-w-range" min="300" max="800" step="5" value="500" aria-label="Calf weight in pounds">
+        </div>
+      </div>
+      <div class="answer" id="value-answer"></div>
+    </div>
     <div>
       <h2>Sell now, or keep and add weight? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="keep-sub">Estimate, not a forecast.</p>
     </div>
     <div class="card" style="display:grid;gap:18px">
       <div class="controls">
-        <div class="seg" id="keep-class"></div>
         <div class="seg" id="keep-days" aria-label="How long to keep"></div>
       </div>
       <div class="controls">
-        <label class="field" for="keep-w"><span>Weight now (lb)</span>
-          <input type="number" id="keep-w" min="300" max="800" step="5" value="500"></label>
         <label class="field" for="keep-adg"><span>Gain (lb/day)</span>
           <input type="number" id="keep-adg" min="0.5" max="4" step="0.1" value="1.5"></label>
         <label class="field" for="keep-cog"><span>Cost per lb gained ($, optional)</span>
@@ -539,7 +526,7 @@ details.method .card { margin-top: 10px; }
       <table id="keep-table"></table>
       <p class="note" id="keep-season"></p>
     </div>
-    <div class="card" id="keep-vog-card" style="display:grid;gap:10px">
+    <div class="card" id="keep-vog-card">
       <div>
         <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-vog-title">How far to grow it</h3>
         <p class="note" id="keep-vog-sub"></p>
@@ -547,6 +534,14 @@ details.method .card { margin-top: 10px; }
       <ul class="legend" id="keep-vog-legend"></ul>
       <div class="chart" id="keep-vog-chart"></div>
       <p class="note" id="keep-vog-best"></p>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="curve-title">Price by weight</h3>
+        <p class="note" id="curve-sub"></p>
+      </div>
+      <ul class="legend" id="curve-legend"></ul>
+      <div class="chart" id="curve-chart"></div>
     </div>
     <details class="method"><summary>Calculation methods</summary><p class="note" id="keep-note"></p></details>
   </section>
@@ -716,7 +711,7 @@ details.method .card { margin-top: 10px; }
     get(k) { try { return localStorage.getItem("mscp." + k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
   };
-  const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", vcls: "Steers", lots: "plain", calcOpen: false, weight: 550,
+  const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", lots: "plain", calcOpen: false,
               tcls: "Steers", tgrp: "500-600", ckind: "boner", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
               bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 2 };   // 2% death loss for bought calves, 1% (dl) for home-raised (Josh, 11/2/2026)
@@ -764,7 +759,7 @@ details.method .card { margin-top: 10px; }
   const isState = () => S.market === "state";
   // ---------- plain or Value Added lots (Josh, 11/3/2026) ----------
   // One switch for the whole page. The Value Added view swaps the state's <st>_va.json into the price data
-  // (This week, Calf value, Price trend, Sell or keep, Purchase planner, Seasonal trend). Steer or bull and
+  // (This week, Price trend, Sell or keep with the calf's value, Purchase planner, Seasonal trend). Steer or bull and
   // the cull cow and bull figures (This week's cards, Price trend's cull chart) read the regular-lots file
   // (B) in either view. A market with too few Value Added sales (the export's coverage test) gets one card
   // in place of the tabs, with its numbers, instead of empty tabs.
@@ -1447,24 +1442,24 @@ details.method .card { margin-top: 10px; }
       document.createTextNode(".")]);
   }
 
+  // the calf's value now, top of Sell or keep (Calf value's own tab until 11/9/2026): the picked market's
+  // last two weeks, at the class and weight the whole tab shares (S.kcls, S.kw; 300-800 lb, Josh)
   function renderValue() {
-    seg($("#value-class"), CLS, () => S.vcls, v => S.vcls = v);
-    const c = D.curve[S.market], now = c[S.vcls].now, ago = c[S.vcls].ago, w = S.weight;
-    $("#value-weight").value = w; $("#value-weight-n").value = w;
+    const c = D.curve[S.market], now = c[S.kcls].now, ago = c[S.kcls].ago, w = S.kw;
     const lo = Math.floor(w / 50) * 50;
     // one price per calf across the page (review item B; Josh, 11/2/2026): the class average tilted along the
     // smooth price-by-weight line, as Sell or keep, Purchase planner and Steer or bull price it; the year-ago
     // figure uses last year's line. The class average stays underneath as the reported number.
     const cp = (pts, at) => { const r = pts.find(p => p[0] === lo); return r ? { price: onLine(r[1], lo, w, at), cls: r[1], head: r[2] } : null; };
-    const a = cp(now, x => slideAt(S.vcls, x)), b = cp(ago, x => slideAgoAt(S.vcls, x));
+    const a = cp(now, x => slideAt(S.kcls, x)), b = cp(ago, x => slideAgoAt(S.kcls, x));
     const ans = $("#value-answer");
-    const cls = (vaOn() ? "Value Added " : "") + S.vcls.toLowerCase().replace(/s$/, "");
+    const cls = (vaOn() ? "Value Added " : "") + S.kcls.toLowerCase().replace(/s$/, "");
     // the subtitle carries the dates, so the answer doesn't repeat them
     $("#value-sub").textContent = `#1 and #2 ${vaOn() ? "Value Added " : ""}calves sold ${span(c.now[0], lastDay(c.now[1]))} vs. the same two weeks last year.`;
     if (!a) {
       // no sales at this 50-lb class: say so; the page never prices a class from its neighbor (Josh, 11/3/2026:
       // "I want to be sure I'm not creating prices"); This week's 100-lb row can still show sales from the other half
-      ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.vcls.toLowerCase()} sold ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks, so there's no price for this weight. ` +
+      ans.replaceChildren(el("p", { class: "none", text: `No ${lo}-${lo + 50} lb ${S.kcls.toLowerCase()} sold ${isState() ? `at ${stName()} auctions` : `at ${market().name}`} in the last two sale weeks, so there's no price for this weight. ` +
         `This week groups calves by 100 lb, so its ${Math.floor(w / 100) * 100}-${Math.floor(w / 100) * 100 + 100} lb row can include other weights. Try a nearby weight${isState() ? "" : " or the statewide view"}.` }));
     } else {
       const ph = R(a.price * w / 100), phAgo = b ? R(b.price * w / 100) : null;
@@ -1489,12 +1484,12 @@ details.method .card { margin-top: 10px; }
         (b ? `; a year ago, ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head.` : "."));
       // plain words for the line (Josh, 11/6/2026): the class average fits the class middle; onLine() moves it
       // to w along the statewide price-by-weight line (8 weeks of sales; export slide())
-      const mid = lo + 25, many = `${vaOn() ? "Value Added " : ""}${S.vcls.toLowerCase()}`;
+      const mid = lo + 25, many = `${vaOn() ? "Value Added " : ""}${S.kcls.toLowerCase()}`;
       calc.push(`That average covers all ${many} from ${lo} to ${lo + 50} lb, so it fits a ${fmtN(mid)}-lb calf best` +
         (w === mid ? `, and a ${fmtN(mid)}-lb calf gets that price. For other weights` : `. For a ${fmtN(w)}-lb calf`) +
         `, the page adjusts it by how price changed with weight in ${stName()} sales over the past 8 weeks ` +
         `(lighter calves usually bring a little more per pound), so the value doesn't jump when a calf crosses ${lo + 50} lb. ` +
-        "Last year's value is figured the same way, and Sell or keep, Purchase planner and Steer or bull price calves this way too.");
+        "Last year's value is figured the same way, and the sell-or-keep estimate below, Purchase planner and Steer or bull price calves this way too.");
       // stays open across redraws (slider, class, resize) once the viewer opens it; added after any warnings
       const det = el("details", { class: "method calc" }, [el("summary", { text: "How this value is calculated" }), ...calc.map(t => el("p", { class: "note", text: t }))]);
       det.open = !!S.calcOpen;
@@ -1506,7 +1501,7 @@ details.method .card { margin-top: 10px; }
       }
       ans.append(det);
     }
-    $("#curve-title").textContent = `${S.vcls}: price by weight`;
+    $("#curve-title").textContent = `${S.kcls}: price by weight`;
     $("#curve-sub").textContent = `${span(c.now[0], lastDay(c.now[1]))} vs. a year earlier, $/cwt. Tap a point for head counts.`;
     $("#curve-legend").replaceChildren(
       el("li", {}, [el("span", { class: "key k1" }), el("span", { text: "Last 2 weeks" })]),
@@ -1519,7 +1514,7 @@ details.method .card { margin-top: 10px; }
       x: { min: 250, max: 950, ticks }, gap: 60, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
       xlab: x => `${x - 25}-${x + 25} lb`, marker: { x: w, t: `${w} lb` },
       xname: "Weight class",
-      aria: `${vaOn() ? "Value Added " : ""}${S.vcls.toLowerCase()} price by weight, last two weeks and a year ago, ${isState() ? stName() : market().name}`, empty: "No sales to chart for this auction." });
+      aria: `${vaOn() ? "Value Added " : ""}${S.kcls.toLowerCase()} price by weight, last two weeks and a year ago, ${isState() ? stName() : market().name}`, empty: "No sales to chart for this auction." });
     if (thinC) $("#curve-legend").append(fewLegend());
   }
 
@@ -1709,8 +1704,13 @@ details.method .card { margin-top: 10px; }
     : `Keeping comes out ahead if your cost of gain is under ${fmt$(be)}/lb`;
   const pct = v => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(1) + "%";
 
-  function renderKeep() {
+  function renderSell() {          // the Sell or keep tab: the shared class and weight, the value now, then keep
     seg($("#keep-class"), CLS, () => S.kcls, v => S.kcls = v);
+    if (document.activeElement !== $("#keep-w-range")) $("#keep-w-range").value = S.kw;
+    renderValue();
+    renderKeep();
+  }
+  function renderKeep() {
     seg($("#keep-days"), KEEP.map(d => ({ v: d, t: `${d} days` })), () => S.days, v => { S.days = v; store.set("days", v); });
     for (const [id, k, dec] of [["#keep-w", "kw", 0], ["#keep-adg", "adg", 1], ["#keep-cog", "cog", 2], ["#keep-dl", "dl", 1]]) {
       const f = $(id); if (document.activeElement !== f) f.value = S[k] == null ? "" : k === "dl" ? S[k] : S[k].toFixed(dec);
@@ -1723,7 +1723,7 @@ details.method .card { margin-top: 10px; }
     }
     $("#keep-calc").hidden = !!P.over;
     const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
-    const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
+    const sellNow = el("div", {}, [el("div", { class: "k", text: isState() ? "Sell now" : "Sell now, statewide price" }),
       el("div", { class: "v", text: fmt$(P.v1, false) }),
       el("div", { class: "d", text: `${S.kw} lb at about ${fmt$(P.p1)}/cwt` })]);
     if (P.over) {
@@ -1797,7 +1797,7 @@ details.method .card { margin-top: 10px; }
     const sea = KEEP.map(d => { const q = keepPlan(S.kcls, S.kw, d); return q && !q.over ? `${d} days ${pct(q.sea - 1)}` : null; }).filter(Boolean);
     $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
-    if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
+    if (!isState()) notes.push(`The value at the top is ${market().name}'s; the sell-or-keep estimate uses statewide prices so every weight is covered.`);
     notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the futures market would change the answer. Death loss starts at 1% for calves you raised. Dates count from today.");
     $("#keep-note").textContent = notes.join(" ");
     renderVog(cls);
@@ -2025,9 +2025,10 @@ details.method .card { margin-top: 10px; }
     monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal pattern by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
-  const VIEWS = { week: renderWeek, trend: renderTrend, value: renderValue, keep: renderKeep, buy: renderBuy, bull: renderBull, season: renderSeason };
-  // links to the old Cull cows tab (#cows) open This week on Cows & bulls, where its cards moved (11/9/2026)
-  const oldCows = h => { if (h !== "cows") return h; S.wcls = "Cows"; return "week"; };   // renderWeek sends a state without cows back to Steers
+  const VIEWS = { week: renderWeek, trend: renderTrend, keep: renderSell, buy: renderBuy, bull: renderBull, season: renderSeason };
+  // links to tabs folded into others (11/9/2026): the Cull cows tab (#cows) opens This week on Cows & bulls
+  // (renderWeek sends a state without cows back to Steers); Calf value (#value) opens Sell or keep
+  const oldCows = h => { if (h === "value") return "keep"; if (h !== "cows") return h; S.wcls = "Cows"; return "week"; };
   function setLots(v) { S.lots = v; store.set("lots", v); }
   function renderLots() {
     seg($("#lots"), [{ v: "plain", t: "Regular lots" }, { v: "va", t: "Value Added" }], () => S.lots, setLots);
@@ -2127,15 +2128,14 @@ details.method .card { margin-top: 10px; }
       : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : null;
     if (n) { setTab(n.dataset.tab, true); n.focus(); e.preventDefault(); }
   });
-  const setW = v => { v = Math.max(250, Math.min(945, Math.round(+v / 5) * 5 || 550)); S.weight = v; store.set("weight", v); renderValue(); };
-  $("#value-weight").addEventListener("input", e => setW(e.target.value));
-  $("#value-weight-n").addEventListener("change", e => setW(e.target.value));
+  $("#keep-w-range").addEventListener("input", e => { S.kw = Math.round(+e.target.value); store.set("kw", S.kw); renderSell(); });
   for (const [id, k, lo, hi] of [["#keep-w", "kw", 300, 800], ["#keep-adg", "adg", 0.5, 4], ["#keep-cog", "cog", 0, 5], ["#keep-dl", "dl", 0, 20]]) {
     $(id).addEventListener("input", e => {
       if (k === "cog" && e.target.value.trim() === "") { S.cog = null; store.set("cog", ""); renderKeep(); return; }
       const v = parseFloat(e.target.value);
       if (!(v >= lo && v <= hi)) return;          // wait for a usable number
-      S[k] = k === "kw" ? Math.round(v) : v; store.set(k, v); renderKeep();
+      S[k] = k === "kw" ? Math.round(v) : v; store.set(k, v);
+      if (k === "kw") renderSell(); else renderKeep();     // the weight moves the value on top too
     });
   }
   const BUY_IN = [["#buy-w", "pw", 300, 800], ["#buy-days", "pdays", 30, 300], ["#buy-dl", "pdl", 0, 20]];
@@ -2207,7 +2207,6 @@ details.method .card { margin-top: 10px; }
   }
 
   function restore() {               // one viewer's remembered settings
-    const w = +store.get("weight"); if (w >= 250 && w <= 945) S.weight = w;
     for (const [k, lo, hi] of [["bw", 300, 895], ["bextra", 0, 150], ["bcost", 0, 200], ["pw", 300, 800], ["pdays", 30, 300], ["pdl", 0, 20], ["padg", 0.1, 5], ["ptot", 10, 600], ["pcog", 0, 5], ["pbuy", 50, 900]]) {
       const raw = store.get(k), v = parseFloat(raw);
       if (raw !== "" && v >= lo && v <= hi) S[k] = ["bw", "pw", "pdays", "ptot"].includes(k) ? Math.round(v) : v;
@@ -2216,6 +2215,10 @@ details.method .card { margin-top: 10px; }
     for (const [k, lo, hi] of [["kw", 300, 800], ["adg", 0.5, 4], ["cog", 0, 5], ["dl", 0, 20], ["days", 30, 90]]) {
       const v = parseFloat(store.get(k)); if (v >= lo && v <= hi) S[k] = k === "days" ? (KEEP.includes(v) ? v : S.days) : k === "kw" ? Math.round(v) : v;
     }
+    // one weight for Sell or keep since Calf value joined it (11/9/2026): a Calf value weight saved before then
+    // stands in when no keep weight was saved
+    const kw = parseFloat(store.get("kw")), w = parseFloat(store.get("weight"));
+    if (!(kw >= 300 && kw <= 800) && w >= 300 && w <= 800) S.kw = Math.round(w);
     let lots = LINKED ? null : store.get("lots");
     try { const q = new URLSearchParams(location.search).get("lots"); if (q) lots = q.toLowerCase() === "va" ? "va" : "plain"; } catch (e) { /* no query */ }
     if (lots === "va") S.lots = "va";
