@@ -477,6 +477,7 @@ details.method .card { margin-top: 10px; }
       <p style="margin:0;font-weight:600" id="trend-summary"></p>
       <ul class="legend" id="trend-legend"></ul>
       <div class="chart" id="trend-chart"></div>
+      <p class="note" id="trend-season" style="margin:0"></p>
     </div>
     <div class="card" id="cull-card">
       <div>
@@ -1642,6 +1643,15 @@ details.method .card { margin-top: 10px; }
     const g = Y[S.tcls] && Y[S.tcls][S.tgrp];
     const avgF = g ? yearChart("trend", g, Y, `${S.tgrp} lb ${vaOn() ? "Value Added " : ""}${S.tcls.toLowerCase()} price this year, last year and the ${base} average, ${isState() ? stName() : mk.name}`)
       : (noChart("trend", groups.length ? "No sales in this weight group this year." : "This sale's reports this year didn't include feeder cattle."), false);
+    // the usual seasonal pattern for the same class and weight, one tap away on Seasonal trend (Josh, 11/10/2026:
+    // kept a separate tab, statewide, so it doesn't mix with a barn's prices here). None in a seasonal state.
+    const sKey = `${S.tcls} ${S.tgrp}`, hasPat = !!D.season.series[sKey];
+    if (!seasonalSt() && Object.keys(D.season.series).some(x => x.startsWith(S.tcls + " "))) {
+      const b = el("button", { type: "button", class: "linkish",
+        text: `See the usual seasonal pattern for ${hasPat ? `${S.tgrp} lb ` : ""}${vaOn() ? "Value Added " : ""}${S.tcls.toLowerCase()}` });
+      b.addEventListener("click", () => { S.scls = S.tcls; if (hasPat) S.sgrp = S.tgrp; setTab("season", true); window.scrollTo({ top: 0 }); });
+      $("#trend-season").replaceChildren(b, isState() ? "" : ` (statewide)`);
+    } else $("#trend-season").replaceChildren();
     const avgC = renderCull();
     const avgNote = avgF || avgC ? ` The ${base} average is drawn only for ${weekly ? "weeks" : "months"} all three years had sales.` : "";
     $("#trend-note").textContent = (weekly ? "" : "Single auctions are shown by month because weekly samples at one barn are often small.") + avgNote +
