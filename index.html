@@ -1724,13 +1724,12 @@ details.method .card { margin-top: 10px; }
     }
     $("#keep-calc").hidden = !!P.over;
     const sellDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
-    const sellNow = el("div", {}, [el("div", { class: "k", text: "Sell now" }),
-      el("div", { class: "v", text: fmt$(P.v1, false) }),
-      el("div", { class: "d", text: `${S.kw} lb at about ${fmt$(P.p1)}/cwt` })]);
+    // no "Sell now" box (Josh, 11/10/2026): "What's my calf worth?" above is the same statewide value, and the
+    // table's caption still names it
     if (P.over) {
-      ans.replaceChildren(sellNow, el("p", { class: "none", text: `At ${S.adg} lb/day the calf would weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try a shorter keep or a lighter weight.` }));
+      ans.replaceChildren(el("p", { class: "none", text: `At ${S.adg} lb/day the calf would weigh ${fmtN(P.w2)} lb, past the 900 lb this page prices. Try a shorter keep or a lighter weight.` }));
     } else {
-      // four numbers in one row (Josh, 11/2/2026: less text up front); what they assume, their range across
+      // three numbers in one row (Josh, 11/2/2026: less text up front); what they assume, their range across
       // the seasonal patterns' years and the line-by-line build-up sit in "How this estimate is calculated"
       const keepVal = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: estimated value` }),
         el("div", { class: "v", text: fmt$(P.gross, false) }),
@@ -1752,7 +1751,7 @@ details.method .card { margin-top: 10px; }
             el("div", { class: "d", text: `vs. selling now; ${fmt$(P.net, false)} after gain cost and death loss` })])
         : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
             el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it above to see dollars a head" })]);
-      ans.replaceChildren(sellNow, keepVal, be, yours);
+      ans.replaceChildren(keepVal, be, yours);
     }
     if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
     if (S.adg > 4) ans.append(warnBox(`${S.adg} lb a day is more than most calves gain; check the gain you entered.`));
