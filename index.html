@@ -319,7 +319,13 @@ tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 
 /* Colorado and North Dakota's seasonal markets (11/10/2026): the parts that need a feeder seasonal pattern give way to
    a message; several carry an inline grid, which beats the hidden attribute */
 .keep-part[hidden], .buy-part[hidden], .season-part[hidden], .off-msg[hidden] { display: none !important; }
-.off-msg p { margin: 0; max-width: 70ch; }   /* the vog card's inline grid kept it showing when hidden (11/9/2026) */
+.off-msg p { margin: 0; max-width: 70ch; }
+/* Compare states' pickers (11/10/2026): the page's field look, with the masthead select's arrow */
+.field select { appearance: none; -webkit-appearance: none; padding: 8px 34px 8px 10px; border: 1px solid var(--rule);
+  border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 170px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
+@media (max-width: 520px) { .cmp-states .field { flex: 1 1 100%; } .field select { width: 100%; min-width: 0; } }   /* the vog card's inline grid kept it showing when hidden (11/9/2026) */
 .cows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
 .cow h3 { margin: 0 0 2px; font: 700 18px/1.25 var(--display); }
 .cow .grade { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
@@ -420,10 +426,11 @@ details.method .card { margin-top: 10px; }
   <div class="wrap" role="tablist" id="tablist">
     <button class="tab" role="tab" id="t-week" aria-controls="week" data-tab="week">This week</button>
     <button class="tab" role="tab" id="t-trend" aria-controls="trend" data-tab="trend">Price trend</button>
+    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season">Seasonal trend</button>
+    <button class="tab" role="tab" id="t-cmp" aria-controls="cmp" data-tab="cmp">Compare</button>
     <button class="tab" role="tab" id="t-keep" aria-controls="keep" data-tab="keep">Sell or keep</button>
     <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
     <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
-    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season">Seasonal trend</button>
   </div>
 </nav>
 
@@ -482,6 +489,52 @@ details.method .card { margin-top: 10px; }
       <div class="chart" id="cull-chart"></div>
     </div>
     <details class="method"><summary>Calculation methods</summary><p class="note" id="trend-note"></p></details>
+  </section>
+
+  <!-- Compare states (Josh, 11/10/2026): up to three states, statewide only (never barns: too thin), a weekly line
+       for the past year and a monthly line for the past 5 years. Data: data/cmp_<state>.json, loaded when picked -->
+  <section class="panel" id="cmp" role="tabpanel" aria-labelledby="t-cmp" hidden>
+    <div>
+      <h2>How do states compare? <span class="chip-scope">Statewide</span></h2>
+      <p class="sub" id="cmp-sub"></p>
+    </div>
+    <p class="vasame" hidden>This tab uses regular lots for every state, with Value Added lots left out.</p>
+    <div class="card" style="display:grid;gap:14px">
+      <div class="controls cmp-states">
+        <label class="field" for="cmp-s1"><span>State</span><select id="cmp-s1"></select></label>
+        <label class="field" for="cmp-s2"><span>Compare with</span><select id="cmp-s2"></select></label>
+        <label class="field" for="cmp-s3"><span>And</span><select id="cmp-s3"></select></label>
+      </div>
+      <div class="controls">
+        <div class="seg" id="cmp-type"></div>
+        <div class="chips" id="cmp-weight" aria-label="Weight group"></div>
+        <div class="seg" id="cmp-grade"></div>
+      </div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)">Past year, by week</h3>
+        <p class="note" id="cmp-wsub"></p>
+      </div>
+      <ul class="legend" id="cmp-wlegend"></ul>
+      <div class="chart" id="cmp-week"></div>
+    </div>
+    <div class="card" style="display:grid;gap:10px">
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)">Past 5 years, by month</h3>
+        <p class="note" id="cmp-msub"></p>
+      </div>
+      <ul class="legend" id="cmp-mlegend"></ul>
+      <div class="chart" id="cmp-month"></div>
+    </div>
+    <p class="note" id="cmp-missing"></p>
+    <p class="note" id="cmp-note"></p>
+    <details class="method"><summary>Calculation methods</summary><p class="note">Each line is one state's average of every
+      reporting auction, averaged by head, for the same calves, lots and cull grades as the rest of the page (see "How these
+      numbers are calculated" at the bottom). A cull cow or bull line is drawn only where the state sold at least 20 head in
+      two-thirds of its sale weeks (weekly) or months (monthly). The week still under way is left off the weekly chart;
+      the latest month can be partial. Circled points rest on fewer than 20 head. Individual auctions aren't compared
+      here: one auction's sales are too few for a fair comparison.</p></details>
   </section>
 
   <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
@@ -724,7 +777,7 @@ details.method .card { margin-top: 10px; }
     set(k, v) { try { localStorage.setItem("mscp." + k, v); } catch (e) { /* private window */ } }
   };
   const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", lots: "plain", calcOpen: false,
-              tcls: "Steers", tgrp: "500-600", ckind: "boner", scls: "Steers", sgrp: "500-600",
+              tcls: "Steers", tgrp: "500-600", ckind: "boner", c1: null, c2: "", c3: "", ctype: "Steers", cgrp: "500-600", cgrade: "boner", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1,
               bw: 550, bextra: null, bcost: null, pcls: "Steers", pw: 450, pbuy: null, pdays: 120, gmode: "adg", padg: 1.5, ptot: 240, pcog: null, pdl: 2 };   // 2% death loss for bought calves, 1% (dl) for home-raised (Josh, 11/2/2026)
   let D = null;              // the data the tabs read: the plain file, or it with the Value Added view swapped in
@@ -1615,6 +1668,93 @@ details.method .card { margin-top: 10px; }
     return yearChart("cull", g, Y, `${k.aria} price this year, last year and the ${D.meta.base_years} average, ${isState() ? stName() : mk.name}`);
   }
 
+  // ---------- compare states (Josh, 11/10/2026) ----------
+  // Up to three states on one chart, statewide only (never barns: one barn's sales are too thin). Each state's
+  // file (data/cmp_<st>.json) loads when it is picked. No rankings: the lines, end labels and a note on why states
+  // can differ for reasons other than price.
+  const CMP = {};                          // state id -> its file, "loading" or "missing"
+  const CMP_GROUPS = ["300-400", "400-500", "500-600", "600-700", "700-800", "800-900"];
+  const CMP_STYLE = [{ cls: 1, width: 2.6 }, { cls: 2, dash: "6 4", width: 2 }, { cls: 3, width: 2 }];
+  function cmpLoad(id) {
+    if (CMP[id]) return;
+    CMP[id] = "loading";
+    fetch(`data/cmp_${id}.json`, { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null)
+      .then(d => { CMP[id] = d || "missing"; if (S.tab === "cmp") renderCmp(); });
+  }
+  function renderCmp() {
+    const states = B.meta.states, nameOf = id => (states.find(x => x.id === id) || {}).name || id.toUpperCase();
+    if (!S.c1 || !states.some(x => x.id === S.c1)) S.c1 = B.meta.id;
+    const fill = (sel, v, none) => {
+      sel.replaceChildren(...(none ? [el("option", { value: "", text: "None" })] : []), ...states.map(x => el("option", { value: x.id, text: x.name })));
+      sel.value = v || "";
+    };
+    fill($("#cmp-s1"), S.c1, false); fill($("#cmp-s2"), S.c2, true); fill($("#cmp-s3"), S.c3, true);
+    seg($("#cmp-type"), [...CLS, { v: "Culls", t: "Cull cows & bulls" }], () => S.ctype, v => S.ctype = v);
+    const culls = S.ctype === "Culls", k = CULL.find(c => c.v === S.cgrade) || CULL[1];
+    $("#cmp-weight").hidden = culls; $("#cmp-grade").hidden = !culls;
+    if (culls) seg($("#cmp-grade"), CULL, () => k.v, v => S.cgrade = v);
+    else chips($("#cmp-weight"), CMP_GROUPS.map(g => ({ v: g, t: `${g} lb` })), () => S.cgrp, v => S.cgrp = v);
+    const key = culls ? k.v : `${S.ctype} ${S.cgrp}`;
+    const what = culls ? (k.v === "bulls" ? "slaughter bull" : `${k.t} cull cow`) : `${S.cgrp} lb feeder ${S.ctype.toLowerCase().replace(/s$/, "")}`;
+    $("#cmp-sub").textContent = `${culls ? k.sub : `${S.cgrp} lb feeder ${S.ctype.toLowerCase()}, #1 and #2, regular lots`}; ` +
+      "every reporting auction in each state, $/cwt. The auction picked at the top doesn't apply here.";
+    const ids = [...new Set([S.c1, S.c2, S.c3].filter(Boolean))];
+    ids.forEach(cmpLoad);
+    if (ids.some(id => CMP[id] === "loading")) {
+      for (const h of ["#cmp-week", "#cmp-month"]) $(h).replaceChildren(el("p", { class: "none", text: "Loading the states picked." }));
+      return;
+    }
+    const label = id => nameOf(id) + (CMP[id] && CMP[id].graded ? " (graded sales)" : "");
+    const draw = (by, host, legend, sub) => {
+      const weekly = by === "weekly", series = [];
+      ids.forEach((id, i) => {
+        const d = CMP[id], pts = d !== "missing" && d[by][key];
+        if (!pts) return;
+        series.push({ ...CMP_STYLE[i], name: label(id), end: id.toUpperCase(), dot: i === 0,
+          pts: pts.map(p => ({ x: weekly ? Date.parse(p[0] + "T12:00:00Z") / 864e5 : +p[0].slice(0, 4) * 12 + +p[0].slice(5, 7) - 1, y: p[1], head: p[2] })) });
+      });
+      const xs = series.flatMap(s => s.pts.map(p => p.x)), xmax = xs.length ? Math.max(...xs) : 0;
+      const xmin = weekly ? xmax - 364 : xmax - 59, ticks = [];
+      if (weekly) {             // the first of each month (January shows the year); Date.UTC rolls month 12 into January
+        const d0 = new Date(xmin * 864e5), y0 = d0.getUTCFullYear();
+        for (let mo = d0.getUTCMonth() + 1, v; (v = Date.UTC(y0, mo, 1) / 864e5) <= xmax; mo++)
+          ticks.push({ v, t: mo % 12 ? MON3[mo % 12] : String(y0 + mo / 12) });
+      } else for (let v = Math.ceil(xmin / 12) * 12; v <= xmax; v += 12) ticks.push({ v, t: String(v / 12) });
+      const narrow = window.innerWidth < 520;
+      legend.replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
+      sub.textContent = weekly ? "Weekly average, the past 52 weeks." : "Monthly average, the past 60 months.";
+      const thin = lineChart(host, { series, x: { min: xmin, max: xmax, ticks: narrow && weekly ? ticks.filter((_, i) => i % 2 === 0) : ticks },
+        gap: weekly ? 20 : 1.5, endLabels: true, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
+        xlab: x => { if (weekly) { const d = new Date((x - 4) * 864e5); return `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`; }
+          return `${MON_FULL[((x % 12) + 12) % 12]} ${Math.floor(x / 12)}`; },
+        xname: weekly ? "Week" : "Month", empty: `No ${what} sales to chart for the states picked.`,
+        aria: `${what} price ${weekly ? "by week, the past year" : "by month, the past 5 years"}: ${series.map(s => s.name).join(", ")}` });
+      if (thin) legend.append(fewLegend());
+    };
+    draw("weekly", $("#cmp-week"), $("#cmp-wlegend"), $("#cmp-wsub"));
+    draw("monthly", $("#cmp-month"), $("#cmp-mlegend"), $("#cmp-msub"));
+    // a state with no line says why: too few sales of this kind, none at all, or no file yet
+    const why = ids.map(id => {
+      const d = CMP[id];
+      if (d === "missing") return `${nameOf(id)}: not available to compare yet.`;
+      const w = !!d.weekly[key], m = !!d.monthly[key], few = d.few.weekly.includes(key) || d.few.monthly.includes(key);
+      if (w && m) return null;
+      if (m) return `${nameOf(id)}: too few ${what} sales week to week for the weekly chart; the monthly line is shown.`;
+      // a state whose reports carry no cull cows at all (Nebraska, South Dakota, North Dakota, Virginia's graded sales)
+      if (culls && k.v !== "bulls" && !["breaker", "boner", "lean"].some(g => d.monthly[g] || d.few.monthly.includes(g)))
+        return `USDA's ${nameOf(id)} auction reports don't include cull cows.`;
+      return few ? `${nameOf(id)}: too few ${what} sales to chart.` : `${nameOf(id)}: no ${what} sales reported in the past 5 years.`;
+    }).filter(Boolean);
+    $("#cmp-missing").textContent = why.join(" ");
+    const picked = ids.map(id => CMP[id]).filter(d => d && d !== "missing");
+    const sea = picked.filter(d => d.seasonal).map(d => d.name), graded = picked.filter(d => d.graded).map(d => d.name);
+    $("#cmp-note").textContent = "States don't grade or sell calves the same way: some report more #1 calves than others, the mix of " +
+      "weights inside a weight group differs, and USDA reports some states' auctions more fully than others. Part of a gap " +
+      "between two states can come from those differences, not price alone." +
+      (graded.length ? ` ${graded.join(" and ")}'s prices are state graded sales, where calves sell in groups sorted by grade and weight.` : "") +
+      (sea.length ? ` ${sea.join(" and ")} ${sea.length > 1 ? "sell" : "sells"} few feeder cattle from May through September, so ${sea.length > 1 ? "their lines skip" : "its line skips"} most of those months.` : "");
+  }
+
   // ---------- sell now or keep ----------
   const KEEP = [30, 60, 90];
   // price at exactly w lb: the last two weeks' 50-lb class average (centered on the class midpoint), moved along
@@ -2066,7 +2206,7 @@ details.method .card { margin-top: 10px; }
     monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal pattern by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
-  const VIEWS = { week: renderWeek, trend: renderTrend, keep: renderSell, buy: renderBuy, bull: renderBull, season: renderSeason };
+  const VIEWS = { week: renderWeek, trend: renderTrend, cmp: renderCmp, keep: renderSell, buy: renderBuy, bull: renderBull, season: renderSeason };
   // links to tabs folded into others (11/9/2026): the Cull cows tab (#cows) opens This week on Cows & bulls
   // (renderWeek sends a state without cows back to Steers); Calf value (#value) opens Sell or keep
   const oldCows = h => { if (h === "value") return "keep"; if (h !== "cows") return h; S.wcls = "Cows"; return "week"; };
@@ -2215,6 +2355,7 @@ details.method .card { margin-top: 10px; }
   $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disc-full").open = true; $("#disclaimer").scrollIntoView({ behavior: "smooth" }); });
   $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
   $("#state").addEventListener("change", e => loadState(e.target.value));
+  for (const [i, k] of [[1, "c1"], [2, "c2"], [3, "c3"]]) $(`#cmp-s${i}`).addEventListener("change", e => { S[k] = e.target.value; renderCmp(); });
   let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => D && VIEWS[S.tab](), 120); }).observe(document.querySelector("main"));
 
   // the pickers and footer for the state just loaded
@@ -2231,6 +2372,7 @@ details.method .card { margin-top: 10px; }
     S.market = saved && D.markets.some(m => m.id === saved) ? saved : "state";
     $("#market").value = S.market;
     S.week = defaultWeek();
+    S.c1 = st;                         // Compare states starts from the state just picked
     $("#foot-src").textContent = `Prices come from USDA Agricultural Marketing Service auction reports co-published with the ${D.meta.agency}.`;
     $("#foot-specials").textContent = D.meta.graded ? `Graded, special and board sales are not included, except in ${D.meta.state}, where the weekly sales USDA reports are state graded sales.`
       : "Graded, special and board sales are not included.";
