@@ -315,7 +315,11 @@ tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 
 /* This week's cull cow cards (the Cull cows tab until 11/9/2026) and Price trend's cull chart: set here, not
    inline, so the hidden attribute still hides them */
 #week-cows { display: grid; gap: 14px; } #cull-card, #keep-vog-card { display: grid; gap: 10px; }
-#week-cows[hidden], #cull-card[hidden], #keep-vog-card[hidden] { display: none; }   /* the vog card's inline grid kept it showing when hidden (11/9/2026) */
+#week-cows[hidden], #cull-card[hidden], #keep-vog-card[hidden] { display: none; }
+/* Colorado and North Dakota's seasonal markets (11/10/2026): the parts that need a feeder seasonal pattern give way to
+   a message; several carry an inline grid, which beats the hidden attribute */
+.keep-part[hidden], .buy-part[hidden], .season-part[hidden], .off-msg[hidden] { display: none !important; }
+.off-msg p { margin: 0; max-width: 70ch; }   /* the vog card's inline grid kept it showing when hidden (11/9/2026) */
 .cows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; }
 .cow h3 { margin: 0 0 2px; font: 700 18px/1.25 var(--display); }
 .cow .grade { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
@@ -435,6 +439,7 @@ details.method .card { margin-top: 10px; }
   <section class="panel" id="week" role="tabpanel" aria-labelledby="t-week">
     <div>
       <h2>Cattle Prices</h2>
+      <p class="sub" id="week-quiet" hidden></p>
     </div>
     <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div></div>
     <div class="controls"><div class="seg" id="week-class"></div></div>
@@ -501,7 +506,8 @@ details.method .card { margin-top: 10px; }
       <h2>Sell now, or keep and add weight? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="keep-sub">Estimate, not a forecast.</p>
     </div>
-    <div class="card" style="display:grid;gap:18px">
+    <div class="card off-msg" id="keep-off" hidden><p></p></div>
+    <div class="card keep-part" style="display:grid;gap:18px">
       <div class="controls">
         <div class="seg" id="keep-days" aria-label="How long to keep"></div>
       </div>
@@ -522,11 +528,11 @@ details.method .card { margin-top: 10px; }
         </div>
       </details>
     </div>
-    <div class="card tablewrap" style="display:grid;gap:8px">
+    <div class="card tablewrap keep-part" style="display:grid;gap:8px">
       <table id="keep-table"></table>
       <p class="note" id="keep-season"></p>
     </div>
-    <div class="card" id="keep-vog-card">
+    <div class="card keep-part" id="keep-vog-card">
       <div>
         <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="keep-vog-title">How far to grow it</h3>
         <p class="note" id="keep-vog-sub"></p>
@@ -551,7 +557,8 @@ details.method .card { margin-top: 10px; }
       <h2>Thinking of buying calves? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="buy-sub">Estimate, not a forecast.</p>
     </div>
-    <div class="card" style="display:grid;gap:18px">
+    <div class="card off-msg" id="buy-off" hidden><p></p></div>
+    <div class="card buy-part" style="display:grid;gap:18px">
       <div class="controls">
         <div class="seg" id="buy-class"></div>
         <label class="field" for="buy-w"><span>Purchase weight (lb)</span>
@@ -575,7 +582,7 @@ details.method .card { margin-top: 10px; }
       </div>
       <div class="answer" id="buy-answer"></div>
     </div>
-    <div class="card" style="display:grid;gap:10px">
+    <div class="card buy-part" style="display:grid;gap:10px">
       <div>
         <h3 style="margin:0;font:700 17px/1.3 var(--body)" id="buy-chart-title"></h3>
         <p class="note" id="buy-chart-sub"></p>
@@ -583,7 +590,7 @@ details.method .card { margin-top: 10px; }
       <ul class="legend" id="buy-legend"></ul>
       <div class="chart" id="buy-chart"></div>
     </div>
-    <details class="method"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
+    <details class="method buy-part"><summary>Calculation methods</summary><div class="card" style="display:grid;gap:12px;max-width:640px">
       <h3 style="margin:0;font:700 17px/1.3 var(--body)">How the estimate is built</h3>
       <dl class="build" id="buy-build"></dl>
     </div><p class="note" id="buy-note"></p></details>
@@ -627,11 +634,12 @@ details.method .card { margin-top: 10px; }
       <h2>Seasonal trend <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="season-sub"></p>
     </div>
-    <div class="controls">
+    <div class="card off-msg" id="season-off" hidden><p></p></div>
+    <div class="controls season-part">
       <div class="seg" id="season-class"></div>
       <div class="chips" id="season-weight" aria-label="Weight group"></div>
     </div>
-    <div class="card" style="display:grid;gap:10px">
+    <div class="card season-part" style="display:grid;gap:10px">
       <p style="margin:0;font-weight:600" id="season-summary"></p>
       <div class="chart" id="season-chart"></div>
     </div>
@@ -1337,6 +1345,12 @@ details.method .card { margin-top: 10px; }
     // and the table titles already say where, which week and $/cwt (Josh, 11/5/2026)
     // week picker: the latest week (marked "so far" while barns are still to report) or the one before
     $("#week-pick-row").hidden = !hasPrev();
+    // a seasonal state two weeks past its last sale (Colorado, North Dakota in summer): when the prices are from,
+    // and that the quiet is the usual season (Josh, 11/10/2026)
+    const quiet = !!seasonalSt() && (Date.now() - new Date(D.meta.through + "T12:00:00")) / 864e5 > 14;
+    $("#week-quiet").hidden = !quiet;
+    if (quiet) $("#week-quiet").textContent = `${stName()}'s last reported sales were the week of ${day(D.report.state.week[0])}. ` +
+      "Feeder sales pick up again in the fall.";
     if (hasPrev()) {
       const L = D.report.state, P = D.prev.state.report;
       seg($("#week-pick"), [{ v: "latest", t: `Week of ${day(L.week[0])}${soFar(L) ? " (so far)" : ""}` },
@@ -1709,6 +1723,19 @@ details.method .card { margin-top: 10px; }
     : `Keeping comes out ahead if your cost of gain is under ${fmt$(be)}/lb`;
   const pct = v => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(1) + "%";
 
+  // Colorado and North Dakota sell few feeder cattle May-September (Josh, 11/10/2026): too few summer sales for a
+  // feeder seasonal pattern, so the estimates built on one aren't offered there. The message states a fact about the
+  // market, never an error (Josh: a quiet summer must not look like a failure)
+  const seasonalSt = () => B && B.meta.seasonal;
+  // "" outside a seasonal state: offMsg's text is built before offMsg looks (11/10/2026: MS's keep and planner threw)
+  const offText = () => seasonalSt() ? `${stName()} auctions sell too few feeder cattle from ${B.meta.seasonal.off_text} to measure a usual seasonal price move` : "";
+  function offMsg(pre, text) {             // hides the tab's .<pre>-part pieces and shows its message; true when off
+    const on = !!seasonalSt();
+    for (const x of document.querySelectorAll(`.${pre}-part`)) x.hidden = on;
+    $(`#${pre}-off`).hidden = !on;
+    if (on) $(`#${pre}-off p`).textContent = text;
+    return on;
+  }
   function renderSell() {          // the Sell or keep tab: the shared class and weight, the value now, then keep
     seg($("#keep-class"), CLS, () => S.kcls, v => S.kcls = v);
     if (document.activeElement !== $("#keep-w-range")) $("#keep-w-range").value = S.kw;
@@ -1716,6 +1743,7 @@ details.method .card { margin-top: 10px; }
     renderKeep();
   }
   function renderKeep() {
+    if (offMsg("keep", `${offText()}, so the keep estimate isn't offered for ${stName()}.`)) { $("#keep-note").textContent = ""; return; }
     seg($("#keep-days"), KEEP.map(d => ({ v: d, t: `${d} days` })), () => S.days, v => { S.days = v; store.set("days", v); });
     for (const [id, k, dec] of [["#keep-w", "kw", 0], ["#keep-adg", "adg", 1], ["#keep-cog", "cog", 2], ["#keep-dl", "dl", 1]]) {
       const f = $(id); if (document.activeElement !== f) f.value = S[k] == null ? "" : k === "dl" ? S[k] : S[k].toFixed(dec);
@@ -1899,6 +1927,7 @@ details.method .card { margin-top: 10px; }
     return P;
   }
   function renderBuy() {
+    if (offMsg("buy", `${offText()}, so the purchase planner isn't offered for ${stName()}.`)) return;
     seg($("#buy-class"), CLS, () => S.pcls, v => S.pcls = v);
     seg($("#buy-gmode"), [{ v: "adg", t: "Gain per day" }, { v: "total", t: "Total gain" }], () => S.gmode, v => { S.gmode = v; store.set("gmode", v); });
     chips($("#buy-days-chips"), BUY_DAYS.map(d => ({ v: d, t: `${d} days` })), () => S.pdays, v => { S.pdays = v; store.set("pdays", v); });
@@ -2008,8 +2037,16 @@ details.method .card { margin-top: 10px; }
   function renderSeason() {
     const Sx = D.season;
     const hasCows = !!Sx.series["Cull cows"];                          // none where the state reports no cull cows
+    // a seasonal state has no feeder pattern: say why, and show its cull cow pattern if it has one (Colorado)
+    const sea = seasonalSt();
+    $("#season-off").hidden = !sea;
+    if (sea) $("#season-off p").textContent = `${offText()}, so there's no seasonal pattern for ${stName()} feeder cattle.` +
+      (hasCows ? " The cull cow pattern is below." : "");
+    for (const x of document.querySelectorAll(".season-part")) x.hidden = !!sea && !hasCows;
+    if (sea && !hasCows) { $("#season-sub").textContent = ""; return; }
+    if (sea) S.scls = "Cows";
     if (!hasCows && S.scls === "Cows") S.scls = "Steers";
-    seg($("#season-class"), [...CLS, ...(hasCows ? [{ v: "Cows", t: "Cull cows" }] : [])], () => S.scls, v => S.scls = v);
+    seg($("#season-class"), [...(sea ? [] : CLS), ...(hasCows ? [{ v: "Cows", t: "Cull cows" }] : [])], () => S.scls, v => S.scls = v);
     const cows = S.scls === "Cows";
     const groups = cows ? [] : Object.keys(Sx.series).filter(k => k.startsWith(S.scls + " ")).map(k => k.split(" ")[1]);
     if (!cows && !groups.includes(S.sgrp))       // nearest group with a pattern (AL heavy heifers have none)
