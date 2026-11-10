@@ -1477,9 +1477,10 @@ details.method .card { margin-top: 10px; }
     $("#week-cows").hidden = !cows;
     if (cows) renderCows();
     // a link to the MSU Extension tool that goes with this class (ADDRESS_STANDARD.md; Josh, 11/10/2026)
-    $("#week-tools").innerHTML = cows
+    $("#week-tools").innerHTML = (cows
       ? 'Imported lean beef is most similar to cull cow beef. See how much comes in, and from where, on <a href="../beeftrade/#imports">U.S. Beef Trade</a>.'
-      : 'Buying calves to graze? Try a stocker budget, built on Mississippi prices, on <a href="../cattlebudgets/#stocker">Beef Cattle Budgets</a>.';
+      : 'Buying calves to graze? Try a stocker budget, built on Mississippi prices, on <a href="../cattlebudgets/#stocker">Beef Cattle Budgets</a>.')
+      + ` Drought in ${D.meta.state} this week, county by county: <a href="../drought/?state=${D.meta.id}#map">Beef Cattle Drought Tracker</a>.`;
     const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
     const anyThin = !cows && noFeeders ? false : (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
