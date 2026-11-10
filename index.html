@@ -666,7 +666,11 @@ details.method .card { margin-top: 10px; }
     <details class="method" id="foot-how"><summary>How these numbers are calculated</summary>
       <ul>
         <li id="foot-lots">Feeder prices are Medium and Large frame calves graded #1, #1-2 and #2, in dollars per hundredweight
-          (cwt). Only regular lots count: Value Added, Fancy, Fleshy and other described lots, and #3 calves, are left out.
+          (cwt), from regular lots. Regular lots include calves reported as unweaned: some states' reporters label
+          them and others don't, so counting them keeps regular lots the same in every state. Value Added lots (groups
+          the reporter marks as Value Added, usually weaned or preconditioned calves that typically sell at a premium)
+          are kept separate: pick Value Added at the top of the page to see them where there are enough sales. Fancy,
+          Fleshy, Thin Fleshed and other described lots, and #3 calves, are left out.
           Cull cows and slaughter bulls are Average dressing. Prices are averaged by head; USDA's report averages are weighted
           by pounds, so the two can differ by a few cents.</li>
         <li><span id="foot-all">The statewide view combines every reporting auction in the state.</span>
@@ -2105,7 +2109,7 @@ details.method .card { margin-top: 10px; }
     $("#buy-sub").textContent = BUY_SUB + (va ? " Assumes the calves are bought and sold as Value Added lots." : "");
     FOOT_LOTS = FOOT_LOTS || $("#foot-lots").textContent;
     $("#foot-lots").textContent = va ? "Feeder prices are Medium and Large frame calves graded #1, #1-2 and #2, in dollars per hundredweight " +
-      "(cwt). With Value Added picked, only Value Added lots count; otherwise only regular lots. #3 calves are left out either way, and Steer or " +
+      "(cwt). With Value Added picked, only Value Added lots count; otherwise only regular lots, which include calves reported as unweaned. #3 calves are left out either way, and Steer or " +
       "bull and the cull cow and bull prices use regular lots either way. Cull cows and slaughter bulls are Average dressing. Prices are averaged by head; USDA's " +
       "report averages are weighted by pounds, so the two can differ by a few cents." : FOOT_LOTS;
   }
