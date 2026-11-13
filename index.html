@@ -916,7 +916,11 @@ details.method .card { margin-top: 10px; }
   // in place of the tabs, with its numbers, instead of empty tabs.
   const PLAIN_TABS = new Set(["bull"]);      // "cows" until the Cull cows tab moved to This week (11/9/2026)
   const vaCov = () => (B && B.va && B.va.markets && B.va.markets[S.market]) || null;
-  const vaReady = () => S.lots === "va" && !!(vaCov() && vaCov().ok) && !!VAC[B.meta.id] && !!VAC[B.meta.id].report[S.market];
+  // the Value Added file must come from the same build as the regular-lots file: a page left open across the
+  // morning update could otherwise show one day's Value Added prices beside the other day's (audit 11/3/2026)
+  const vaFresh = st => !!VAC[st] && VAC[st].meta.generated === B.meta.generated;
+  const vaHeld = () => !!(B && B.va && B.va.held);     // the export held the Value Added view back today
+  const vaReady = () => S.lots === "va" && !vaHeld() && !!(vaCov() && vaCov().ok) && vaFresh(B.meta.id) && !!VAC[B.meta.id].report[S.market];
   const vaOn = () => D !== B;                 // the tabs are reading Value Added prices
   function viewData() {
     if (!vaReady() || PLAIN_TABS.has(S.tab)) return B;
@@ -926,9 +930,18 @@ details.method .card { margin-top: 10px; }
   }
   function loadVA() {
     const st = B.meta.id;
-    if (VAC[st] || VALOAD[st] || VAERR[st]) return;
+    if (vaHeld() || vaFresh(st) || VALOAD[st] || VAERR[st]) return;
     VALOAD[st] = fetch(`data/${st}_va.json`, { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(v => { VAC[st] = v; }).catch(err => { console.error(err); VAERR[st] = true; })
+      .then(v => {
+        if (v.meta.generated === B.meta.generated) { VAC[st] = v; return; }
+        // a newer build than the regular prices on screen: fetch those again so both come from it
+        if (Date.parse(v.meta.generated) > Date.parse(B.meta.generated))
+          return getData(st).then(data => {
+            if (data.meta.generated !== v.meta.generated) throw new Error("the two files are from different builds");
+            VAC[st] = v; if (B && B.meta.id === st) setState(data);
+          });
+        throw new Error("the Value Added file is older than the regular prices");
+      }).catch(err => { console.error(err); VAERR[st] = true; })
       .finally(() => { delete VALOAD[st]; if (B && B.meta.id === st) render(); });
   }
   const stName = () => D.meta.state;
@@ -1032,10 +1045,12 @@ details.method .card { margin-top: 10px; }
       d: "M" + B.map(p => `${X(p.x).toFixed(1)},${Y(p.hi).toFixed(1)}`).join("L") + "L" +
          [...B].reverse().map(p => `${X(p.x).toFixed(1)},${Y(p.lo).toFixed(1)}`).join("L") + "Z" }));
     if (cfg.zero && ylo < 0 && yhi > 0) svg.append(svgEl("path", { class: "axis", d: `M${m.l},${Y(0)} H${W - m.r}` }));
+    let mkLab = null;                                             // the marker's label, flipped left below if it would run off the right edge
     if (cfg.marker) {
       const x = X(cfg.marker.x);
       svg.append(svgEl("path", { class: "ref", d: `M${x},${m.t} V${H - m.b}` }));
-      const tx = svgEl("text", { x: x + 6, y: m.t + 12, class: "endlab" }); tx.textContent = cfg.marker.t; svg.append(tx);
+      mkLab = svgEl("text", { x: x + 6, y: m.t + 12, class: "endlab" }); mkLab.textContent = cfg.marker.t; svg.append(mkLab);
+      mkLab.dataset.mx = x;
     }
     // lines, drawn back to front, breaking at gaps
     const ends = []; let thin = 0;
@@ -1135,6 +1150,12 @@ details.method .card { margin-top: 10px; }
     host.replaceChildren(svg, tip, srTable(cfg.aria || "Chart", [cfg.xname || "", ...cfg.series.map(s => s.name), ...(cfg.band ? [cfg.band.name] : [])],
       xs.map(x => { const bp = B.find(p => p.x === x);
         return [cfg.xlab(x), ...cfg.series.map(s => cell(s, x)), ...(cfg.band ? [bp ? `${cfg.yfmt(bp.lo, true)} to ${cfg.yfmt(bp.hi, true)}` : "–"] : [])]; })));
+    // a marker at the right end (120 days kept, the planner's last point): its label goes to the left of the line,
+    // measured once the chart is on the page (an estimate while the tab is hidden)
+    if (mkLab) {
+      const mx = +mkLab.dataset.mx, w = mkLab.getComputedTextLength() || mkLab.textContent.length * 7.5;
+      if (mx + 6 + w > W - 2) { mkLab.setAttribute("x", mx - 6); mkLab.setAttribute("text-anchor", "end"); }
+    }
     return thin;
   }
 
@@ -2369,11 +2390,12 @@ details.method .card { margin-top: 10px; }
     $("#buy-legend").replaceChildren(
       el("li", {}, [el("span", { class: "key k1" }), el("span", { text: `Estimate (${yrs} average pattern)` })]),
       el("li", {}, [el("span", { class: "key kband" }), el("span", { text: `Seasonal pattern alone, ${yrs}` })]));
-    const ticks = []; for (let v = 60; v <= 180; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
+    const x0 = Math.min(60, pts.length ? pts[0].x : 60);         // a typed keep under 60 days starts the axis there, so its point stays on the chart
+    const ticks = []; for (let v = Math.ceil(x0 / 30) * 30; v <= 180; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
     lineChart($("#buy-chart"), {
       band: band.length ? { pts: band, name: `Seasonal pattern alone, ${yrs}` } : null,
       series: [{ cls: 1, pts, name: useM ? "Estimate" : "Break-even", width: 2.4 }],
-      x: { min: 60, max: Math.max(90, pts.length ? pts[pts.length - 1].x : 90), ticks },
+      x: { min: x0, max: Math.max(90, pts.length ? pts[pts.length - 1].x : 90), ticks },
       yfmt: (v, full) => useM ? (full ? signedR(v) : (v < 0 ? "−$" : "$") + Math.abs(Math.round(v))) : (full ? (v <= 0 ? "none" : fmt$(v) + "/lb") : "$" + v.toFixed(2)),
       xlab: d => { const t = addDays(tb, d); return `Keep ${d} days (sell ${MON[t.getMonth()]} ${t.getDate()})`; },
       marker: { x: Math.min(S.pdays, pts.length ? pts[pts.length - 1].x : S.pdays), t: `${S.pdays} days`, ...(useM ? {} : { y: 0 }) }, zero: useM,
@@ -2455,7 +2477,12 @@ details.method .card { margin-top: 10px; }
     const c = vaCov(), mk = market(), stc = B.va && B.va.markets.state, body = $("#va-card-body"), btns = $("#va-card-btns");
     const btn = (t, ghost, f) => { const b = el("button", { type: "button", class: "btn" + (ghost ? " ghost" : ""), text: t }); b.addEventListener("click", f); return b; };
     const plainBtn = btn("Show regular lots", false, () => { setLots("plain"); render(); $("#lots").querySelector("button").focus(); });
-    const loading = c && c.ok && !VAC[B.meta.id] && !VAERR[B.meta.id];
+    if (vaHeld() && c && c.ok) {        // held back by today's checks (Josh, 11/13/2026)
+      $("#va-card-h").textContent = "Value Added prices aren't available today";
+      body.replaceChildren(el("p", { text: "Today's update didn't pass its checks for Value Added lots. Regular lots are up to date." }));
+      btns.replaceChildren(plainBtn); return;
+    }
+    const loading = c && c.ok && !vaFresh(B.meta.id) && !VAERR[B.meta.id];
     $("#va-card-h").textContent = loading ? "Loading Value Added prices…" : VAERR[B.meta.id] && c && c.ok
       ? "Value Added prices didn't load" : "Too few Value Added sales to report here";
     if (loading) { body.replaceChildren(); btns.replaceChildren(); return; }
