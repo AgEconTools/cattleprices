@@ -248,6 +248,7 @@ tr.thin td, td.thinchg { background: var(--warn-bg); }
 /* calf value */
 .answer { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
 .answer .k { font-size: 13px; color: var(--muted); font-weight: 600; }
+.answer .k.sub2 { margin-top: 12px; }
 .answer .v { font: 700 34px/1.1 var(--body); font-variant-numeric: tabular-nums; }
 .answer .v.hero { color: var(--accent); }
 :root[data-theme="dark"] .answer .v.hero { color: var(--line-1); }
@@ -496,7 +497,7 @@ details.method .card { margin-top: 10px; }
   </section>
   <section class="panel" id="week" role="tabpanel" aria-labelledby="t-week">
     <div>
-      <h2>Cattle Prices</h2>
+      <h2 class="sr-only">Cattle prices by week</h2>   <!-- shown only to screen readers: it repeated the page title (review of build 70) -->
       <p class="sub" id="week-quiet" hidden></p>
     </div>
     <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div></div>
@@ -811,7 +812,8 @@ details.method .card { margin-top: 10px; }
         <li id="foot-lots">Feeder prices are Medium and Large frame calves graded #1, #1-2 and #2, in dollars per hundredweight
           (cwt), from regular lots. Regular lots include calves reported as unweaned: some states' reporters label
           them and others don't, so counting them keeps regular lots the same in every state. Value Added lots (groups
-          the reporter marks as Value Added, usually weaned or preconditioned calves that typically sell at a premium)
+          the reporter marks as Value Added, sold with extra management, usually weaned and often vaccinated; what
+          qualifies varies by auction)
           are kept separate: pick Value Added at the top of the page to see them where there are enough sales. Fancy,
           Fleshy, Thin Fleshed and other described lots, and #3 calves, are left out.
           Cull cows and slaughter bulls are Average dressing. Prices are averaged by head; USDA's report averages are weighted
@@ -953,11 +955,21 @@ details.method .card { margin-top: 10px; }
   const prevWeek = () => S.week === "prev" && hasPrev();
   const wk = () => prevWeek() ? D.prev.state : { report: D.report[S.market], coverage: D.coverage[S.market], grades: D.grades[S.market] };
   const soFar = r => isState() && r.complete === false;            // barns still to report this week
-  const defaultWeek = () => { const r = D.report.state; return D.prev && D.prev.state && r.complete === false && r.expected && r.reports < r.expected / 2 ? "prev" : "latest"; };
+  // a statewide table with a price for both steers and heifers
+  const pricedBoth = rows => ["Steers", "Heifers"].every(c => (rows || []).some(x => x.item.startsWith(c) && x.price != null));
+  // the complete week until half the expected auctions are in; also the week before when the latest week priced no
+  // steers or heifers (West Virginia, week of 11/9/2026: one barn, no steers; review of build 70, 11/16/2026)
+  const defaultWeek = () => { const r = D.report.state, p = D.prev && D.prev.state;
+    if (!p) return "latest";
+    if (r.complete === false && r.expected && r.reports < r.expected / 2) return "prev";
+    return !pricedBoth(r.rows) && pricedBoth(p.report.rows) ? "prev" : "latest"; };
   // "(4 of 16 auctions reported so far)" / "(14 auctions reported)"
   const reported = r => !r.reports ? "" : soFar(r) ? ` (${r.reports} of ${r.expected} auctions reported so far)`
     : ` (${r.reports} auction${r.reports === 1 ? "" : "s"} reported)`;
-  const weekWord = r => prevWeek() ? "last week" : soFar(r) ? "this week so far" : "this week";
+  // "this week" only for the week under way; a finished week is "the week of Nov. 9" (review of build 70, 11/16/2026:
+  // on a Monday the week just ended read "This week", and a held-back state's older week did too)
+  const underWay = r => { const t = today(); return !!(r && r.week) && iso(r.week[0]) <= t && t <= iso(r.week[1]); };
+  const weekWord = r => underWay(r) ? (soFar(r) ? "this week so far" : "this week") : "that week";   // the lead line names the week
 
   // ---------- small controls ----------
   // re-focus the rebuilt button with the same label, so keyboard users don't lose their place
@@ -1356,8 +1368,8 @@ details.method .card { margin-top: 10px; }
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
       el("div", { class: "row" }, [item(rc.week, `head ${isState() ? weekWord(r) : "this sale"}`, true), " · ",
-        item(rc.prior, (prevWeek() || !isState() ? "the week before" : "last week") + (once ? "" : sp || same)), " · ",
-        item(rc.year_ago, "a year ago" + (once ? ` (same ${r.reports} auctions)` : sy || same))]));
+        item(rc.prior, (!isState() || !underWay(r) ? "the week before" : "last week") + (once ? "" : sp || same)), " · ",
+        item(rc.year_ago, "a year ago" + (once ? ` (same ${r.reports} auction${r.reports === 1 ? "" : "s"})` : sy || same))]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10);   // ISO with offset, written in Central time
     const ver = D.meta.build ? `version ${D.meta.build}, ` : "";   // commits to the page code; "+" = uncommitted edits (support)
@@ -1479,8 +1491,8 @@ details.method .card { margin-top: 10px; }
     // a barn's columns name its sale and "the week before" it (audit 11/3/2026: Glasgow's Oct. 22 monthly sale read
     // "This week" on Nov. 3); statewide, the changes say they compare the same barns, since flipping the week picker
     // can show a different gap (TN 300-400 lb steers: $452.39 to $462.96, change −$15.99 on the barns in both weeks)
-    const now = !isState() ? `${day(r.sale)} sale` : prevWeek() ? "Last week" : soFar(r) ? "This week so far" : "This week";
-    const vs = !isState() || prevWeek() ? "vs. week before" : "vs. last week";
+    const now = !isState() ? `${day(r.sale)} sale` : !underWay(r) ? `Week of ${day(r.week[0])}` : soFar(r) ? "This week so far" : "This week";
+    const vs = !isState() || !underWay(r) ? "vs. week before" : "vs. last week";
     const same = isState() ? ", same auctions" : "";   // the rule sits in the closed methods box; keep it in the heads
     // no "same auctions" line under the table title: the column headings ("same barns") and the note under
     // the tables say it; the legend says only what the ⚠ and grey mean (Josh, 11/5/2026)
@@ -1505,19 +1517,19 @@ details.method .card { margin-top: 10px; }
     // a link to the MSU Extension tool that goes with this class (ADDRESS_STANDARD.md; Josh, 11/10/2026)
     // the stocker budget link came off the feeder view (Josh, 11/12/2026); the drought link stays on both
     $("#week-tools").innerHTML = (cows
-      ? 'Imported lean beef is most similar to cull cow beef. See how much comes in, and from where, on <a href="../beeftrade/#imports">U.S. Beef Trade</a>. '
-      : "")
+      ? 'Beef import and export volumes: <a href="../beeftrade/#imports">U.S. Beef Trade</a>. '
+      : 'What a calf of a given weight is worth: <a href="#keep">Sell or keep</a>. ')   // review of build 70 (11/16/2026)
       + `Drought in ${D.meta.state} this week, county by county: <a href="../drought/?state=${D.meta.id}#map">Beef Cattle Drought Tracker</a>.`;
     const feed = r.rows.filter(x => x.item.startsWith(S.wcls));
     const sl = r.rows.filter(x => !x.item.startsWith("Steers") && !x.item.startsWith("Heifers"));
     const anyThin = !cows && noFeeders ? false : (cows ? sl : feed).some(x => (x.head > 0 && x.head < FEW) || [x.chg_head, x.chg_yr_head].some(h => h && Math.min(...h) < FEW));
     if (!cows) $("#week-feeders").replaceChildren(el("caption", {}, [document.createTextNode(`${vaOn() ? "Value Added feeder" : "Feeder"} ${S.wcls.toLowerCase()}, #1 and #2, $/cwt`),
-      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. Gray means few sales." }) : null]),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. A gray change compares with a week of under 20 head." }) : null]),
       thead("Weight (lb)", now, vs + same, same), el("tbody", {}, noFeeders
         ? el("tr", {}, el("td", { colspan: "5", class: "none", text: "This sale's report didn't include feeder cattle." }))
         : reportRows(feed, x => x.item.split(" ")[1])));
     if (cows) $("#week-slaughter").replaceChildren(el("caption", {}, [document.createTextNode("Cull cows and slaughter bulls, $/cwt"),
-      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. Gray means few sales." }) : null]),
+      anyThin ? el("p", { class: "legend-few", text: "⚠ Under 20 head: one or two lots can swing the price. A gray change compares with a week of under 20 head." }) : null]),
       thead("Class", now, vs + same, same), el("tbody", {}, reportRows(sl, x => x.item.replace("Cull cows, ", "Cows, ").replace("Slaughter bulls, YG 1-2", "Bulls, YG 1-2"))));
     renderFacts(r);
     const notes = [];
@@ -1566,7 +1578,7 @@ details.method .card { margin-top: 10px; }
       va(lots.ytd) != null ? `${va(lots.ytd)}% so far in ${yr}` : "");
     const why = el("a", { href: "#about", text: "More on these numbers" });
     why.addEventListener("click", e => { e.preventDefault(); $("#foot-how").open = true; $("#foot-how").scrollIntoView({ behavior: "smooth", block: "start" }); });
-    $("#week-facts").replaceChildren(el("h3", { text: isState() ? `About ${prevWeek() ? "last" : "this"} week's ${stName()} sales` : `About this sale at ${market().name}` }),
+    $("#week-facts").replaceChildren(el("h3", { text: isState() ? (underWay(r) ? `About this week's ${stName()} sales` : `About ${stName()} sales, week of ${day(r.week[0])}`) : `About this sale at ${market().name}` }),
       el("dl", {}, items),
       el("p", { class: "gmix" }, [document.createTextNode("Reporters grade differently from barn to barn, so prices here combine #1 and #2 calves. " + (vaOn() ? "These are Value Added lots only. " : "")), why]),
       ...[specialsNote()].filter(Boolean));   // null (no special sales, or a barn view) would print as "null" (bug 11/2/2026)
@@ -2256,6 +2268,7 @@ details.method .card { margin-top: 10px; }
     const g0 = R(P.w2 * P.pSlide / 100), l0 = R(g0 * dl / 100), b0 = R(S.pw * (S.pbuy ?? P.p1) / 100);
     P.margin0 = P.cost != null ? g0 - l0 - P.cost - P.other - b0 : null;
     P.voG0 = P.gain > 0 ? (g0 - l0 - P.other - b0) / P.gain : null;
+    P.maxBuy0 = P.cost != null ? (g0 - l0 - P.cost - P.other) / S.pw * 100 : null;      // the same, today's prices (review of build 70)
     const at = sea => { const g = R(P.w2 * P.pSlide * sea / 100), l = R(g * dl / 100);
       return P.cost != null ? g - l - P.cost - P.other - P.buy : P.gain > 0 ? (g - l - P.other - P.buy) / P.gain : null; };
     P.rangeLo = at(P.seaLo); P.rangeHi = at(P.seaHi);
@@ -2318,11 +2331,14 @@ details.method .card { margin-top: 10px; }
       ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
           two(signedR(P.margin) + " a head", signedR(P.margin0) + " a head", i => upDown(i ? P.margin0 : P.margin)),
           N ? el("div", { class: "d", text: `For ${fmtN(N)} head: ${signedR(P.margin * N)}, with the seasonal change` }) : null,
-          el("div", { class: "d", text: `After gain cost${P.other ? ", death loss and other costs" : " and death loss"}. Break-even purchase price: ${P.maxBuy > 0 ? fmt$(P.maxBuy) + "/cwt" : "none"}` }),
+          el("div", { class: "d", text: `After gain cost${P.other ? ", death loss and other costs" : " and death loss"}.` }),
+          // both cases, as the margin and break-even cost of gain (review of build 70, 11/16/2026)
+          el("div", { class: "k sub2", text: "Break-even purchase price" }),
+          two(...[P.maxBuy, P.maxBuy0].map(v => v > 0 ? fmt$(v) + "/cwt" : "none")),
           el("div", { class: "d", text: NOT_IN })].filter(Boolean))
       : el("div", {}, [el("div", { class: "k", text: "Break-even cost of gain" }),
           two(beFig(P.voG), beFig(P.voG0)),
-          el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "The estimate is below the purchase cost even at zero cost of gain." : "Gain must cost less than this to make money. Enter your cost of gain to see the margin." }),
+          el("div", { class: "d", text: P.voG != null && P.voG <= 0 ? "The estimate is below the purchase cost even at zero cost of gain." : "Below this cost of gain, the estimate shows a positive margin, before the costs listed below. Enter your cost of gain to see the margin." }),
           sensLine(P.gross, pdl(), P.gain),
           el("div", { class: "d", text: NOT_IN })].filter(Boolean));
     ans.replaceChildren(buyCard,
@@ -2433,13 +2449,15 @@ details.method .card { margin-top: 10px; }
     $("#season-sub").textContent = `${cows ? "Boner cows (Average dressing)" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: % above or below a typical month, ${yrs[0]}-${yrs[yrs.length - 1]}, ${stName()}.`;
     const rows = Sx.series[cows ? "Cull cows" : `${S.scls} ${S.sgrp}`];
     const by = [...rows].sort((a, b) => b.index - a.index);
-    const nm = r => MON[MON3.indexOf(r.month)].replace(".", "");
+    const nm = r => ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][MON3.indexOf(r.month)];
     // two months next to each other read as a span ("Mar-Apr"); otherwise "March and June"
+    // the two highest and two lowest months, each with its own figure, in calendar order (review of build 70: "March-April
+    // (about +7%)" quoted March alone; April was +4%)
+    const sg = v => { const x = Math.round(v - 100); return x === 0 ? "0%" : (x > 0 ? "+" : "−") + Math.abs(x) + "%"; };
     const pair = (a, b) => { const [x, y] = [a, b].sort((p, q) => MON3.indexOf(p.month) - MON3.indexOf(q.month));
-      const gap = MON3.indexOf(y.month) - MON3.indexOf(x.month);
-      return gap === 1 ? `${nm(x)}-${nm(y)}` : gap === 11 ? `${nm(y)}-${nm(x)}` : `${nm(x)} and ${nm(y)}`; };
-    $("#season-summary").textContent = `Highest: ${pair(by[0], by[1])} (about +${(by[0].index - 100).toFixed(0)}%). ` +
-      `Lowest: ${pair(by[by.length - 1], by[by.length - 2])} (about −${(100 - by[by.length - 1].index).toFixed(0)}%).`;
+      const yx = MON3.indexOf(y.month) - MON3.indexOf(x.month) === 11 ? [y, x] : [x, y];   // Dec. before Jan.
+      return yx.map(m => `${nm(m)} (${sg(m.index)})`).join(" and "); };
+    $("#season-summary").textContent = `Highest: ${pair(by[0], by[1])}. Lowest: ${pair(by[by.length - 1], by[by.length - 2])}.`;
     monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal pattern by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
