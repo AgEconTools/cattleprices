@@ -141,6 +141,7 @@ h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap:
        font-weight: 600; font-size: 15px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .tab:hover { background: var(--accent-soft); color: var(--ink); }
 .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab-break { display: none; }
 
 /* panels */
 main { padding-block: 26px 40px; }
@@ -301,6 +302,7 @@ details.calc#keep-calc { max-width: none; }
 .tip .row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .key { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; }
 .key.dash { border-top-style: dashed; }
+.key.dot { border-top-style: dotted; border-top-width: 2px; }   /* the thin today's-prices line (review of build 71) */
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--ink-2); margin: 0; padding: 0; list-style: none; }
 .legend li { display: flex; align-items: center; gap: 7px; }
 .k1 { border-color: var(--line-1); } .k2 { border-color: var(--line-2); } .k3 { border-color: var(--line-3); }
@@ -425,9 +427,26 @@ details.method .card { margin-top: 10px; }
   .controls .field input[type=number] { width: 100%; }
   /* the four keep lengths on one line at phone width (review, build 68) */
   #keep-days { display: flex; flex-wrap: nowrap; width: 100%; } #keep-days button { flex: 1 1 0; padding: 7px 4px; white-space: nowrap; }
-  .tabs::after { content: ""; position: absolute; right: 0; top: 0; bottom: 1px; width: 44px; pointer-events: none;
-                 background: linear-gradient(to right, transparent, var(--bg)); }
-  .tabs.end::after { display: none; }
+  /* a compact masthead and every tab in view, two rows (review of build 71: the first price sat below a 375 x 812
+     screen and four tabs were off its edge, behind a fade): prices on the first row, the calculators on the second */
+  .mast .wrap { padding-block: 12px 12px; gap: 10px; }
+  h1 { font-size: 24px; }
+  .asof { margin-top: 3px; font-size: 13px; }
+  .asof.edu, .asof.tools-line { margin-top: 1px; font-size: 12.5px; }
+  .pickers { gap: 6px 8px; }
+  .picker label, .picker .lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .picker select { padding-block: 8px; font-size: 15px; }
+  .picker .seg.lots button { padding: 6px 10px; font-size: 14px; }
+  .tally .wrap { padding-block: 7px 8px; gap: 1px; }
+  .tally .lead { font-size: 13px; }
+  .tally .row { font-size: 13.5px; line-height: 1.4; }
+  .tally .row b { font-size: 15px; } .tally .row b.big { font-size: 16px; }
+  .tabs .wrap { flex-wrap: wrap; overflow: visible; gap: 2px 2px; padding-block: 5px; }
+  .tab { flex: 1 1 auto; padding: 6px 5px; font-size: 13.5px; }   /* each row fills the width; four fit from 360 px */
+  .tab-break { display: block; flex-basis: 100%; height: 0; }
+}
+@media (max-width: 359px) {   /* under 360 px the first four don't fit: three even rows instead of a lone Compare */
+  .tab-break { display: none; }
   table { font-size: 14px; }
   th, td { padding: 9px 3px; }
   thead th { white-space: normal; font-size: 11px; vertical-align: bottom; }
@@ -480,6 +499,7 @@ details.method .card { margin-top: 10px; }
     <button class="tab" role="tab" id="t-trend" aria-controls="trend" data-tab="trend">Price trend</button>
     <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season">Seasonal trend</button>
     <button class="tab" role="tab" id="t-cmp" aria-controls="cmp" data-tab="cmp">Compare</button>
+    <span class="tab-break" aria-hidden="true"></span>
     <button class="tab" role="tab" id="t-keep" aria-controls="keep" data-tab="keep">Sell or keep</button>
     <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
     <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
@@ -636,6 +656,8 @@ details.method .card { margin-top: 10px; }
         <div class="seg dlmode" id="keep-dlmode" aria-label="Enter death loss as" hidden></div>
         <label class="field" for="keep-oth"><span>Other costs of keeping ($/head, optional)</span>
           <input type="number" id="keep-oth" min="0" max="500" step="1" placeholder="e.g. 25"></label>
+        <label class="field" for="keep-int"><span>Interest on the sell-now value (% a year, optional)</span>
+          <input type="number" id="keep-int" min="0" max="25" step="0.25" placeholder="e.g. 8"></label>
         <label class="field" for="keep-head"><span>Number of head (optional)</span>
           <input type="number" id="keep-head" min="1" max="10000" step="1"></label>
       </div>
@@ -705,6 +727,8 @@ details.method .card { margin-top: 10px; }
         <div class="seg dlmode" id="buy-dlmode" aria-label="Enter death loss as" hidden></div>
         <label class="field" for="buy-oth"><span>Other costs ($/head, optional)</span>
           <input type="number" id="buy-oth" min="0" max="500" step="1" placeholder="e.g. 25"></label>
+        <label class="field" for="buy-int"><span>Interest on the purchase (% a year, optional)</span>
+          <input type="number" id="buy-int" min="0" max="25" step="0.25" placeholder="e.g. 8"></label>
         <label class="field" for="buy-head"><span>Number of head (optional)</span>
           <input type="number" id="buy-head" min="1" max="10000" step="1"></label>
       </div>
@@ -864,6 +888,7 @@ details.method .card { margin-top: 10px; }
   const S = { tab: "week", market: "state", week: "latest", wcls: "Steers", lots: "plain", calcOpen: false,
               tcls: "Steers", tgrp: "500-600", ckind: "boner", c1: null, c2: "", c3: "", ctype: "Steers", cgrp: "500-600", cgrade: "boner", scls: "Steers", sgrp: "500-600",
               kcls: "Steers", kw: 500, days: 60, adg: 1.5, cog: null, dl: 1, koth: null, poth: null,   // other costs, $/head (blank = not used; review, build 65)
+              kint: null, pint: null,   // interest, % a year, simple interest for the days kept (blank = not used; review of build 71)
               // Josh, 11/12/2026: the keep table and chart's price change (%, never remembered: 0 on every visit); head
               // counts and death loss as head (only with a head count); the planner's purchase month (0 = now)
               kx: 0, khead: null, kdlm: "pct", kdead: 1, phead: null, pdlm: "pct", pdead: 1, pmon: 0,
@@ -1288,7 +1313,8 @@ details.method .card { margin-top: 10px; }
           el("div", { class: "d", text: `About ${fmt$(bp)}/cwt (steers bring ${Rw.pct.toFixed(1)}% more at the same weight)` })]));   // the matched gap, as the chart shows it, on the bull-price base (audit 11/3/2026); sp / bp mixed in the weight slide when extra bull weight was entered (review, build 65)
       const mh = Math.min(Rw.steers, Rw.bulls);
       if (mh < FEW) ans.append(warnBox(`Few sales: only ${fmtN(mh)} head of ${grp} lb bulls or steers sold alongside each other in the last 12 months. Treat this as a rough guide.`));
-      if (now.head < FEW) ans.append(warnBox(`Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
+      if (now.head < FEW) ans.append(warnBox(now.thin ? `Few sales: only ${fmtN(now.head)} head of ${now.lo}-${now.lo + 50} lb steers sold in the last two weeks, so the steer price comes from the nearest classes with ${FEW} or more head.`
+        : `Few sales: the steer price rests on only ${fmtN(now.head)} head.`));
     }
     $("#bull-chart-sub").textContent = `Steer price minus bull price, ${day(C.start, true)} to ${day(C.end, true)}, comparing only steers and bulls of the same 50-lb class and grade at the same sale. ` +
       `The per-head answer applies that percentage gap to the last two weeks' steer price. A group is flagged when either count is under ${FEW} head. ` +
@@ -1607,8 +1633,7 @@ details.method .card { margin-top: 10px; }
     // one price per calf across the page (review item B; Josh, 11/2/2026): the class average tilted along the
     // smooth price-by-weight line, as Sell or keep, Purchase planner and Steer or bull price it; the year-ago
     // figure uses last year's line. The class average stays underneath as the reported number.
-    const cp = (pts, at) => { const r = pts.find(p => p[0] === lo); return r ? { price: onLine(r[1], lo, w, at), cls: r[1], head: r[2] } : null; };
-    const a = cp(now, x => slideAt(S.kcls, x)), b = cp(ago, x => slideAgoAt(S.kcls, x));
+    const a = priceOn(now, x => slideAt(S.kcls, x), w), b = priceOn(ago, x => slideAgoAt(S.kcls, x), w);
     const ans = $("#value-answer");
     const cls = (vaOn() ? "Value Added " : "") + S.kcls.toLowerCase().replace(/s$/, "");
     // the subtitle carries the dates, so the answer doesn't repeat them
@@ -1620,7 +1645,9 @@ details.method .card { margin-top: 10px; }
         `This week groups calves by 100 lb, so its ${Math.floor(w / 100) * 100}-${Math.floor(w / 100) * 100 + 100} lb row can include other weights. Try a nearby weight.` }));
     } else {
       const ph = R(a.price * w / 100), phAgo = b ? R(b.price * w / 100) : null;
-      const thinNow = a.head < FEW, thinAgo = b && b.head < FEW;
+      // a thin class takes its level from the classes beside it (priceOn, review of build 71), so its change still
+      // means something; only when no class has FEW head does the change read "too few sales"
+      const thinNow = a.head < FEW && !a.thin, thinAgo = b && b.head < FEW && !b.thin, lentNow = a.thin, lentAgo = !!(b && b.thin);
       // the answer: value, last year, change; how it's built sits one tap below (Josh, 11/2/2026: less text,
       // still transparent), the line's effect and the reported class average included
       ans.replaceChildren(
@@ -1639,14 +1666,16 @@ details.method .card { margin-top: 10px; }
       // the reported number and what it would give, so the line's effect is visible in dollars (Josh, 11/2/2026)
       calc.push(`Reported ${lo}-${lo + 50} lb ${vaOn() ? "Value Added " : ""}class average: ${fmt$(a.cls)}/cwt on ${fmtN(a.head)} head, ${fmt$(R(a.cls * w / 100), false)} at that price` +
         (b ? `; a year ago, ${fmt$(b.cls)}/cwt on ${fmtN(b.head)} head.` : "."));
-      // plain words for the line (Josh, 11/6/2026): the class average fits the class middle; onLine() moves it
-      // to w along the statewide price-by-weight line (8 weeks of sales; export slide())
+      // plain words for the method (Josh, 11/6/2026; the blend, review of build 71): priceOn() reads each class
+      // average at its midpoint against the statewide price-by-weight line (8 weeks of sales; export slide())
       const mid = lo + 25, many = `${vaOn() ? "Value Added " : ""}${S.kcls.toLowerCase()}`;
-      calc.push(`That average covers all ${many} from ${lo} to ${lo + 50} lb, so it fits a ${fmtN(mid)}-lb calf best` +
-        (w === mid ? `, and a ${fmtN(mid)}-lb calf gets that price. For other weights` : `. For a ${fmtN(w)}-lb calf`) +
-        `, the page adjusts it by how price changed with weight in ${stName()} sales over the past 8 weeks ` +
-        `(lighter calves usually bring a little more per pound), so the value changes more smoothly with weight. It can still step where one 50-lb class average hands off to the next. ` +
-        "Last year's value is figured the same way, and the sell-or-keep estimate below, Purchase planner and Steer or bull price calves this way too.");
+      calc.push(`That average covers all ${many} from ${lo} to ${lo + 50} lb, so it fits a ${fmtN(mid)}-lb calf best. ` +
+        `For any weight, the page follows how price changed with weight in ${stName()} sales over the past 8 weeks ` +
+        `(lighter calves usually bring a little more per pound) and blends between the nearest class averages, ` +
+        `so the value changes smoothly from one weight to the next, with no jump where one 50-lb class ends and the next begins. ` +
+        `At the middle of each class it equals that class's average. Classes with fewer than ${FEW} head don't set the level; the nearest classes with ${FEW} or more do.` +
+        (a.thin ? ` The ${lo}-${lo + 50} lb class had only ${fmtN(a.head)} head, so this value comes from its neighbors.` : "") +
+        " Last year's value is figured the same way, and the sell-or-keep estimate below, Purchase planner and Steer or bull price calves this way too.");
       // stays open across redraws (slider, class, resize) once the viewer opens it; added after any warnings
       const det = el("details", { class: "method calc" }, [el("summary", { text: "How this is calculated" }), ...calc.map(t => el("p", { class: "note", text: t }))]);
       det.open = !!S.calcOpen;
@@ -1655,6 +1684,11 @@ details.method .card { margin-top: 10px; }
         const which = thinNow && thinAgo ? `this price (${fmtN(a.head)} head) and the year-ago price (${fmtN(b.head)} head) rest` :
           thinNow ? `this price rests on only ${fmtN(a.head)} head` : `the year-ago price rests on only ${fmtN(b.head)} head`;
         ans.append(warnBox(`Few sales: ${which}${thinNow && thinAgo ? " on very few sales" : ""}. Treat it as a rough guide, or try a nearby weight.`));
+      }
+      if (lentNow || lentAgo) {
+        const few = [lentNow ? `only ${fmtN(a.head)} head of ${lo}-${lo + 50} lb ${S.kcls.toLowerCase()} sold in the last two weeks` : "",
+          lentAgo ? `only ${fmtN(b.head)} head in the same weeks last year` : ""].filter(Boolean).join(", and ");
+        ans.append(warnBox(`Few sales at this weight: ${few}, so ${lentNow && lentAgo ? "both values come" : lentNow ? "this value comes" : "last year's value comes"} from the nearest classes with ${FEW} or more head. Treat it as a rough guide.`));
       }
       ans.append(det);
     }
@@ -1859,14 +1893,29 @@ details.method .card { margin-top: 10px; }
 
   // ---------- sell now or keep ----------
   const KEEP = [30, 60, 90, 120];            // 120 added (Josh, 11/12/2026)
-  // price at exactly w lb: the last two weeks' 50-lb class average (centered on the class midpoint), moved along
-  // the statewide slide (its shape fit on 8 weeks of sales) to w, so the value changes more smoothly with weight;
-  // it can still step where one 50-lb class average hands off to the next (review, build 68)
-  function priceAt(pts, cls, w) {
+  // price at exactly w lb (review of build 71; replaced one class average tilted along the line, which stepped at
+  // class edges: an 800-lb heifer $440 under a 795-lb one when the 800-850 lb class had 7 head). Each 50-lb class
+  // average of the last two weeks sits at its midpoint as a ratio to the statewide price-by-weight line (8 weeks of
+  // sales; export slide()); the ratio is blended between midpoints and the price is the line at w times it. Smooth
+  // across class edges, and the class average itself at a class midpoint. Only classes with FEW+ head set the ratio
+  // (a thinner class takes its neighbors'); with none, the calf's own class does. Prices only USDA's: no sales in
+  // the calf's own class, no price (Josh, 11/3/2026)
+  function priceOn(pts, at, w) {
     const lo = Math.floor(w / 50) * 50, row = pts.find(p => p[0] === lo);
     if (!row) return null;
-    return { lo, cls: row[1], price: onLine(row[1], lo, w, x => slideAt(cls, x)), head: row[2] };
+    const out = { lo, cls: row[1], head: row[2], price: row[1], thin: row[2] < FEW };
+    const anchor = p => { const m = at(p[0] + 25); return m ? { x: p[0] + 25, r: p[1] / m } : null; };
+    let nodes = pts.filter(p => p[2] >= FEW).map(anchor).filter(Boolean);
+    if (!nodes.length) { nodes = [anchor(row)].filter(Boolean); out.thin = false; }
+    const s = at(w);
+    if (s == null || !nodes.length) return out;
+    const j = nodes.findIndex(n => n.x >= w);
+    const r = j === 0 ? nodes[0].r : j < 0 ? nodes[nodes.length - 1].r
+      : nodes[j - 1].r + (nodes[j].r - nodes[j - 1].r) * (w - nodes[j - 1].x) / (nodes[j].x - nodes[j - 1].x);
+    out.price = s * r;
+    return out;
   }
+  const priceAt = (pts, cls, w) => priceOn(pts, x => slideAt(cls, x), w);
   const grpOf = w => { const lo = Math.max(300, Math.min(800, Math.floor(w / 100) * 100)); return `${lo}-${lo + 100}`; };
   function slideOn(L, w) {                // a smooth statewide price line (10-lb steps) read at w lb
     if (!L || !L.length || w < L[0][0] || w > L[L.length - 1][0]) return null;
@@ -1877,8 +1926,6 @@ details.method .card { margin-top: 10px; }
   const slideAgoAt = (cls, w) => slideOn((D.slide_ago || D.slide)[cls], w);  // the same 8 weeks a year ago
   // the build-ups' line for the sale-weight price (review, build 65)
   const SLIDE_SUB = "From how price changed with weight over the past 8 weeks. It can differ a few dollars from that weight's class average.";
-  // a class average tilted along a line: the price at exactly w lb (the class sits at its midpoint)
-  const onLine = (price, lo, w, at) => { const a = at(w), b = at(lo + 25); return a && b ? price * a / b : price; };
   // seasonal index for weight w, blended between the 100-lb groups' midpoints so
   // the seasonal index changes smoothly when a calf crosses from one group into the next
   // f: "index" (the 5-year average), or "low"/"high" (that month's lowest and highest year)
@@ -1910,10 +1957,13 @@ details.method .card { margin-top: 10px; }
     const now = priceAt(D.curve.state[cls].now, cls, w);
     if (!now) return null;
     const w2 = Math.round(w + gain), t0 = today(), t1 = addDays(start || t0, days);
-    const out = { lo: now.lo, pc: now.cls, p1: now.price, head: now.head, days, gain, w2, t0, t1, m0: t0.getMonth(), m1: t1.getMonth() };
+    // the day the price stands for: the head-weighted middle of the two sale weeks (export curve()), where the
+    // seasonal move starts; it had started today, about 9 days later (review of build 71). Never after today
+    const md = D.curve.state[cls].mid, tp = md && iso(md) < t0 ? iso(md) : t0;
+    const out = { lo: now.lo, pc: now.cls, p1: now.price, head: now.head, thin: now.thin, days, gain, w2, t0, tp, t1, m0: t0.getMonth(), m1: t1.getMonth() };
     const s1 = slideAt(cls, w), s2 = slideAt(cls, w2);
     if (s1 == null || s2 == null) return { ...out, over: true };
-    const i0 = seasonIdxDay(cls, w2, t0), i1 = seasonIdxDay(cls, w2, t1);
+    const i0 = seasonIdxDay(cls, w2, tp), i1 = seasonIdxDay(cls, w2, t1);
     out.pSlide = out.p1 * s2 / s1;
     out.sea = i0 && i1 ? i1 / i0 : 1;
     // the sale month at its lowest and highest year of the five (the whiskers on Seasonal trend), today held at
@@ -1956,7 +2006,7 @@ details.method .card { margin-top: 10px; }
   const kdlText = () => dlText(S.kdlm, S.kdead, S.khead, kdl()), pdlText = () => dlText(S.pdlm, S.pdead, S.phead, pdl());
   // the break-even with the sale price moved x (a share, -0.2 to 0.2) beyond the usual seasonal move: the keep
   // table's second column and the chart's dashed line (Josh, 11/12/2026); x = 0 gives keepPlan's own break-even
-  const beAtX = (q, x) => { const g = R(q.gross * (1 + x)), l = R(g * kdl() / 100); return q.gain > 0 ? (g - l - q.v1 - q.other) / q.gain : null; };
+  const beAtX = (q, x) => { const g = R(q.gross * (1 + x)), l = R(g * kdl() / 100); return q.gain > 0 ? (g - l - q.v1 - q.oc) / q.gain : null; };
   const scenName = x => `Seasonal move ${x > 0 ? "plus" : "minus"} ${Math.abs(x)}%`;
   // the death loss box and its % / head switch, shared by Sell or keep and the planner
   function dlField(pre, headN, mode, setMode, pctV, deadV) {
@@ -1977,24 +2027,33 @@ details.method .card { margin-top: 10px; }
     out.loss = R(out.gross * kdl() / 100);
     out.cost = R(out.gain * (S.cog || 0));
     out.other = S.koth || 0;                                                     // other costs of keeping, $/head (review, build 65)
-    out.net = out.gross - out.loss - out.cost - out.other;
+    // interest on the sell-now value, simple, for the days kept: the money the calf would bring today, tied up
+    // until it sells (review of build 71); blank = none
+    out.int = S.kint ? R(out.v1 * S.kint / 100 * days / 365) : 0;
+    out.oc = out.other + out.int;                                                // every cost but gain and death loss
+    out.net = out.gross - out.loss - out.cost - out.oc;
     out.diff = out.net - out.v1;
-    out.be = out.gain > 0 ? (out.gross - out.loss - out.v1 - out.other) / out.gain : null;   // cost of gain where keeping breaks even
+    out.be = out.gain > 0 ? (out.gross - out.loss - out.v1 - out.oc) / out.gain : null;   // cost of gain where keeping breaks even
     // the same estimate at today's prices, no seasonal change, shown beside it (review, build 65: the seasonal
     // assumption on the face)
     out.gross0 = R(out.w2 * out.pSlide / 100);
     out.loss0 = R(out.gross0 * kdl() / 100);
-    out.be0 = out.gain > 0 ? (out.gross0 - out.loss0 - out.v1 - out.other) / out.gain : null;
-    out.diff0 = out.gross0 - out.loss0 - out.cost - out.other - out.v1;
+    out.be0 = out.gain > 0 ? (out.gross0 - out.loss0 - out.v1 - out.oc) / out.gain : null;
+    out.diff0 = out.gross0 - out.loss0 - out.cost - out.oc - out.v1;
     // the same estimate with the sale month at its lowest and highest year (the purchase planner's band), as a
     // range under the value and the break-even (review item F1; Josh, 11/2/2026)
     const at = sea => { const g = R(out.w2 * out.pSlide * sea / 100), l = R(g * kdl() / 100);
-      return { gross: g, be: out.gain > 0 ? (g - l - out.v1 - out.other) / out.gain : null }; };
+      return { gross: g, be: out.gain > 0 ? (g - l - out.v1 - out.oc) / out.gain : null }; };
     const a = at(out.seaLo), b = at(out.seaHi);
     out.grossLo = Math.min(a.gross, b.gross); out.grossHi = Math.max(a.gross, b.gross);
     out.beLo = a.be == null || b.be == null ? null : Math.min(a.be, b.be); out.beHi = a.be == null || b.be == null ? null : Math.max(a.be, b.be);
     return out;
   }
+  const NOT_IN_K = "The break-even doesn't include labor, commission, shrink or freight unless you enter them as other costs, or interest unless you enter a rate.";
+  // the costs taken off after a first one the sentence already names ("after gain cost" + ", death loss, other
+  // costs and interest"; "less death loss" + " and interest"); interest added in the review of build 71
+  const costWords = (P, withDL) => { const L = [...(withDL ? ["death loss"] : []), ...(P.other ? ["other costs"] : []), ...(P.int ? ["interest"] : [])];
+    return !L.length ? "" : L.length === 1 ? " and " + L[0] : ", " + andList(L); };
   const signedR = v => { const r = Math.round(v); return (r > 0 ? "+" : r < 0 ? "−" : "") + fmt$(Math.abs(r), false); };
   const upDown = v => Math.round(v) > 0 ? "up" : Math.round(v) < 0 ? "down" : "";
   const BELOW = "The estimate is below selling now even at zero cost of gain.";   // review, build 65
@@ -2030,7 +2089,7 @@ details.method .card { margin-top: 10px; }
   function renderKeep() {
     if (offMsg("keep", `${offText()}, so the keep estimate isn't offered for ${stName()}.`)) { $("#keep-note").textContent = ""; return; }
     seg($("#keep-days"), KEEP.map(d => ({ v: d, t: `${d} days` })), () => S.days, v => { S.days = v; store.set("days", v); });
-    for (const [id, k, dec] of [["#keep-w", "kw", 0], ["#keep-adg", "adg", 1], ["#keep-cog", "cog", 2], ["#keep-oth", "koth", null], ["#keep-head", "khead", null]]) {
+    for (const [id, k, dec] of [["#keep-w", "kw", 0], ["#keep-adg", "adg", 1], ["#keep-cog", "cog", 2], ["#keep-oth", "koth", null], ["#keep-int", "kint", null], ["#keep-head", "khead", null]]) {
       const f = $(id); if (document.activeElement !== f) f.value = S[k] == null ? "" : dec == null ? S[k] : S[k].toFixed(dec);
     }
     dlField("keep", S.khead, S.kdlm, v => {
@@ -2055,7 +2114,7 @@ details.method .card { margin-top: 10px; }
       // three boxes in one row (Josh, 11/2/2026: less text up front). The seasonal assumption is on the face (review,
       // build 65; Josh, 11/10/2026): the break-even and the dollars a head two ways, with equal weight, inside their
       // own boxes so the row stays three boxes, and the range across the seasonal years under the break-even
-      const oth = P.other ? ` and ${fmt$(P.other, false)} other costs` : "";
+      const oth = (P.other ? ` and ${fmt$(P.other, false)} other costs` : "") + (P.int ? ` and ${fmt$(P.int, false)} interest` : "");
       const keepVal = el("div", {}, [el("div", { class: "k", text: `Keep ${S.days} days: estimated value` }),
         el("div", { class: "v", text: fmt$(P.gross, false) }),
         el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt, sold about ${sellDay(P.t1)}, with the usual seasonal change` }),
@@ -2067,17 +2126,18 @@ details.method .card { margin-top: 10px; }
         sensLine(P.gross, kdl(), P.gain),
         el("div", { class: "d", text: `On ${fmtN(Math.round(P.gain))} lb gained, after ${kdlText()} death loss${oth}` })].filter(Boolean));
       // the seasonal move and its link sit in the build-up just below
-      $("#keep-calc-notes").replaceChildren(el("p", { class: "note", text: "The break-even doesn't include interest, labor, commission, shrink or freight unless you enter them as other costs." }));
+      $("#keep-calc-notes").replaceChildren(el("p", { class: "note", text: NOT_IN_K }));
       const yours = S.cog != null
         ? el("div", {}, [el("div", { class: "k", text: `At your ${fmt$(S.cog)}/lb, vs. selling now` }),
             two(signedR(P.diff) + " a head", signedR(P.diff0) + " a head", i => upDown(i ? P.diff0 : P.diff)),
-            el("div", { class: "d", text: `${fmt$(P.net, false)} after gain cost${P.other ? ", death loss and other costs" : " and death loss"}, with the seasonal change` }),
+            el("div", { class: "d", text: `${fmt$(P.net, false)} after gain cost${costWords(P, true)}, with the seasonal change` }),
             N ? el("div", { class: "d", text: `For ${fmtN(N)} head: ${signedR(P.diff * N)} vs. selling now, with the seasonal change` }) : null].filter(Boolean))
         : el("div", {}, [el("div", { class: "k", text: "Your cost of gain" }),
             el("div", { class: "v", style: "font-size:18px;font-weight:600", text: "Enter it above to see dollars a head" })]);
       ans.replaceChildren(keepVal, be, yours);
     }
-    if (P.head < FEW) ans.append(warnBox(`Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
+    if (P.head < FEW) ans.append(warnBox(P.thin ? `Few sales: only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()} sold in the last two weeks, so the starting price comes from the nearest classes with ${FEW} or more head. Treat the estimate as a rough guide.`
+      : `Few sales: the starting price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.kcls.toLowerCase()}. Treat the estimate as a rough guide.`));
     if (S.adg > 4) ans.append(warnBox(`${S.adg} lb a day is more than most calves gain; check the gain you entered.`));
     if (!P.over) { const f = saleFew(S.kcls, P); if (f) ans.append(f); }
     // the build-up, line by line
@@ -2088,7 +2148,7 @@ details.method .card { margin-top: 10px; }
     add(`Weight in ${S.days} days`, `+${fmtN(Math.round(P.gain))} lb at ${S.adg} lb/day`, `${fmtN(P.w2)} lb`);
     if (!P.over) {
       add(`Price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls} on the price-by-weight line`, [document.createTextNode(SLIDE_SUB + " "), curveLink(S.kcls, P.w2)], `${fmt$(P.pSlide)}/cwt`);
-      add(`Usual seasonal change, ${sellDay(P.t0)} to ${sellDay(P.t1)}`,
+      add(`Usual seasonal change, ${sellDay(P.tp)} to ${sellDay(P.t1)}`,
         [document.createTextNode(`${fmtN(P.w2)}-lb ${S.kcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.kcls, P.w2)],
         pct(P.sea - 1));
       // the days in the labels (Josh, 11/12/2026)
@@ -2097,10 +2157,11 @@ details.method .card { margin-top: 10px; }
       add(S.kdlm === "head" && S.khead ? `Less death loss: ${kdlText()}` : `Less death loss (${kdlText()})`, "", "−" + fmt$(P.loss, false));
       if (S.cog != null) add("Less cost of gain", `${fmtN(Math.round(P.gain))} lb × ${fmt$(S.cog)}/lb`, "−" + fmt$(P.cost, false));
       if (P.other) add("Less other costs", "", "−" + fmt$(P.other, false));
-      add(S.cog != null ? `Estimated net if you keep ${S.days} days` : `Estimated value in ${S.days} days, less death loss${P.other ? " and other costs" : ""}`, "", fmt$(P.net, false), "tot");
+      if (P.int) add("Less interest on the sell-now value", `${+S.kint}% a year on ${fmt$(P.v1, false)} for ${S.days} days`, "−" + fmt$(P.int, false));
+      add(S.cog != null ? `Estimated net if you keep ${S.days} days` : `Estimated value in ${S.days} days, less death loss${costWords(P, false)}`, "", fmt$(P.net, false), "tot");
       add("Sell now", "", fmt$(P.v1, false));
       if (N) {
-        add(S.cog != null ? `Estimated net for ${fmtN(N)} head` : `Estimated value for ${fmtN(N)} head, less death loss${P.other ? " and other costs" : ""}`, "", fmt$(R(P.net * N), false), "tot");
+        add(S.cog != null ? `Estimated net for ${fmtN(N)} head` : `Estimated value for ${fmtN(N)} head, less death loss${costWords(P, false)}`, "", fmt$(R(P.net * N), false), "tot");
         add(`Sell now, ${fmtN(N)} head`, "", fmt$(R(P.v1 * N), false));
       }
     }
@@ -2133,17 +2194,18 @@ details.method .card { margin-top: 10px; }
     $("#keep-none").textContent = anyNone ? "None: at that keep length, the estimate is below selling now even at zero cost of gain." : "";
     // the seasonal move behind each keep length, so an odd-looking middle row has a visible reason
     const sea = KEEP.map(d => { const q = keepPlan(S.kcls, S.kw, d); return q && !q.over ? `${d} days ${pct(q.sea - 1)}` : null; }).filter(Boolean);
-    $("#keep-season").textContent = sea.length ? `Usual seasonal price move from today: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
+    $("#keep-season").textContent = sea.length ? `Usual seasonal price move from ${sellDay(P.tp)} to the sale day: ${sea.join(" · ")}. The rest of the difference is the lower price per cwt of a heavier calf.` : "";
     const notes = [];
     if (!isState()) notes.push("This tab uses statewide prices so every weight is covered.");
-    notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the market would change the answer. Death loss starts at 1% for calves you raised. Dates count from today.");
+    notes.push("It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the market would change the answer. Death loss starts at 1% for calves you raised. " +
+      (P.tp < P.t0 ? `Sale dates count from today. The seasonal move starts ${sellDay(P.tp)}, the middle of the two sale weeks the price comes from, counted by head sold.` : "Dates count from today."));
     $("#keep-note").textContent = notes.join(" ");
     renderVog(cls);
   }
   // break-even cost of gain by days kept, 30-120 (Josh, 11/12/2026; bars by sale weight until then): the table
   // drawn as lines, with the viewer's price change and cost of gain, and dots at the table's days that pick a row
   function renderVog(cls) {
-    const x = S.kx / 100, pts = [], scen = [], cost = [], info = {};
+    const x = S.kx / 100, pts = [], scen = [], cost = [], flat = [], info = {};
     for (let d = 30; d <= 120; d += 2) {
       const q = keepPlan(S.kcls, S.kw, d);
       if (!q || q.over || q.be == null) break;              // past 900 lb: the line stops there
@@ -2151,20 +2213,22 @@ details.method .card { margin-top: 10px; }
       // below zero plots at $0 and reads "none" (review, build 68)
       const pt = v => v > 0 ? { x: d, y: v } : { x: d, y: 0, t: "none" };
       pts.push(pt(q.be));
+      if (q.be0 != null) flat.push(pt(q.be0));            // at today's prices, a thin reference line (review of build 71)
       if (x) scen.push(pt(beAtX(q, x)));
       if (S.cog != null) cost.push({ x: d, y: S.cog });
     }
     $("#keep-vog-card").hidden = pts.length < 2;
     if (pts.length < 2) return;
     $("#keep-vog-title").textContent = `Break-even cost of gain by days kept, ${S.kw}-lb ${cls}`;
-    const oth = S.koth ? ` and ${fmt$(S.koth, false)} other costs` : "";
+    const oth = (S.koth ? ` and ${fmt$(S.koth, false)} other costs` : "") + (S.kint ? `, ${+S.kint}% interest on the sell-now value` : "");
     $("#keep-vog-sub").textContent = `At ${S.adg} lb a day, ${kdlText()} death loss${oth}, today's prices plus the usual seasonal move. ` +
       (S.cog != null ? "Keeping comes out ahead where a line is above your cost of gain." : "Keeping comes out ahead when gain costs less than the line.") +
-      " Dots mark 30, 60, 90 and 120 days.";
+      " Dots mark 30, 60, 90 and 120 days. The thin dotted line is the same at today's prices, for reference.";
     const series = [{ cls: 1, pts, name: "Usual seasonal move", width: 2.6, marks: KEEP },
       ...(x ? [{ cls: 2, pts: scen, name: scenName(S.kx), dash: "6 4", width: 2, marks: KEEP }] : []),
-      ...(cost.length ? [{ cls: 3, pts: cost, name: "Your cost of gain", width: 1.8 }] : [])];
-    $("#keep-vog-legend").replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
+      ...(cost.length ? [{ cls: 3, pts: cost, name: "Your cost of gain", width: 1.8 }] : []),
+      ...(flat.length > 1 ? [{ cls: 3, pts: flat, name: "At today's prices (no seasonal change)", dash: "1.5 3", dotted: true, width: 1.2 }] : [])];
+    $("#keep-vog-legend").replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dotted ? " dot" : s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
     lineChart($("#keep-vog-chart"), {
       series, x: { min: 30, max: 120, ticks: KEEP.map(v => ({ v, t: String(v) })) }, floor: 0,
       marker: { x: S.days, t: `${S.days} days`, y: 0 },          // y: 0 keeps $0 on the axis, which starts there
@@ -2236,7 +2300,7 @@ details.method .card { margin-top: 10px; }
   // ---------- purchase planner ----------
   const BUY_DAYS = [60, 90, 120, 150, 180];
   const BUY_MONS = 3, BUY_MAXD = 210;       // purchase months ahead, longest keep typed (review, build 68)
-  const NOT_IN = "Doesn't include interest, labor, commission, shrink or freight unless you enter them as other costs.";
+  const NOT_IN = "Doesn't include labor, commission, shrink or freight unless you enter them as other costs, or interest unless you enter a rate.";
   // total-gain mode works at the daily rate it implies, so the chart's other keep lengths stay realistic
   const buyAdg = () => S.gmode === "adg" ? S.padg : S.ptot / S.pdays;
   const buyGain = days => S.gmode === "total" && days === S.pdays ? S.ptot : buyAdg() * days;
@@ -2249,7 +2313,7 @@ details.method .card { margin-top: 10px; }
     P.tb = tb;
     // a later month: today's price at the purchase weight moved by that weight's usual seasonal change to mid-month,
     // as the sale price is moved to the sale day (Josh, 11/12/2026); today held at its average, as on the sale side
-    const i0 = seasonIdxDay(S.pcls, S.pw, P.t0), ib = seasonIdxDay(S.pcls, S.pw, tb);
+    const i0 = seasonIdxDay(S.pcls, S.pw, P.tp), ib = seasonIdxDay(S.pcls, S.pw, tb);
     P.noSeaB = !!S.pmon && !(i0 && ib);
     P.seaB = S.pmon && i0 && ib ? ib / i0 : 1;
     P.p1b = P.p1 * P.seaB;
@@ -2261,16 +2325,21 @@ details.method .card { margin-top: 10px; }
     P.loss = R(P.gross * dl / 100);
     P.cost = S.pcog != null ? R(P.gain * S.pcog) : null;
     P.other = S.poth || 0;                                                     // other costs, $/head (review, build 65)
-    P.margin = P.cost != null ? P.gross - P.loss - P.cost - P.other - P.buy : null;
-    P.voG = P.gain > 0 ? (P.gross - P.loss - P.other - P.buy) / P.gain : null;          // break-even cost of gain, $/lb
-    P.maxBuy = P.cost != null ? (P.gross - P.loss - P.cost - P.other) / S.pw * 100 : null; // break-even purchase price, $/cwt
+    // interest on the purchase cost, simple, for the days kept (review of build 71); blank = none. The break-even
+    // purchase price carries it too: the price where margin is 0 with interest on that price
+    const f = S.pint ? S.pint / 100 * days / 365 : 0;
+    P.int = R(P.buy * f);
+    P.oc = P.other + P.int;
+    P.margin = P.cost != null ? P.gross - P.loss - P.cost - P.oc - P.buy : null;
+    P.voG = P.gain > 0 ? (P.gross - P.loss - P.oc - P.buy) / P.gain : null;          // break-even cost of gain, $/lb
+    P.maxBuy = P.cost != null ? (P.gross - P.loss - P.cost - P.other) / (1 + f) / S.pw * 100 : null; // break-even purchase price, $/cwt
     // the same at today's prices, no seasonal change on either side (review, build 65: the seasonal assumption on the face)
-    const g0 = R(P.w2 * P.pSlide / 100), l0 = R(g0 * dl / 100), b0 = R(S.pw * (S.pbuy ?? P.p1) / 100);
-    P.margin0 = P.cost != null ? g0 - l0 - P.cost - P.other - b0 : null;
-    P.voG0 = P.gain > 0 ? (g0 - l0 - P.other - b0) / P.gain : null;
-    P.maxBuy0 = P.cost != null ? (g0 - l0 - P.cost - P.other) / S.pw * 100 : null;      // the same, today's prices (review of build 70)
+    const g0 = R(P.w2 * P.pSlide / 100), l0 = R(g0 * dl / 100), b0 = R(S.pw * (S.pbuy ?? P.p1) / 100), oc0 = P.other + R(b0 * f);
+    P.margin0 = P.cost != null ? g0 - l0 - P.cost - oc0 - b0 : null;
+    P.voG0 = P.gain > 0 ? (g0 - l0 - oc0 - b0) / P.gain : null;
+    P.maxBuy0 = P.cost != null ? (g0 - l0 - P.cost - P.other) / (1 + f) / S.pw * 100 : null;      // the same, today's prices (review of build 70)
     const at = sea => { const g = R(P.w2 * P.pSlide * sea / 100), l = R(g * dl / 100);
-      return P.cost != null ? g - l - P.cost - P.other - P.buy : P.gain > 0 ? (g - l - P.other - P.buy) / P.gain : null; };
+      return P.cost != null ? g - l - P.cost - P.oc - P.buy : P.gain > 0 ? (g - l - P.oc - P.buy) / P.gain : null; };
     P.rangeLo = at(P.seaLo); P.rangeHi = at(P.seaHi);
     return P;
   }
@@ -2290,7 +2359,7 @@ details.method .card { margin-top: 10px; }
     mon.value = String(S.pmon);
     $("#buy-gain-k").textContent = S.gmode === "adg" ? "Gain (lb/day)" : "Total gain (lb)";
     const fields = [["#buy-w", S.pw, 0], ["#buy-days", S.pdays, 0], ["#buy-gain", S.gmode === "adg" ? S.padg : S.ptot, S.gmode === "adg" ? 1 : 0],
-      ["#buy-cog", S.pcog, 2], ["#buy-oth", S.poth, null], ["#buy-head", S.phead, null]];
+      ["#buy-cog", S.pcog, 2], ["#buy-oth", S.poth, null], ["#buy-int", S.pint, null], ["#buy-head", S.phead, null]];
     for (const [id, v, dec] of fields) {
       const f = $(id); if (document.activeElement !== f) f.value = v == null ? "" : dec == null ? v : (+v).toFixed(dec);
     }
@@ -2331,7 +2400,7 @@ details.method .card { margin-top: 10px; }
       ? el("div", {}, [el("div", { class: "k", text: "Estimated margin" }),
           two(signedR(P.margin) + " a head", signedR(P.margin0) + " a head", i => upDown(i ? P.margin0 : P.margin)),
           N ? el("div", { class: "d", text: `For ${fmtN(N)} head: ${signedR(P.margin * N)}, with the seasonal change` }) : null,
-          el("div", { class: "d", text: `After gain cost${P.other ? ", death loss and other costs" : " and death loss"}.` }),
+          el("div", { class: "d", text: `After gain cost${costWords(P, true)}.` }),
           // both cases, as the margin and break-even cost of gain (review of build 70, 11/16/2026)
           el("div", { class: "k sub2", text: "Break-even purchase price" }),
           two(...[P.maxBuy, P.maxBuy0].map(v => v > 0 ? fmt$(v) + "/cwt" : "none")),
@@ -2347,7 +2416,8 @@ details.method .card { margin-top: 10px; }
         el("div", { class: "d", text: `${fmtN(P.w2)} lb at about ${fmt$(P.p2)}/cwt` }),
         N ? el("div", { class: "d", text: `For ${fmtN(N)} head, less death loss: ${fmt$(R((P.gross - P.loss) * N), false)}` }) : null].filter(Boolean)),
       third);
-    if (P.head < FEW) ans.append(warnBox(`Few sales: the purchase price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.pcls.toLowerCase()}. Treat the estimate as a rough guide.`));
+    if (P.head < FEW) ans.append(warnBox(P.thin ? `Few sales: only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.pcls.toLowerCase()} sold in the last two weeks, so the purchase price comes from the nearest classes with ${FEW} or more head. Treat the estimate as a rough guide.`
+      : `Few sales: the purchase price rests on only ${fmtN(P.head)} head of ${P.lo}-${P.lo + 50} lb ${S.pcls.toLowerCase()}. Treat the estimate as a rough guide.`));
     const adg = P.gain / P.days;
     if (adg < 0.5 || adg > 4) ans.append(warnBox(`That works out to ${adg.toFixed(2)} lb a day, outside what most calves gain; check the gain and days you entered.`));
     { const f = saleFew(S.pcls, P); if (f) ans.append(f); }
@@ -2356,7 +2426,7 @@ details.method .card { margin-top: 10px; }
     const add = (k, sub, v, c = "") => rows.push(el("dt", { class: c }, [document.createTextNode(k), sub ? el("small", {}, sub) : null]), el("dd", { class: c, text: v }));
     add(`Price now at ${S.pw} lb`, `${P.lo}-${P.lo + 50} lb class ${fmt$(P.pc)}, statewide, last two weeks, ${fmtN(P.head)} head`, `${fmt$(P.p1)}/cwt`);
     if (later && S.pbuy == null) {           // the purchase side's seasonal step (Josh, 11/12/2026)
-      add(`Usual seasonal change, ${md(P.t0)} to ${md(tb)}`,
+      add(`Usual seasonal change, ${md(P.tp)} to ${md(tb)}`,
         P.noSeaB ? `No seasonal pattern for ${S.pw}-lb ${S.pcls.toLowerCase()}; today's price is used.`
           : [document.createTextNode(`${S.pw}-lb ${S.pcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.pcls, S.pw)],
         P.noSeaB ? "–" : pct(P.seaB - 1));
@@ -2366,7 +2436,7 @@ details.method .card { margin-top: 10px; }
     add(`Weight after ${P.days} days`, S.gmode === "adg" ? `+${fmtN(Math.round(P.gain))} lb at ${S.padg} lb/day`
       : `+${fmtN(Math.round(P.gain))} lb (${(P.gain / P.days).toFixed(2)} lb/day)`, `${fmtN(P.w2)} lb`);
     add(`Price for ${an(P.w2)} ${fmtN(P.w2)}-lb ${cls} on the price-by-weight line`, [document.createTextNode(SLIDE_SUB + " "), curveLink(S.pcls, P.w2)], `${fmt$(P.pSlide)}/cwt`);
-    add(`Usual seasonal change, ${md(P.t0)} to ${md(P.t1)}`,
+    add(`Usual seasonal change, ${md(P.tp)} to ${md(P.t1)}`,
       [document.createTextNode(`${fmtN(P.w2)}-lb ${S.pcls.toLowerCase()}, ${yrsLabel()} average. `), seasonLink(S.pcls, P.w2)],
       pct(P.sea - 1));
     add(`Estimated price at sale in ${monYr(P.t1)}`, "", `${fmt$(P.p2)}/cwt`, "tot");
@@ -2374,20 +2444,21 @@ details.method .card { margin-top: 10px; }
     add(S.pdlm === "head" && S.phead ? `Less death loss: ${pdlText()}` : `Less death loss (${pdlText()})`, "", "−" + fmt$(P.loss, false));
     add("Less purchase cost", "", "−" + fmt$(P.buy, false));
     if (P.other) add("Less other costs", "", "−" + fmt$(P.other, false));
+    if (P.int) add("Less interest on the purchase", `${+S.pint}% a year on ${fmt$(P.buy, false)} for ${P.days} days`, "−" + fmt$(P.int, false));
     if (P.cost != null) {
       add("Less cost of gain", `${fmtN(Math.round(P.gain))} lb × ${fmt$(S.pcog)}/lb`, "−" + fmt$(P.cost, false));
       add("Estimated margin", "", signedR(P.margin), "tot");
       if (N) add(`Estimated margin, ${fmtN(N)} head`, "", signedR(P.margin * N), "tot");
     } else {
-      add("Left to pay for the gain", `${fmtN(Math.round(P.gain))} lb`, fmt$(P.gross - P.loss - P.other - P.buy, false), "tot");
+      add("Left to pay for the gain", `${fmtN(Math.round(P.gain))} lb`, fmt$(P.gross - P.loss - P.oc - P.buy, false), "tot");
       add("Break-even cost of gain", "", P.voG == null ? "–" : P.voG <= 0 ? "none" : `${fmt$(P.voG)}/lb`);
-      if (N) add(`Left to pay for the gain, ${fmtN(N)} head`, "", fmt$(R((P.gross - P.loss - P.other - P.buy) * N), false), "tot");
+      if (N) add(`Left to pay for the gain, ${fmtN(N)} head`, "", fmt$(R((P.gross - P.loss - P.oc - P.buy) * N), false), "tot");
     }
     build.replaceChildren(...rows);
     // how the answer changes with the keep length
     // 60-180 days (the keep lengths the planner offers), with a band for how much the seasonal
     // pattern has varied, so its rises and dips aren't read as precise (Josh, 11/1/2026)
-    const pts = [], band = [], ds = [];
+    const pts = [], band = [], flat = [], ds = [];
     for (let d = 60; d <= 180; d += 10) ds.push(d);   // from 60: shorter keeps spread a price swing over too few pounds
     if (!ds.includes(S.pdays)) ds.push(S.pdays);                 // a point at the chosen keep length
     for (const d of ds.sort((a, b) => a - b)) {
@@ -2396,21 +2467,26 @@ details.method .card { margin-top: 10px; }
       const m = q.margin != null, y = m ? q.margin : q.voG, z = v => m ? v : Math.max(0, v);   // a break-even below 0 plots at $0, "none" (review, build 68)
       if (y == null) continue;
       pts.push({ x: d, y: z(y) });
+      const y0 = m ? q.margin0 : q.voG0;                         // at today's prices, a thin reference line (review of build 71)
+      if (y0 != null) flat.push({ x: d, y: z(y0), ...(!m && y0 <= 0 ? { t: "none" } : {}) });
       if (q.rangeLo != null && q.rangeHi != null) band.push({ x: d, lo: z(Math.min(q.rangeLo, q.rangeHi)), hi: z(Math.max(q.rangeLo, q.rangeHi)) });
     }
     const useM = P.margin != null, yrs = yrsLabel();
     $("#buy-chart-title").textContent = useM ? "Estimated margin by how long you keep them" : "Break-even cost of gain by how long you keep them";
     $("#buy-chart-sub").textContent = `At ${+buyAdg().toFixed(2)} lb/day` + (S.gmode === "total" ? ` (your ${fmtN(S.ptot)} lb over ${S.pdays} days)` : "") +
       `, bought ${later ? `in ${monYr(tb)}` : "now"}, sold after each number of days, ${useM ? "$ per head" : "$ per lb of gain"}. ` +
-      `The shaded band is the seasonal pattern alone, ${yrs}: the range across those years${later ? " for the sale month" : ""}. The market itself can move more.`;
+      `The shaded band is the seasonal pattern alone, ${yrs}: the range across those years${later ? " for the sale month" : ""}. The market itself can move more, ` +
+      `and the estimate at today's prices (the thin dotted line) can fall outside the band.`;
     $("#buy-legend").replaceChildren(
       el("li", {}, [el("span", { class: "key k1" }), el("span", { text: `Estimate (${yrs} average pattern)` })]),
-      el("li", {}, [el("span", { class: "key kband" }), el("span", { text: `Seasonal pattern alone, ${yrs}` })]));
+      el("li", {}, [el("span", { class: "key kband" }), el("span", { text: `Seasonal pattern alone, ${yrs}` })]),
+      ...(flat.length > 1 ? [el("li", {}, [el("span", { class: "key k3 dot" }), el("span", { text: "At today's prices (no seasonal change)" })])] : []));
     const x0 = Math.min(60, pts.length ? pts[0].x : 60);         // a typed keep under 60 days starts the axis there, so its point stays on the chart
     const ticks = []; for (let v = Math.ceil(x0 / 30) * 30; v <= 180; v += 30) if (!pts.length || v <= pts[pts.length - 1].x) ticks.push({ v, t: String(v) });
     lineChart($("#buy-chart"), {
       band: band.length ? { pts: band, name: `Seasonal pattern alone, ${yrs}` } : null,
-      series: [{ cls: 1, pts, name: useM ? "Estimate" : "Break-even", width: 2.4 }],
+      series: [{ cls: 1, pts, name: useM ? "Estimate" : "Break-even", width: 2.4 },
+        ...(flat.length > 1 ? [{ cls: 3, pts: flat, name: "At today's prices", dash: "1.5 3", width: 1.2 }] : [])],
       x: { min: x0, max: Math.max(90, pts.length ? pts[pts.length - 1].x : 90), ticks },
       yfmt: (v, full) => useM ? (full ? signedR(v) : (v < 0 ? "−$" : "$") + Math.abs(Math.round(v))) : (full ? (v <= 0 ? "none" : fmt$(v) + "/lb") : "$" + v.toFixed(2)),
       xlab: d => { const t = addDays(tb, d); return `Keep ${d} days (sell ${MON[t.getMonth()]} ${t.getDate()})`; },
@@ -2422,9 +2498,12 @@ details.method .card { margin-top: 10px; }
     if (!isState()) notes.push("Uses statewide prices so every weight is covered.");
     notes.push(`Death loss starts at 2% because bought calves are hauled and mixed with others; change it to fit your experience. ` +
       `It assumes the cattle market stays at the last two weeks' level and moves only with its usual seasonal pattern; a rally or a break in the market would change the answer. ` +
-      (later ? `A later purchase month moves today's price at the purchase weight by that weight's usual seasonal change to the 15th of the month, and dates count from that day. ` : "Dates count from today. ") +
-      `The shaded band is the seasonal pattern alone: the estimate if the sale month's price ran as high or as low as in any year, ${yrsLabel()}, with today's month${later ? " and the purchase month" : ""} held at ${later ? "their" : "its"} average. The market itself can move more.`);
-    $("#buy-note").textContent = notes.join(" ");
+      (later ? `A later purchase month moves today's price at the purchase weight by that weight's usual seasonal change to the 15th of the month, and dates count from that day. ` : "Sale dates count from today. ") +
+      (P.tp < P.t0 ? `The seasonal move starts ${MON[P.tp.getMonth()]} ${P.tp.getDate()}, the middle of the two sale weeks the price comes from, counted by head sold. ` : "") +
+      `The shaded band is the seasonal pattern alone: the estimate if the sale month's price ran as high or as low as in any year, ${yrsLabel()}, with today's month${later ? " and the purchase month" : ""} held at ${later ? "their" : "its"} average. ` +
+      `It is not the range of possible outcomes: the market itself can move more, and the estimate at today's prices can fall outside the band. ` +
+      (useM ? "" : `As a break-even, the band is spread over the pounds gained, so it tends to narrow on longer keeps.`));
+    $("#buy-note").textContent = notes.join(" ").trim();
   }
 
   function renderSeason() {
@@ -2628,7 +2707,12 @@ details.method .card { margin-top: 10px; }
     if (raw === "") S.koth = null; else if (v >= 0 && v <= 500) S.koth = v; else return;
     store.set("koth", S.koth ?? ""); renderKeep();
   });
-  for (const [id, k, lo, hi] of [["#buy-cog", "pcog", 0, 5], ["#buy-price", "pbuy", 50, 900], ["#buy-oth", "poth", 0, 500]]) $(id).addEventListener("input", e => {
+  $("#keep-int").addEventListener("input", e => {     // interest, % a year: blank = not used (review of build 71)
+    const raw = e.target.value.trim(), v = parseFloat(raw);
+    if (raw === "") S.kint = null; else if (v >= 0 && v <= 25) S.kint = v; else return;
+    store.set("kint", S.kint ?? ""); renderKeep();
+  });
+  for (const [id, k, lo, hi] of [["#buy-cog", "pcog", 0, 5], ["#buy-price", "pbuy", 50, 900], ["#buy-oth", "poth", 0, 500], ["#buy-int", "pint", 0, 25]]) $(id).addEventListener("input", e => {
     const raw = e.target.value.trim(), v = parseFloat(raw);
     if (raw === "") S[k] = null; else if (v >= lo && v <= hi) S[k] = v; else return;   // blank = not used
     store.set(k, S[k] ?? ""); renderBuy();
@@ -2690,7 +2774,7 @@ details.method .card { margin-top: 10px; }
   }
 
   function restore() {               // one viewer's remembered settings
-    for (const [k, lo, hi] of [["bw", 300, 895], ["bextra", -100, 150], ["bcost", 0, 200], ["pw", 300, 800], ["pdays", 30, BUY_MAXD], ["pdl", 0, 20], ["padg", 0.1, 5], ["ptot", 10, 600], ["pcog", 0, 5], ["pbuy", 50, 900], ["koth", 0, 500], ["poth", 0, 500],
+    for (const [k, lo, hi] of [["bw", 300, 895], ["bextra", -100, 150], ["bcost", 0, 200], ["pw", 300, 800], ["pdays", 30, BUY_MAXD], ["pdl", 0, 20], ["padg", 0.1, 5], ["ptot", 10, 600], ["pcog", 0, 5], ["pbuy", 50, 900], ["koth", 0, 500], ["poth", 0, 500], ["kint", 0, 25], ["pint", 0, 25],
       ["khead", 1, 10000], ["phead", 1, 10000], ["kdead", 0, 10000], ["pdead", 0, 10000]]) {
       const raw = store.get(k), v = parseFloat(raw);
       if (raw !== "" && v >= lo && v <= hi) S[k] = ["bw", "pw", "pdays", "ptot", "khead", "phead", "kdead", "pdead"].includes(k) ? Math.round(v) : v;
