@@ -388,6 +388,13 @@ footer .legal { display: grid; gap: 8px; margin-top: 14px; }
 .asof.tools-line { margin-top: 6px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
 .share-btn { all: unset; cursor: pointer; text-decoration: underline; color: inherit; font: inherit; }
 .share-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 2px; }
+/* the copy-by-hand box, shown only when the clipboard is blocked (the catfish dashboard's fix, versions 43-44) */
+.share-box { margin-top: 8px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.share-box[hidden] { display: none; }
+.share-box input { flex: 1 1 18em; min-width: 0; max-width: 40em; font: inherit; font-size: 14px; padding: 6px 8px; border-radius: 4px;
+  border: 1px solid currentColor; background: rgba(255, 255, 255, .12); color: inherit; }
+.share-box input:focus { outline: 2px solid currentColor; outline-offset: 1px; }
+@media print { .share-box { display: none; } }
 .tools-strip { margin: 0 0 24px; scroll-margin-top: 80px; min-width: 0; }   /* clears the sticky tab bar; min-width: footer .wrap is a grid, and its auto-fill list laid the page out 506 px wide on a 390-px phone (review, build 65) */
 .tools-strip h2 { margin: 0 0 10px; }
 .tools-strip ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -468,6 +475,7 @@ details.method .card { margin-top: 10px; }
       <p class="asof" id="linknote" hidden></p>
       <p class="asof edu">For educational use only. <a href="#disclaimer" id="to-disc">Read the disclaimer</a>.</p>
       <p class="asof tools-line"><a href="#more-tools">More cattle tools</a><button type="button" class="share-btn" id="share-view">Share this view</button><span class="sr-only" role="status" id="share-msg"></span></p>
+      <div class="share-box" id="share-box" hidden><label for="share-url">Copy this link:</label><input id="share-url" type="text" readonly spellcheck="false"><button type="button" class="share-btn" id="share-close">Close</button></div>
     </div>
     <div class="pickers">
       <div class="picker">
@@ -2825,9 +2833,22 @@ details.method .card { margin-top: 10px; }
       if (navigator.share && matchMedia("(pointer: coarse)").matches) {
         try { await navigator.share({ title: document.title, url }); return; } catch (e) { if (e && e.name === "AbortError") return; }
       }
-      try { await navigator.clipboard.writeText(url); say("Link copied"); }
-      catch (e) { window.prompt("Copy this link:", url); }
+      try { await navigator.clipboard.writeText(url); say("Link copied"); hideBox(); }
+      catch (e) { showBox(url); }
     });
+    // Where the clipboard is blocked (some in-app browsers; window.prompt can fail there too), show the
+    // link as selected text under the button so it can be copied by hand (catfish dashboard, versions 43-44)
+    const box = document.getElementById("share-box"), field = document.getElementById("share-url");
+    const hideBox = () => { box.hidden = true; };
+    const showBox = (url) => {
+      field.value = url; box.hidden = false; field.focus(); field.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      if (ok) { hideBox(); btn.focus(); say("Link copied"); }   // copied after all: nothing left to do by hand
+      else { msg.textContent = "Copy the link shown below the button."; }
+    };
+    document.getElementById("share-close").addEventListener("click", () => { hideBox(); btn.focus(); });
+    field.addEventListener("focus", () => field.select());
+    field.addEventListener("keydown", (e) => { if (e.key === "Escape") { hideBox(); btn.focus(); } });
   }
   const STATE_TOOLS = ["cattleprices", "drought"];
   const carry = a => {
