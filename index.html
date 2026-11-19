@@ -1384,7 +1384,7 @@ details.method .card { margin-top: 10px; }
     const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
     const lead = isState()
       ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${reported(r)}`
-      : `Cattle sold at ${mk.name} on ${day(r.sale)}`;
+      : `Cattle sold at ${(mk.label || mk.name).replace(/ \((Mon|Tue|Wed|Thu|Fri|Sat|Sun)\)$/, "")} on ${wday(r.sale)}`;   // "Lexington on Monday, Nov. 16", not "Lexington Mon on Monday"
     // one line: this week, last week, a year ago (year to date is in the About box)
     // each count stays with its label; the spaces around the dots are where a narrow screen breaks the line
     // when a barn that sold last week hasn't reported, the other two counts cover only the barns in
@@ -2756,7 +2756,7 @@ details.method .card { margin-top: 10px; }
     $("#state").replaceChildren(...D.meta.states.map(x => el("option", { value: x.id, text: x.name })));
     $("#state").value = st;
     const og1 = el("optgroup", { label: "Statewide" }, el("option", { value: "state", text: "All auctions" }));
-    const og2 = el("optgroup", { label: "One auction" }, D.markets.filter(m => m.id !== "state").map(m => el("option", { value: m.id, text: m.name })));
+    const og2 = el("optgroup", { label: "One auction" }, D.markets.filter(m => m.id !== "state").map(m => el("option", { value: m.id, text: m.label || m.name })));   // with its sale day, "Meridian (Mon)" (11/19/2026)
     $("#market").replaceChildren(og1, og2);
     const saved = LINKED ? null : store.get("market." + st);
     LINKED = false;                    // only the first state a link opens; later picks remember as usual
