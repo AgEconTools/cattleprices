@@ -146,6 +146,9 @@ h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap:
 /* panels */
 main { padding-block: 26px 40px; }
 .panel { display: grid; gap: 18px; }
+/* in-page jumps land with their heading below the sticky tab bar, which wraps to two rows on a phone: --tabs-h is the
+   bar's measured height, set on load and whenever it changes (iPhone review, 11/23/2026; was a fixed 80 px on the strip) */
+#more-tools, #disclaimer, #week-facts, #foot-how, #curve-card { scroll-margin-top: calc(var(--tabs-h, 80px) + env(safe-area-inset-top, 0px) + 12px); }
 .panel > * { min-width: 0; }
 h2 { font: 700 clamp(22px, 3.4vw, 28px)/1.2 var(--display); margin: 0; text-wrap: balance; }
 .sub { margin: 4px 0 0; color: var(--ink-2); font-size: 15px; max-width: 68ch; }
@@ -399,7 +402,7 @@ footer .legal { display: grid; gap: 8px; margin-top: 14px; }
   border: 1px solid currentColor; background: rgba(255, 255, 255, .12); color: inherit; }
 .share-box input:focus { outline: 2px solid currentColor; outline-offset: 1px; }
 @media print { .share-box { display: none; } }
-.tools-strip { margin: 0 0 24px; scroll-margin-top: 80px; min-width: 0; }   /* clears the sticky tab bar; min-width: footer .wrap is a grid, and its auto-fill list laid the page out 506 px wide on a 390-px phone (review, build 65) */
+.tools-strip { margin: 0 0 24px; min-width: 0; }   /* min-width: footer .wrap is a grid, and its auto-fill list laid the page out 506 px wide on a 390-px phone (review, build 65) */
 .tools-strip h2 { margin: 0 0 10px; }
 .tools-strip ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .tools-strip a { display: flex; gap: 12px; align-items: flex-start; height: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); text-decoration: none; }
@@ -518,17 +521,19 @@ details.method .card { margin-top: 10px; }
 
 <nav class="tabs" aria-label="Questions">
   <div class="wrap" role="tablist" id="tablist">
-    <button class="tab" role="tab" id="t-week" aria-controls="week" data-tab="week">This week</button>
-    <button class="tab" role="tab" id="t-trend" aria-controls="trend" data-tab="trend">Price trend</button>
-    <button class="tab" role="tab" id="t-season" aria-controls="season" data-tab="season">Seasonal trend</button>
-    <button class="tab" role="tab" id="t-cmp" aria-controls="cmp" data-tab="cmp">Compare</button>
+    <button class="tab" role="tab" id="t-week" aria-controls="p-week" data-tab="week">This week</button>
+    <button class="tab" role="tab" id="t-trend" aria-controls="p-trend" data-tab="trend">Price trend</button>
+    <button class="tab" role="tab" id="t-season" aria-controls="p-season" data-tab="season">Seasonal trend</button>
+    <button class="tab" role="tab" id="t-cmp" aria-controls="p-cmp" data-tab="cmp">Compare</button>
     <span class="tab-break" aria-hidden="true"></span>
-    <button class="tab" role="tab" id="t-keep" aria-controls="keep" data-tab="keep">Sell or keep</button>
-    <button class="tab" role="tab" id="t-buy" aria-controls="buy" data-tab="buy">Purchase planner</button>
-    <button class="tab" role="tab" id="t-bull" aria-controls="bull" data-tab="bull">Steer or bull</button>
+    <button class="tab" role="tab" id="t-keep" aria-controls="p-keep" data-tab="keep">Sell or keep</button>
+    <button class="tab" role="tab" id="t-buy" aria-controls="p-buy" data-tab="buy">Purchase planner</button>
+    <button class="tab" role="tab" id="t-bull" aria-controls="p-bull" data-tab="bull">Steer or bull</button>
   </div>
 </nav>
 
+<!-- the panels are p-<tab>, not the tab names: the address ends in #week, and a panel with that id made the browser
+     open the page scrolled past the masthead to it (iPhone review, 11/23/2026) -->
 <main class="wrap">
   <noscript><p class="warn">This page needs JavaScript to show the prices.</p></noscript>
   <section class="panel vacard" id="va-card" hidden aria-live="polite">
@@ -538,7 +543,7 @@ details.method .card { margin-top: 10px; }
       <div class="controls" id="va-card-btns"></div>
     </div>
   </section>
-  <section class="panel" id="week" role="tabpanel" aria-labelledby="t-week">
+  <section class="panel" id="p-week" role="tabpanel" aria-labelledby="t-week">
     <div>
       <h2 class="sr-only">Cattle prices by week</h2>   <!-- shown only to screen readers: it repeated the page title (review of build 70) -->
       <p class="sub" id="week-quiet" hidden></p>
@@ -560,7 +565,7 @@ details.method .card { margin-top: 10px; }
     <details class="method"><summary>How this is calculated</summary><p class="note" id="week-note"></p></details>
   </section>
 
-  <section class="panel" id="trend" role="tabpanel" aria-labelledby="t-trend" hidden>
+  <section class="panel" id="p-trend" role="tabpanel" aria-labelledby="t-trend" hidden>
     <div>
       <h2>How do prices this year compare?</h2>
       <p class="sub" id="trend-sub"></p>
@@ -598,7 +603,7 @@ details.method .card { margin-top: 10px; }
 
   <!-- Compare states (Josh, 11/10/2026): up to three states, statewide only (never barns: too thin), a weekly line
        for the past year and a monthly line for the past 5 years. Data: data/cmp_<state>.json, loaded when picked -->
-  <section class="panel" id="cmp" role="tabpanel" aria-labelledby="t-cmp" hidden>
+  <section class="panel" id="p-cmp" role="tabpanel" aria-labelledby="t-cmp" hidden>
     <div>
       <h2>How do states compare? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="cmp-sub"></p>
@@ -642,7 +647,7 @@ details.method .card { margin-top: 10px; }
       here: one auction's sales are too few for a fair comparison.</p></details>
   </section>
 
-  <section class="panel" id="keep" role="tabpanel" aria-labelledby="t-keep" hidden>
+  <section class="panel" id="p-keep" role="tabpanel" aria-labelledby="t-keep" hidden>
     <!-- Calf value and Sell or keep, one tab since 11/9/2026 (Josh): one class and weight (300-800 lb) for both;
          the calf's value now on top, the sell-or-keep estimate under it, both statewide -->
     <div>
@@ -716,7 +721,7 @@ details.method .card { margin-top: 10px; }
     </div>
   </section>
 
-  <section class="panel" id="buy" role="tabpanel" aria-labelledby="t-buy" hidden>
+  <section class="panel" id="p-buy" role="tabpanel" aria-labelledby="t-buy" hidden>
     <div>
       <h2>Thinking of buying calves? <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="buy-sub">Assumes today's market plus the usual seasonal move. Not a forecast.</p>
@@ -771,7 +776,7 @@ details.method .card { margin-top: 10px; }
     </div><p class="note" id="buy-note"></p></details>
   </section>
 
-  <section class="panel" id="bull" role="tabpanel" aria-labelledby="t-bull" hidden>
+  <section class="panel" id="p-bull" role="tabpanel" aria-labelledby="t-bull" hidden>
     <div>
       <h2>Steer or bull: price difference at sale <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="bull-sub"></p>
@@ -804,7 +809,7 @@ details.method .card { margin-top: 10px; }
     <details class="method"><summary>How this is calculated</summary><p class="note" id="bull-chart-sub"></p><div class="card tablewrap"><table id="bull-years"></table></div><p class="note" id="bull-note"></p></details>
   </section>
 
-  <section class="panel" id="season" role="tabpanel" aria-labelledby="t-season" hidden>
+  <section class="panel" id="p-season" role="tabpanel" aria-labelledby="t-season" hidden>
     <div>
       <h2>Seasonal trend <span class="chip-scope">Statewide</span></h2>
       <p class="sub" id="season-sub"></p>
@@ -1374,7 +1379,7 @@ details.method .card { margin-top: 10px; }
       a.addEventListener("click", e => {
         e.preventDefault();
         if (!isState()) { S.market = "state"; $("#market").value = "state"; store.set("market." + D.meta.id, "state"); }
-        setTab("week", true);
+        setTab("week", false);
         $("#week-facts").scrollIntoView({ behavior: "smooth", block: "start" });
       });
       return a;
@@ -1808,7 +1813,7 @@ details.method .card { margin-top: 10px; }
     if (!seasonalSt() && Object.keys(D.season.series).some(x => x.startsWith(S.tcls + " "))) {
       const b = el("button", { type: "button", class: "linkish",
         text: `See the usual seasonal pattern for ${hasPat ? `${S.tgrp} lb ` : ""}${vaOn() ? "Value Added " : ""}${S.tcls.toLowerCase()}` });
-      b.addEventListener("click", () => { S.scls = S.tcls; if (hasPat) S.sgrp = S.tgrp; setTab("season", true); window.scrollTo({ top: 0 }); });
+      b.addEventListener("click", () => { S.scls = S.tcls; if (hasPat) S.sgrp = S.tgrp; setTab("season", false); window.scrollTo({ top: 0 }); });
       $("#trend-season").replaceChildren(b, isState() ? "" : ` (statewide)`);
     } else $("#trend-season").replaceChildren();
     const avgC = renderCull();
@@ -2046,12 +2051,12 @@ details.method .card { margin-top: 10px; }
   // the price-by-weight chart moved to Price trend (Josh, 11/12/2026): one tap from the build-ups' price-by-weight row
   function curveLink(cls, w) {
     const b = el("button", { type: "button", class: "linkish", text: "See price by weight" });
-    b.addEventListener("click", () => { S.tcls = cls; S.tgrp = grpOf(w); setTab("trend", true); requestAnimationFrame(() => $("#curve-card").scrollIntoView()); });
+    b.addEventListener("click", () => { S.tcls = cls; S.tgrp = grpOf(w); setTab("trend", false); requestAnimationFrame(() => $("#curve-card").scrollIntoView({ block: "start" })); });
     return b;
   }
   function seasonLink(cls, w) {
     const b = el("button", { type: "button", class: "linkish", text: "See the seasonal trend" });
-    b.addEventListener("click", () => { S.scls = cls; S.sgrp = grpOf(w); setTab("season", true); window.scrollTo({ top: 0 }); });
+    b.addEventListener("click", () => { S.scls = cls; S.sgrp = grpOf(w); setTab("season", false); window.scrollTo({ top: 0 }); });
     return b;
   }
   // death loss as % or as head out of the group (Josh, 11/12/2026): head only once a head count is entered;
@@ -2325,7 +2330,7 @@ details.method .card { margin-top: 10px; }
     // before any early return so a market without cows never keeps the last market's sentence (Fable, 11/5/2026)
     const bull = B.meta.no_cows ? {} : (B.bulls || {})[S.market] || {}, bn = bull.now;
     const cowSeason = B.season.series["Cull cows"] ? el("button", { type: "button", class: "linkish", text: "See the seasonal trend for cull cows" }) : null;
-    if (cowSeason) cowSeason.addEventListener("click", () => { S.scls = "Cows"; setTab("season", true); window.scrollTo({ top: 0 }); });
+    if (cowSeason) cowSeason.addEventListener("click", () => { S.scls = "Cows"; setTab("season", false); window.scrollTo({ top: 0 }); });
     const bullAgo = bull.ago && bn && Math.min(bn.head, bull.ago.head) >= FEW ? `, ${fmt$(bull.ago.price)}/cwt a year ago` : "";
     $("#cows-note").replaceChildren(...(bn && bn.price ? [document.createTextNode(`Slaughter bulls (Yield Grade 1 and 1-2) brought ${fmt$(bn.price)}/cwt on ${fmtN(bn.head)} head${bullAgo}. `), bn.head < FEW ? fewTag() : null, document.createTextNode(" ")].filter(Boolean) : []), ...(cowSeason ? [cowSeason] : []));
     if (B.meta.no_cows) { $("#cows-cards").replaceChildren(el("p", { class: "none", text: `The ${stName()} sales used here report feeder cattle only, so there are no cull cow prices for ${stName()}.` })); return; }
@@ -2663,7 +2668,7 @@ details.method .card { margin-top: 10px; }
     $(".tabs").hidden = card;
     $("#va-card").hidden = !card;
     if (card) {
-      for (const b of document.querySelectorAll(".tab")) $("#" + b.dataset.tab).hidden = true;
+      for (const b of document.querySelectorAll(".tab")) $("#p-" + b.dataset.tab).hidden = true;
       renderCard();
       return;
     }
@@ -2673,7 +2678,7 @@ details.method .card { margin-top: 10px; }
     for (const b of document.querySelectorAll(".tab")) {
       const on = b.dataset.tab === S.tab;
       b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
-      $("#" + b.dataset.tab).hidden = !on;
+      $("#p-" + b.dataset.tab).hidden = !on;
       // the open tab sits mid-strip on a phone, clear of the "more tabs" fade at the right edge
       // (the strip scrolls, never the page)
       if (on) { const w = $("#tablist"); w.scrollLeft = b.offsetLeft - (w.clientWidth - b.offsetWidth) / 2; }
@@ -2700,19 +2705,30 @@ details.method .card { margin-top: 10px; }
   $("#tablist").addEventListener("scroll", tabFade, { passive: true });
 
   // ---------- wiring ----------
-  window.addEventListener("hashchange", () => { const h = oldCows((location.hash || "").slice(1)); if (VIEWS[h] && h !== S.tab) setTab(h, false); else if (h === "week") render(); });
-  function setTab(t, push) {
+  // a jump within the page (#more-tools, #disclaimer) puts the tab back in the address, so a share right after it opens
+  // this view, not This week scrolled to the footer (iPhone review, 11/23/2026)
+  window.addEventListener("hashchange", () => { const h = oldCows((location.hash || "").slice(1));
+    if (VIEWS[h] && h !== S.tab) setTab(h, "tab"); else if (h === "week") render(); else if (!VIEWS[h]) writeAddr(); });
+  // scroll "tab" (a tab button or a link to a tab): only when the reader is below the tab bar, so the tab opens at its
+  // top instead of wherever the old tab left off (often the footer on a phone); at the top of the page nothing moves
+  // (iPhone review, 11/23/2026; drought's page version 45)
+  function setTab(t, scroll) {
     if (!VIEWS[t]) return;
     S.tab = t; store.set("tab", t);
     writeAddr();
     render();
+    const top = $("main").getBoundingClientRect().top + window.scrollY - $(".tabs").offsetHeight;
+    if (scroll === "tab" && window.scrollY > top + 1) window.scrollTo({ top });
   }
-  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab, true)));
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab, "tab")));
+  // the tab bar's height (two rows on a phone; 0 while the Value Added card hides it), for scroll-margin-top
+  const tabsH = () => document.documentElement.style.setProperty("--tabs-h", $(".tabs").offsetHeight + "px");
+  tabsH(); new ResizeObserver(tabsH).observe($(".tabs")); window.addEventListener("resize", tabsH);
   $("#tablist").addEventListener("keydown", e => {
     const tabs = [...document.querySelectorAll(".tab")].filter(b => !b.hidden), i = tabs.findIndex(b => b.dataset.tab === S.tab);
     const n = e.key === "ArrowRight" ? tabs[(i + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(i + tabs.length - 1) % tabs.length]
       : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : null;
-    if (n) { setTab(n.dataset.tab, true); n.focus(); e.preventDefault(); }
+    if (n) { setTab(n.dataset.tab, "tab"); n.focus(); e.preventDefault(); }
   });
   $("#keep-w-range").addEventListener("input", e => { S.kw = Math.round(+e.target.value); store.set("kw", S.kw); renderSell(); });
   for (const [id, k, lo, hi] of [["#keep-w", "kw", 300, 800], ["#keep-adg", "adg", 0.5, 4], ["#keep-cog", "cog", 0, 5]]) {
@@ -2791,7 +2807,7 @@ details.method .card { margin-top: 10px; }
       if (t) t.hidden = true; if (x) x.setAttribute("visibility", "hidden");
     }
   });
-  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disc-full").open = true; $("#disclaimer").scrollIntoView({ behavior: "smooth" }); });
+  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disc-full").open = true; $("#disclaimer").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
   $("#state").addEventListener("change", e => loadState(e.target.value));
   for (const [i, k] of [[1, "c1"], [2, "c2"], [3, "c3"]]) $(`#cmp-s${i}`).addEventListener("change", e => { S[k] = e.target.value; renderCmp(); });
