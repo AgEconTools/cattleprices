@@ -451,12 +451,12 @@ details.method .card { margin-top: 10px; }
   .tabs .wrap { flex-wrap: wrap; overflow: visible; gap: 2px 2px; padding-block: 5px; }
   .tab { flex: 1 1 auto; padding: 6px 5px; font-size: 13.5px; }   /* each row fills the width; four fit from 360 px */
   .tab-break { display: block; flex-basis: 100%; height: 0; }
-}
-@media (max-width: 359px) {   /* under 360 px the first four don't fit: three even rows instead of a lone Compare */
-  .tab-break { display: none; }
+  /* every phone, not only under 360 px: build 72's three-row tab rule had swallowed these, so a 375-430 px phone
+     got the desktop table and scrolled sideways (Josh, 11/23/2026) */
   table { font-size: 14px; }
   th, td { padding: 9px 3px; }
   thead th { white-space: normal; font-size: 11px; vertical-align: bottom; }
+  #week-slaughter td:first-child { white-space: normal; }   /* "Cows, Breaker", "Bulls, YG 1-2" wrap at the space; "300-400" never breaks */
   td.price { font-size: 15px; }
   .picker.lots-pick { grid-column: 1 / -1; }
   .picker .seg.lots { display: flex; } .picker .seg.lots button { flex: 1; }
@@ -464,6 +464,17 @@ details.method .card { margin-top: 10px; }
   td:first-child > .few { display: flex; width: fit-content; margin: 3px 0 0; }
   .headsm { display: block; font-size: 12px; color: var(--muted); }
   .answer .v { font-size: 30px; }
+}
+@media (max-width: 374px) {   /* the first four tabs need 336 px at 13.5px type: a step smaller so they fit from 360 px */
+  .tab { padding: 6px 4px; font-size: 13px; }
+}
+@media (max-width: 359px) {   /* under 360 px the first four don't fit: three even rows instead of a lone Compare */
+  .tab-break { display: none; }
+  /* the This week tables fit a 320 px screen (Josh, 11/23/2026) */
+  table { font-size: 13px; }
+  th, td { padding: 8px 2px; }
+  thead th { font-size: 10.5px; }
+  td.price { font-size: 14px; }
 }
 </style>
 
