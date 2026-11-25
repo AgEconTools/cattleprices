@@ -334,6 +334,8 @@ details.calc#keep-calc { max-width: none; }
 .legend li { display: flex; align-items: center; gap: 7px; }
 .k1 { border-color: var(--line-1); } .k2 { border-color: var(--line-2); } .k3 { border-color: var(--line-3); }
 .key.kband { height: 12px; border: 0; border-radius: 2px; background: var(--band); opacity: .6; }
+.key.kbar { width: 12px; height: 12px; border: 0; border-radius: 2px; }   /* the volume chart's bars (11/25/2026) */
+.key.kbar.k1 { background: var(--line-1); } .key.kbar.k2 { background: var(--line-2); } .key.kbar.k3 { background: var(--line-3); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips button { border: 1px solid var(--rule); background: var(--surface); border-radius: 999px; padding: 6px 12px;
                 font-weight: 600; font-size: 14px; color: var(--ink-2); cursor: pointer; font-variant-numeric: tabular-nums; }
@@ -1678,38 +1680,89 @@ details.method .card { margin-top: 10px; }
   // auctions sold 80% or more of this year's head
   function volumeBlock() {
     const v = D.volume;
-    if (!isState() || !v || !v.x.length) return null;
+    if (!isState() || !v || !v.x.length || !v.months) return null;
     const yr = +v.through.slice(0, 4), avg = !!v.avg, pc = x => `${Math.round(x * 100)}%`;
-    const doy = s => Math.round((Date.parse(s + "T00:00:00Z") - Date.UTC(yr, 0, 1)) / 864e5);
-    const pts = arr => arr.map((y, i) => ({ x: doy(v.x[i]), y }));
     const chart = el("div", { class: "chart", id: "vol-chart" }), legend = el("ul", { class: "legend", id: "vol-legend" });
     const say = avg
-      ? `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of every year shown. They sold ${pc(v.share)} of this year's head.`
-      : `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of both years. They sold ${pc(v.share)} of this year's head. ` +
+      ? `Head sold each month at the auctions USDA reported in the same weeks of every year shown. They sold ${pc(v.share)} of this year's head.`
+      : `Head sold each month at the auctions USDA reported in the same weeks of both years. They sold ${pc(v.share)} of this year's head. ` +
         `The ${v.years} average is left off: only ${pc(v.avg_share)} of this year's head sold at auctions reported in each of those years.`;
-    // weeks that add nothing stay on the chart, flat, and are named (review, 11/25/2026); a seasonal state's quiet
-    // summer is many weeks, so past four the note gives the count
+    // a week counts in the month its Friday falls in (the price charts' rule); the latest month says how far it runs
+    const lastWk = v.x[v.x.length - 1], part = volPartial(v);
+    const monthSay = ` A week counts in the month its Friday falls in.` +
+      (part ? ` ${MON_FULL[+lastWk.slice(5, 7) - 1]} runs through the week of ${day(isoAdd(lastWk, -4))}${lastWk > v.through ? ", still under way" : ""}.` : "");
+    // weeks that add nothing are named (review, 11/25/2026); a seasonal state's quiet summer is many weeks, so past
+    // four the note gives the count
     const fl = v.flat || [], noneSold = " no auction sold in that week of every year shown.";
     const flatSay = !fl.length ? "" : fl.length <= 4
       ? ` Nothing is added for the week${fl.length > 1 ? "s" : ""} of ${andList(fl.map(s => day(s)))}:${noneSold}`
       : ` Nothing is added for ${fl.length} weeks when${noneSold}`;
-    const node =el("div", { class: "vol" }, [el("h4", { text: `Cattle sold so far in ${yr}` }), el("p", { class: "note", text: say + flatSay }), legend, chart, shareControl(chart)]);
+    const node = el("div", { class: "vol" }, [el("h4", { text: `Cattle sold each month in ${yr}` }),
+      el("p", { class: "note", text: say + monthSay + flatSay }), legend, chart, shareControl(chart)]);
     const draw = () => {
-      const narrow = chart.clientWidth < 520;
-      const cur = pts(v.now), last = cur[cur.length - 1].x;
-      const series = [{ cls: 1, pts: cur, name: String(yr), end: String(yr), dot: true, width: 2.6 },
-        { cls: 3, pts: pts(v.ago), name: String(yr - 1), width: 1.8, end: String(yr - 1) },
-        ...(avg ? [{ cls: 2, pts: pts(v.avg), name: `${v.years} avg.`, end: narrow ? "3-yr avg." : `${v.years} avg.`, endFull: `${v.years} avg.`, dash: "6 4", width: 1.8 }] : [])];
-      legend.replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
-      const ticks = MON3.map((t, i) => ({ v: Math.round((Date.UTC(yr, i, 1) - Date.UTC(yr, 0, 1)) / 864e5), t })).filter(t => t.v <= last);
-      lineChart(chart, { series, height: narrow ? 220 : 240, endLabels: true,
-        x: { min: 0, max: last, ticks: narrow ? ticks.filter((_, i) => i % 2 === 0) : ticks, all: ticks },
-        yfmt: (y, full) => full ? fmtN(Math.round(y)) : y >= 1e6 ? `${+(y / 1e6).toFixed(1)}M` : y >= 1000 ? `${Math.round(y / 1000)}K` : String(y),
-        // each point is the week's Friday; the week starts that Monday
-        xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (x - 4) * 864e5); return `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; },
-        xname: "Week", aria: `Cattle sold in ${stName()} so far in ${yr}, added up by week, vs. ${yr - 1}${avg ? ` and the ${v.years} average` : ""}` });
+      // left to right, as the bars stand: the base years' average, last year, this year (Josh, 11/25/2026)
+      legend.replaceChildren(...volKeys(v).map(([, c, name]) => el("li", {}, [el("span", { class: `key kbar k${c}` }), el("span", { text: name })])));
+      volBars(chart, v);
     };
     return { node, draw };
+  }
+  const isoAdd = (s, n) => { const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  // the latest month is under way unless its last counted week is the month's last (the next Friday is in a new month)
+  // and that week is over (its Friday on or before the latest sale)
+  const volPartial = v => { const f = v.x[v.x.length - 1]; return isoAdd(f, 7).slice(5, 7) === f.slice(5, 7) || f > v.through; };
+  const volKeys = v => [...(v.months.avg ? [["avg", 2, `${v.years} avg.`]] : []), ["ago", 3, String(+v.through.slice(0, 4) - 1)],
+    ["now", 1, v.through.slice(0, 4)]];
+  // the About card's volume chart (Josh, 11/25/2026; a running total until then, whose lines parted only at the end):
+  // head sold each month, three bars a month, left to right the base years' average (black), last year (grey) and
+  // this year (maroon), at the same auctions in the same weeks (the export's volume_ytd)
+  function volBars(host, v, ht) {
+    host._redraw = (h, hh) => volBars(h, v, hh);
+    const M = v.months, yr = +v.through.slice(0, 4), keys = volKeys(v), n = M.m.length, part = volPartial(v);
+    const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = ht || (small ? 230 : 250);
+    const m = { t: 12, r: 6, b: 28, l: small ? 38 : 46 };
+    const max = Math.max(1, ...keys.flatMap(([k]) => M[k]));
+    // the axis runs one step past the tallest bar, so every bar sits under a labeled tick
+    const { ticks, step } = niceTicks(0, max, 4);
+    if (ticks[ticks.length - 1] < max) ticks.push(+(ticks[ticks.length - 1] + step).toFixed(6));
+    const top = ticks[ticks.length - 1];
+    const gw = (W - m.l - m.r) / n, bw = Math.min(22, gw * 0.8 / keys.length);
+    const Y = y => m.t + (1 - y / top) * (H - m.t - m.b);
+    const kfmt = y => y >= 1e6 ? `${+(y / 1e6).toFixed(1)}M` : y >= 1000 ? `${Math.round(y / 1000)}K` : String(y);
+    const label = `Cattle sold each month in ${stName()}, ${yr} vs. ${keys.length > 2 ? `${yr - 1} and the ${v.years} average` : yr - 1}`;
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": label });
+    for (const t of ticks) {
+      const tx = svgEl("text", { x: m.l - 7, y: Y(t) + 4, "text-anchor": "end" }); tx.textContent = kfmt(t); svg.append(tx);
+      svg.append(svgEl("path", { class: "axis", d: `M${m.l - 4},${Y(t)} H${m.l}` }));
+    }
+    svg.append(svgEl("path", { class: "axis", d: `M${m.l},${m.t} V${Y(0)} H${W - m.r}` }));
+    const tip = el("div", { class: "tip", hidden: "", "aria-live": "polite" });
+    const shows = []; let cur = n - 1;                      // the keyboard starts at the latest month
+    const mname = i => MON_FULL[M.m[i] - 1] + (part && i === n - 1 ? " (so far)" : "");
+    M.m.forEach((mo, i) => {
+      const x0 = m.l + i * gw, cx = x0 + gw / 2, left = cx - bw * keys.length / 2;
+      keys.forEach(([k, c], j) => { const y = Y(M[k][i]);
+        svg.append(svgEl("rect", { x: left + j * bw + 0.5, y, width: Math.max(1, bw - 1), height: Math.max(0, Y(0) - y), class: `f${c}` })); });
+      const tx = svgEl("text", { x: cx, y: H - m.b + 18, "text-anchor": "middle" });
+      tx.textContent = small && (n - 1 - i) % 2 ? "" : MON3[mo - 1]; svg.append(tx);   // every other month on a phone, the latest always
+      const hit = svgEl("rect", { x: x0, y: m.t, width: gw, height: H - m.t - m.b, fill: "transparent" });
+      const show = () => {
+        const a = M.ago[i], c = M.now[i];
+        tip.replaceChildren(el("b", { text: mname(i) }), ...keys.map(([k, , name]) => el("div", { text: `${name}: ${fmtN(M[k][i])} head` })),
+          a > 0 ? el("div", { text: `${pctS((c / a - 1) * 100)} vs. ${yr - 1}` }) : null);
+        tip.hidden = false;
+        const rr = svg.getBoundingClientRect(), px = cx * rr.width / W, tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, Math.min(rr.width - tw, px - tw / 2)) + "px"; tip.style.top = "6px";
+      };
+      shows.push(show);
+      hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
+      hit.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
+      svg.append(hit);
+    });
+    const box = kbox(svg);
+    keyNav(svg, n, () => cur, i => { cur = i; shows[i](); box.at(m.l + i * gw + 1, m.t, gw - 2, H - m.t - m.b); },
+      () => { tip.hidden = true; box.off(); });
+    host.replaceChildren(svg, tip, srTable(label, ["Month", ...keys.map(k => k[2])],
+      M.m.map((mo, i) => [mname(i), ...keys.map(([k]) => `${fmtN(M[k][i])} head`)])));
   }
   // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
   // report, and never in any figure on the page (Josh, 11/2/2026); in the About box, statewide view only
@@ -2701,7 +2754,7 @@ details.method .card { margin-top: 10px; }
     "cmp-week": () => cmpShot(true),
     "cmp-month": () => cmpShot(false),
     "vol-chart": () => { const v = D.volume, yr = +v.through.slice(0, 4);
-      return { title: `Cattle sold at ${stName()} auctions so far in ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
+      return { title: `Cattle sold each month at ${stName()} auctions, ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
         sub: ($("#vol-chart").parentElement.querySelector("p.note") || { textContent: "" }).textContent.trim() }; },
     "keep-vog-chart": () => ({ title: `${textOf("#keep-vog-title")}, ${stPlace()}`, sub: textOf("#keep-vog-sub"), note: SHOT_EST, xaxis: "Days kept" }),
     "buy-chart": () => ({ title: `${textOf("#buy-chart-title")}, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stPlace()}`, sub: textOf("#buy-chart-sub"), note: SHOT_EST, xaxis: "Days kept" }),
@@ -2778,6 +2831,7 @@ details.method .card { margin-top: 10px; }
         const col = T[`--line-${["1", "2", "3"].find(n => k.contains("k" + n)) || "1"}`];
         if (k.contains("fewkey")) parts.push(`<circle cx="${x + 9}" cy="${cy}" r="5" fill="${T["--warn-bg"]}" stroke="${T["--warn-line"]}" stroke-width="2.5"/>`);
         else if (k.contains("kband")) parts.push(`<rect x="${x}" y="${cy - 6}" width="18" height="12" rx="2" fill="${T["--band"]}" opacity=".6"/>`);
+        else if (k.contains("kbar")) parts.push(`<rect x="${x + 3}" y="${cy - 6}" width="12" height="12" rx="2" fill="${col}"/>`);
         else parts.push(`<line x1="${x}" x2="${x + 18}" y1="${cy}" y2="${cy}" stroke="${col}" stroke-width="${k.contains("dot") ? 2 : 3}"${k.contains("dot") ? ' stroke-dasharray="1.5 3"' : k.contains("dash") ? ' stroke-dasharray="5 3"' : ""}/>`);
         parts.push(`<text x="${x + 25}" y="${(cy + size * 0.36).toFixed(1)}" font-family="${xesc(fam.body)}" font-size="${size}" fill="${T["--ink-2"]}">${xesc(it.text)}</text>`);
         x += w + 18;
