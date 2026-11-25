@@ -533,9 +533,11 @@ details.method .card { margin-top: 10px; }
 <section class="tally" aria-label="Cattle sold">
   <div class="wrap" id="tally"></div>
 </section>
-<div class="wrap state-note" id="state-note" hidden><p id="state-note-p"></p></div>
-<div class="wrap va-band" id="va-band" hidden><p id="va-band-p"></p></div>
-<div class="wrap stale-row" id="stale-row" hidden><p class="warn" role="status" id="stale"></p></div>
+<!-- each notice row is its own labeled region (axe "region", 11/25/2026): between the masthead and main they sat outside
+     every landmark, so landmark navigation skipped them; a hidden row is no region at all -->
+<div class="wrap state-note" id="state-note" role="region" aria-label="About this state's prices" hidden><p id="state-note-p"></p></div>
+<div class="wrap va-band" id="va-band" role="region" aria-label="About Value Added lots" hidden><p id="va-band-p"></p></div>
+<div class="wrap stale-row" id="stale-row" role="region" aria-label="Update notice" hidden><p class="warn" role="status" id="stale"></p></div>
 
 <nav class="tabs" aria-label="Questions">
   <div class="wrap" role="tablist" id="tablist">
