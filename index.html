@@ -21,7 +21,9 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- Visit counts: GoatCounter, no cookies and no personal data (Josh, 11/2026). It skips localhost. -->
-<script data-goatcounter="https://agecontools.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<!-- Pinned to GoatCounter's versioned script with its integrity hash (security review, 11/25/2026): the browser
+     refuses the file if it ever changes, so no outside code can run here. The Watchdog checks the hash daily. -->
+<script data-goatcounter="https://agecontools.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" crossorigin="anonymous" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ"></script>
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
@@ -1427,8 +1429,12 @@ details.method .card { margin-top: 10px; }
       `${wday(D.meta.through, true)}. It normally updates every morning, so prices may be out of date.`;
     renderNote();
     const t = $("#tally"); const rc = r.receipts, y = D.receipts_ytd[S.market];
-    // change from last year over the barn-weeks reported in both years; left off when too few match
-    const lk = y.like || {}, ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
+    // change from last year over the barn-weeks reported in both years; left off when too few match. Statewide it is
+    // the About card's volume chart's own comparison (its last point), so the card shows one number: the chart keeps
+    // only auctions reported in every year it shows (review, 11/25/2026: MS read 9.8% fewer over a chart at 10.8%)
+    const vy = isState() && D.volume && D.volume.x.length ? D.volume : null;
+    const lk = vy ? { now: vy.now[vy.now.length - 1], ago: vy.ago[vy.ago.length - 1], share: vy.share } : y.like || {};
+    const ytdP = lk.ago && lk.share >= 0.7 ? (lk.now / lk.ago - 1) * 100 : null;
     const lead = isState()
       ? `Cattle sold, week of ${span(r.week[0], r.week[1])}${reported(r)}`
       : `Cattle sold at ${(mk.label || mk.name).replace(/ \((Mon|Tue|Wed|Thu|Fri|Sat|Sun)\)$/, "")} on ${wday(r.sale)}`;   // "Lexington on Monday, Nov. 16", not "Lexington Mon on Monday"
@@ -1470,10 +1476,11 @@ details.method .card { margin-top: 10px; }
     const cls = v > 0 ? "up" : v < 0 ? "down" : "";
     const arrow = v > 0 ? "▲ " : v < 0 ? "▼ " : "";
     const p = pct != null ? el("span", { class: "pct", text: ` (${pctS(pct)})` }) : null;
-    // a change resting on a thin week (either side) is shown in grey, without an arrow
+    // a change resting on a thin week (either side) is shown in grey, with the same arrow as every other row (review,
+    // 11/25/2026: Texas's "+$8.26" among arrows read as a glitch); the grey alone marks it
     const thin = heads && Math.min(...heads) < FEW;
     if (thin) return el("td", { class: "chg muted", title: `Rests on ${heads[0]} head vs. ${heads[1]} head` },
-      [document.createTextNode((v > 0 ? "+" : v < 0 ? "−" : "") + fmt$(Math.abs(v))), p]);
+      [document.createTextNode(arrow + fmt$(Math.abs(v))), p]);
     return el("td", { class: `chg ${cls}` }, [document.createTextNode(arrow + fmt$(Math.abs(v))), p]);
   }
   // ---------- price range box (Josh, 11/6/2026) ----------
@@ -1680,7 +1687,13 @@ details.method .card { margin-top: 10px; }
       ? `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of every year shown. They sold ${pc(v.share)} of this year's head.`
       : `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of both years. They sold ${pc(v.share)} of this year's head. ` +
         `The ${v.years} average is left off: only ${pc(v.avg_share)} of this year's head sold at auctions reported in each of those years.`;
-    const node = el("div", { class: "vol" }, [el("h4", { text: `Cattle sold so far in ${yr}` }), el("p", { class: "note", text: say }), legend, chart, shareControl(chart)]);
+    // weeks that add nothing stay on the chart, flat, and are named (review, 11/25/2026); a seasonal state's quiet
+    // summer is many weeks, so past four the note gives the count
+    const fl = v.flat || [], noneSold = " no auction sold in that week of every year shown.";
+    const flatSay = !fl.length ? "" : fl.length <= 4
+      ? ` Nothing is added for the week${fl.length > 1 ? "s" : ""} of ${andList(fl.map(s => day(s)))}:${noneSold}`
+      : ` Nothing is added for ${fl.length} weeks when${noneSold}`;
+    const node =el("div", { class: "vol" }, [el("h4", { text: `Cattle sold so far in ${yr}` }), el("p", { class: "note", text: say + flatSay }), legend, chart, shareControl(chart)]);
     const draw = () => {
       const narrow = chart.clientWidth < 520;
       const cur = pts(v.now), last = cur[cur.length - 1].x;
