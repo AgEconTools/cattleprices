@@ -302,6 +302,24 @@ details.calc#keep-calc { max-width: none; }
 .chart text.sm { font-size: 11px; }
 .sqkey { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
 .wkey { display: inline-block; width: 2px; height: 14px; background: var(--ink-2); }
+/* Share this chart (Josh, 11/24/2026): the button under each chart and the picture's panel */
+.chart-share { display: grid; justify-items: end; gap: 10px; margin-top: 4px; }
+.chart:not(:has(svg)) + .chart-share { display: none; }
+.cs-btn { display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1 var(--body); color: var(--ink-2); background: transparent;
+          border: 1px solid var(--rule); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.cs-btn:hover { color: var(--ink); border-color: var(--muted); }
+.cs-btn[disabled] { cursor: progress; }
+.cs-btn svg { width: 14px; height: 14px; flex: none; }
+.cs-btn:focus-visible, .cs-act:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.cs-panel { justify-self: stretch; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--bg); }
+.cs-panel[hidden] { display: none; }
+.cs-img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.cs-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-act { font: 600 14px/1 var(--body); padding: 10px 16px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
+.cs-act:first-child { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.cs-panel .note { margin: 0; }
+.cs-msg:empty { display: none; }
+@media print { .chart-share { display: none; } }
 .tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink);
        border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 13px;
        box-shadow: 0 4px 16px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
@@ -1083,7 +1101,11 @@ details.method .card { margin-top: 10px; }
     const H = cfg.height || (small ? 290 : 320);
     const m = { t: 12, r: cfg.endLabels ? (small ? 74 : 104) : 14, b: 30, l: small ? 46 : 54 };
     const all = cfg.series.flatMap(s => s.pts);
-    if (!all.length) { host.replaceChildren(el("p", { class: "none", text: cfg.empty || "No sales to chart." })); return; }
+    if (!all.length) { host._redraw = null; host.replaceChildren(el("p", { class: "none", text: cfg.empty || "No sales to chart." })); return; }
+    // Share this chart: the same chart again at the picture's size, with the full month ticks and end labels a phone
+    // drops (x.all, endFull) and no tap-to-pick
+    host._redraw = (h, ht) => lineChart(h, { ...cfg, height: ht || cfg.height, pick: null, x: { ...cfg.x, ticks: cfg.x.all || cfg.x.ticks },
+      series: cfg.series.map(s => s.endFull ? { ...s, end: s.endFull } : s) });
     const B = cfg.band ? cfg.band.pts : [];
     let ylo = Math.min(...all.map(p => p.y), ...B.map(p => p.lo)), yhi = Math.max(...all.map(p => p.y), ...B.map(p => p.hi));
     if (cfg.marker && cfg.marker.y != null) { ylo = Math.min(ylo, cfg.marker.y); yhi = Math.max(yhi, cfg.marker.y); }
@@ -1226,6 +1248,7 @@ details.method .card { margin-top: 10px; }
 
   // seasonal index bars around 100
   function monthBars(host, rows, label) {
+    host._redraw = h => monthBars(h, rows, label);
     const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = small ? 250 : 300;
     const m = { t: 14, r: 10, b: 30, l: small ? 40 : 46 };
     const vals = rows.flatMap(r => [r.low, r.high, r.index]);
@@ -1276,6 +1299,7 @@ details.method .card { margin-top: 10px; }
 
   // steer premium over bulls by weight group: horizontal bars, $/cwt, with % and $/head
   function premiumBars(host, rows, pick) {
+    host._redraw = h => premiumBars(h, rows, null);        // the picture shows every weight group at full strength
     const W = Math.max(280, host.clientWidth || 600), small = W < 520;
     const rowH = small ? 60 : 56, m = { t: 6, r: small ? 8 : 16, b: 6, l: small ? 98 : 112 };
     const H = m.t + m.b + rows.length * rowH;
@@ -1653,17 +1677,17 @@ details.method .card { margin-top: 10px; }
       ? `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of every year shown. They sold ${pc(v.share)} of this year's head.`
       : `Head sold, added up week by week from Jan. 1, at the auctions USDA reported in the same weeks of both years. They sold ${pc(v.share)} of this year's head. ` +
         `The ${v.years} average is left off: only ${pc(v.avg_share)} of this year's head sold at auctions reported in each of those years.`;
-    const node = el("div", { class: "vol" }, [el("h4", { text: `Cattle sold so far in ${yr}` }), el("p", { class: "note", text: say }), legend, chart]);
+    const node = el("div", { class: "vol" }, [el("h4", { text: `Cattle sold so far in ${yr}` }), el("p", { class: "note", text: say }), legend, chart, shareControl(chart)]);
     const draw = () => {
       const narrow = chart.clientWidth < 520;
       const cur = pts(v.now), last = cur[cur.length - 1].x;
       const series = [{ cls: 1, pts: cur, name: String(yr), end: String(yr), dot: true, width: 2.6 },
         { cls: 3, pts: pts(v.ago), name: String(yr - 1), width: 1.8, end: String(yr - 1) },
-        ...(avg ? [{ cls: 2, pts: pts(v.avg), name: `${v.years} avg.`, end: narrow ? "3-yr avg." : `${v.years} avg.`, dash: "6 4", width: 1.8 }] : [])];
+        ...(avg ? [{ cls: 2, pts: pts(v.avg), name: `${v.years} avg.`, end: narrow ? "3-yr avg." : `${v.years} avg.`, endFull: `${v.years} avg.`, dash: "6 4", width: 1.8 }] : [])];
       legend.replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
       const ticks = MON3.map((t, i) => ({ v: Math.round((Date.UTC(yr, i, 1) - Date.UTC(yr, 0, 1)) / 864e5), t })).filter(t => t.v <= last);
       lineChart(chart, { series, height: narrow ? 220 : 240, endLabels: true,
-        x: { min: 0, max: last, ticks: narrow ? ticks.filter((_, i) => i % 2 === 0) : ticks },
+        x: { min: 0, max: last, ticks: narrow ? ticks.filter((_, i) => i % 2 === 0) : ticks, all: ticks },
         yfmt: (y, full) => full ? fmtN(Math.round(y)) : y >= 1e6 ? `${+(y / 1e6).toFixed(1)}M` : y >= 1000 ? `${Math.round(y / 1000)}K` : String(y),
         // each point is the week's Friday; the week starts that Monday
         xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (x - 4) * 864e5); return `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; },
@@ -1768,11 +1792,11 @@ details.method .card { margin-top: 10px; }
     const series = [{ cls: 1, pts: cur, name: String(yr), end: String(yr), dot: true, width: 2.6 },
       { cls: 3, pts: ago, name: String(yr - 1), end: String(yr - 1), width: 1.8, markAt: cur.length ? cur[cur.length - 1].x : null,
         labelAt: cur.length ? cur[cur.length - 1].x : null },
-      { cls: 2, pts: avg, name: `${base} avg.`, end: narrow ? "3-yr avg." : `${base} avg.`, dash: "6 4", width: 1.8,
+      { cls: 2, pts: avg, name: `${base} avg.`, end: narrow ? "3-yr avg." : `${base} avg.`, endFull: `${base} avg.`, dash: "6 4", width: 1.8,
         markAt: cur.length ? cur[cur.length - 1].x : null, labelAt: cur.length ? cur[cur.length - 1].x : null }].filter(s => s.pts.length);
     $(`#${pre}-legend`).replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
     const thinT = lineChart($(`#${pre}-chart`), {
-      series, x: { min: 0, max: 365, ticks: window.innerWidth < 520 ? ticks.filter((_, i) => i % 2 === 0) : ticks },
+      series, x: { min: 0, max: 365, ticks: window.innerWidth < 520 ? ticks.filter((_, i) => i % 2 === 0) : ticks, all: ticks },
       gap: weekly ? 20 : 45, endLabels: true, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
       // weekly points are labeled by the week's Friday; the week starts that Monday
       xlab: x => { const d = new Date(Date.UTC(yr, 0, 1) + (weekly ? x - 4 : x) * 864e5); return weekly ? `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}` : MON_FULL[d.getUTCMonth()]; },
@@ -1921,7 +1945,7 @@ details.method .card { margin-top: 10px; }
       const narrow = window.innerWidth < 520;
       legend.replaceChildren(...series.map(s => el("li", {}, [el("span", { class: `key k${s.cls}${s.dash ? " dash" : ""}` }), el("span", { text: s.name })])));
       sub.textContent = weekly ? "Weekly average, the past 52 weeks." : "Monthly average, the past 60 months.";
-      const thin = lineChart(host, { series, x: { min: xmin, max: xmax, ticks: narrow && weekly ? ticks.filter((_, i) => i % 2 === 0) : ticks },
+      const thin = lineChart(host, { series, x: { min: xmin, max: xmax, ticks: narrow && weekly ? ticks.filter((_, i) => i % 2 === 0) : ticks, all: ticks },
         gap: weekly ? 20 : 1.5, endLabels: true, yfmt: (v, full) => full ? fmt$(v) : "$" + v,
         xlab: x => { if (weekly) { const d = new Date((x - 4) * 864e5); return `Week of ${MON[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`; }
           return `${MON_FULL[((x % 12) + 12) % 12]} ${Math.floor(x / 12)}`; },
@@ -2602,6 +2626,240 @@ details.method .card { margin-top: 10px; }
     monthBars($("#season-chart"), rows, `${cows ? "Boner cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}${S.scls.toLowerCase()}`}: seasonal pattern by month, ${stName()}, ${yrs[0]}-${yrs[yrs.length - 1]}`);
   }
 
+  // ---------- Share this chart (Josh, 11/24/2026) ----------
+  // A button under each chart makes a picture of it to paste into a slide, document or text message: the chart drawn
+  // again at a fixed size (800 x about 450, saved at 2x: 1600 px wide, so lines and type hold up on a slide) in the
+  // light colors whatever the page's theme, with a title naming what it shows, a subtitle, its legend, the Source
+  // line with the latest sales date, any footnote, and the page's name and address. The phone's share sheet where it
+  // takes files, Copy image where the clipboard takes pictures, Download always; the picture shows in the panel too,
+  // to press and hold where a browser blocks all three.
+  const SHOT = { W: 800, PAD: 28, H: 450, SCALE: 2 };
+  const SHOT_SITE = "Chart: Cattle Auction Prices Dashboard, Mississippi State University Extension (agecontools.github.io/cattleprices)";   // Josh, 11/24/2026
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const one = c => c.toLowerCase().replace(/s$/, "");                     // "Steers" -> "steer"
+  // a picture travels without the page's state note, so it carries what changes how its prices read (Josh, 11/24/2026):
+  // Virginia's graded sales in every title, and a short footnote for graded sales, few barns or a seasonal state. Each
+  // shows only while the page's own note has the sentence named first (the export drops a barn sentence when that
+  // state's barns change, so a barn count can't go stale on the state's own pictures)
+  const stPlace = () => stName() + (B.meta.graded ? " (graded sales)" : "");
+  const place = () => isState() ? stPlace() : `${market().name}, ${stName()}`;
+  const SHOT_NOTES = {
+    co: ["Colorado auctions sell most feeder cattle", "Colorado auctions sell few feeder cattle from May through September."],
+    ks: ["Only three Kansas auction barns", "USDA reports only three Kansas auction barns (Dodge City, Pratt and Salina), so these prices may not represent the whole state."],
+    mt: ["USDA reports three Montana barns", "USDA reports only three Montana auction barns (two in Billings and one in Miles City), so these prices may not represent the whole state."],
+    nd: ["North Dakota auctions sell most feeder cattle", "North Dakota auctions sell few feeder cattle from May through September."],
+    nm: ["Only three New Mexico auction barns", "USDA reports only three New Mexico auction barns (Belen, Clovis and Roswell), so these prices may not represent the whole state."],
+    tx: ["Only five are included here", "USDA reports only five Texas auction barns, four in the Panhandle and West Texas and one in Central Texas, so these prices may not represent the whole state."],
+    ut: ["Only three Utah auction barns", "USDA reports only three Utah auction barns (Cedar, Monroe and Salina), so these prices may not represent the whole state."],
+    va: ["are state graded sales", "Virginia's prices come from state graded sales: state graders grade the cattle, and they sell in groups of similar grade and weight."],
+    wy: ["Only two Wyoming auction barns", "USDA reports only two Wyoming auction barns (Riverton and Torrington), so these prices may not represent the whole state."],
+  };
+  const stateShotNote = () => { const n = SHOT_NOTES[B.meta.id]; return n && (B.meta.note || "").includes(n[0]) ? n[1] : null; };
+  const textOf = id => { const n = $(id); return n ? n.textContent.trim() : ""; };
+  const SHOT_EST = "An estimate from the inputs shown: today's market plus the usual seasonal move. Not a forecast.";
+  const shotSource = () => `Source: ${D.meta.source}. Sales through ${day(D.meta.through, true)}.`;
+  const cmpShot = weekly => {
+    const culls = S.ctype === "Culls", k = CULL.find(c => c.v === S.cgrade) || CULL[1];
+    const what = culls ? (k.v === "bulls" ? "Slaughter bull" : `${k.t} cull cow`) : `${S.cgrp} lb feeder ${one(S.ctype)}`;
+    const names = [...$(weekly ? "#cmp-wlegend" : "#cmp-mlegend").querySelectorAll("li")].filter(li => !li.querySelector(".fewkey")).map(li => li.textContent.trim());
+    const ids = [...new Set([S.c1, S.c2, S.c3].filter(Boolean))], solo = names.length < 2;
+    let sub = textOf("#cmp-sub").replace(/ The auction picked.*$/, "");
+    if (!culls) sub = cap(sub.replace(/^[^,]*, /, ""));                  // the title names the weight and class
+    return { title: solo ? `${what} prices, ${names[0] || stName()}: the past ${weekly ? "year" : "5 years"}` : `${what} prices: ${andList(names)}`,
+      sub: `${sub} ${weekly ? "Weekly average, the past 52 weeks." : "Monthly average, the past 5 years."}`,
+      ...(solo ? {} : { note: "States don't grade or sell calves the same way, so part of a gap between two states can come from those differences, not price alone." }),
+      // the state on the page follows its note; another picked state's file carries no note, so its footnote shows as written
+      notes: ids.map(id => id === B.meta.id ? stateShotNote() : SHOT_NOTES[id] && SHOT_NOTES[id][1]).filter(Boolean),
+      // one state: its own credit (the state on the page; another state's file carries no credit line)
+      source: solo && ids.length === 1 && ids[0] === B.meta.id ? `Source: ${B.meta.source}.`
+        : "Source: USDA-AMS auction reports, co-published with each state's department of agriculture." };
+  };
+  const SHARE_SPECS = {
+    "trend-chart": () => ({ title: `${S.tgrp} lb ${vaOn() ? "Value Added " : ""}feeder ${one(S.tcls)} prices, ${place()}: ${D.years[S.market].year} vs. recent years`,
+      sub: cap(textOf("#trend-sub").replace(/^[^,]*, /, "")) }),      // the title names the weight and class
+    "cull-chart": () => { const k = CULL.find(c => c.v === S.ckind) || CULL[1], Y = (B.cull_years || {})[S.market] || {};
+      return { title: `${k.v === "bulls" ? "Slaughter bull" : `${k.t} cull cow`} prices, ${place()}: ${Y.year} vs. recent years`,
+        sub: textOf("#cull-sub").replace(/ The same for regular and Value Added lots\.$/, "") }; },
+    "curve-chart": () => ({ title: cap(`${vaOn() ? "Value Added " : ""}feeder ${one(S.tcls)} prices by weight, ${stPlace()}: last 2 weeks vs. a year ago`),
+      sub: textOf("#curve-sub").replace(/ Tap a point for head counts\.$/, ""), xaxis: "Weight (lb), by 50-lb class" }),
+    "cmp-week": () => cmpShot(true),
+    "cmp-month": () => cmpShot(false),
+    "vol-chart": () => { const v = D.volume, yr = +v.through.slice(0, 4);
+      return { title: `Cattle sold at ${stName()} auctions so far in ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
+        sub: ($("#vol-chart").parentElement.querySelector("p.note") || { textContent: "" }).textContent.trim() }; },
+    "keep-vog-chart": () => ({ title: `${textOf("#keep-vog-title")}, ${stPlace()}`, sub: textOf("#keep-vog-sub"), note: SHOT_EST, xaxis: "Days kept" }),
+    "buy-chart": () => ({ title: `${textOf("#buy-chart-title")}, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stPlace()}`, sub: textOf("#buy-chart-sub"), note: SHOT_EST, xaxis: "Days kept" }),
+    "season-chart": () => { const yrs = D.season.used_years, cows = S.scls === "Cows";
+      return { title: `Seasonal price pattern, ${cows ? "Boner cull cows" : `${S.sgrp} lb ${vaOn() ? "Value Added " : ""}feeder ${S.scls.toLowerCase()}`}, ${stPlace()}`,
+        sub: `How far each month's price usually runs above or below the average of the 12 months around it, ${yrs[0]}-${yrs[yrs.length - 1]}.`,
+        note: "Thin lines on each bar show the lowest and highest year." }; },
+    "bull-chart": () => ({ title: `How much more steers bring than bulls, by weight, ${stPlace()}`,
+      sub: "Last 12 months, $/cwt (and %): steers vs. bulls of the same weight and grade at the same sale." }),
+  };
+  // the light theme's colors (the plain :root rules, outside the dark-mode ones), set on the chart drawn for the picture
+  const lightTokens = () => {
+    const t = {};
+    for (const sh of document.styleSheets) {
+      let rules; try { rules = sh.cssRules; } catch (e) { continue; }
+      for (const r of rules) if (r.selectorText === ":root") for (const p of r.style) if (p.startsWith("--")) t[p] = r.style.getPropertyValue(p).trim();
+    }
+    return t;
+  };
+  // the page's own two fonts inside the picture, so it draws in them (a picture can't reach the page's fonts)
+  let SHOT_FONTS = null;
+  const shotFonts = async () => {
+    if (SHOT_FONTS != null) return SHOT_FONTS;
+    const face = async (fam, file, wt) => {
+      const b = await (await fetch(`fonts/${file}`)).blob();
+      const u = await new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsDataURL(b); });
+      return `@font-face{font-family:"${fam}";font-weight:${wt};src:url(${u.replace(/^data:[^;,]*/, "data:font/woff2")}) format("woff2")}`;
+    };
+    try { SHOT_FONTS = (await Promise.all([face("Bitter", "bitter-latin.woff2", "600 700"), face("Public Sans", "public-sans-latin.woff2", "400 700")])).join(""); }
+    catch (e) { SHOT_FONTS = ""; }        // Georgia and Arial then
+    return SHOT_FONTS;
+  };
+  const xesc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const SHOT_FONT = { title: ['700 22px Bitter, Georgia, serif', 22, 28], sub: ['400 14px "Public Sans", Arial, sans-serif', 14, 20],
+    leg: ['400 13.5px "Public Sans", Arial, sans-serif', 13.5, 22], src: ['400 11.5px "Public Sans", Arial, sans-serif', 11.5, 16],
+    site: ['600 11.5px "Public Sans", Arial, sans-serif', 11.5, 16] };
+  const measure = document.createElement("canvas").getContext("2d");
+  const wrapText = (text, font, w) => {
+    measure.font = font; const out = []; let cur = "";
+    for (const wd of String(text).split(/\s+/).filter(Boolean)) {
+      const t = cur ? `${cur} ${wd}` : wd;
+      if (cur && measure.measureText(t).width > w) { out.push(cur); cur = wd; } else cur = t;
+    }
+    if (cur) out.push(cur);
+    return out;
+  };
+  const SHOT_PROPS = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-linecap", "stroke-linejoin", "stroke-opacity",
+    "opacity", "visibility", "font-family", "font-size", "font-weight", "font-variant-numeric"];
+  async function chartPicture(host, spec) {
+    const { W, PAD, SCALE } = SHOT, IW = W - 2 * PAD, T = lightTokens();
+    await Promise.all(["700 22px Bitter", '400 14px "Public Sans"', '600 14px "Public Sans"'].map(f => document.fonts.load(f))).catch(() => {});
+    const parts = [], fam = { title: "Bitter, Georgia, serif", body: '"Public Sans", Arial, sans-serif' };
+    const lines = (key, text, y, color, weight) => {
+      const [font, size, lh] = SHOT_FONT[key];
+      for (const ln of wrapText(text, font, IW)) {
+        parts.push(`<text x="${PAD}" y="${(y + size).toFixed(1)}" font-family="${xesc(key === "title" ? fam.title : fam.body)}" font-size="${size}" font-weight="${weight}" fill="${color}">${xesc(ln)}</text>`);
+        y += lh;
+      }
+      return y;
+    };
+    let y = PAD;
+    y = lines("title", spec.title, y, T["--ink"], 700) + 2;
+    y = lines("sub", spec.sub, y, T["--ink-2"], 400) + 8;
+    // the legend, from the one on the page: lines, the shaded band and the few-sales circle, in the light colors
+    const leg = host.parentElement.querySelector(":scope > ul.legend");
+    const items = leg ? [...leg.querySelectorAll(":scope > li")].map(li => ({ key: li.querySelector("span"), text: li.textContent.trim() })) : [];
+    if (items.length) {
+      const [font, size, lh] = SHOT_FONT.leg; measure.font = font;
+      let x = PAD;
+      for (const it of items) {
+        const w = 18 + 7 + measure.measureText(it.text).width;
+        if (x > PAD && x + w > W - PAD) { x = PAD; y += lh; }
+        const k = it.key ? it.key.classList : { contains: () => false }, cy = y + lh / 2;
+        const col = T[`--line-${["1", "2", "3"].find(n => k.contains("k" + n)) || "1"}`];
+        if (k.contains("fewkey")) parts.push(`<circle cx="${x + 9}" cy="${cy}" r="5" fill="${T["--warn-bg"]}" stroke="${T["--warn-line"]}" stroke-width="2.5"/>`);
+        else if (k.contains("kband")) parts.push(`<rect x="${x}" y="${cy - 6}" width="18" height="12" rx="2" fill="${T["--band"]}" opacity=".6"/>`);
+        else parts.push(`<line x1="${x}" x2="${x + 18}" y1="${cy}" y2="${cy}" stroke="${col}" stroke-width="${k.contains("dot") ? 2 : 3}"${k.contains("dot") ? ' stroke-dasharray="1.5 3"' : k.contains("dash") ? ' stroke-dasharray="5 3"' : ""}/>`);
+        parts.push(`<text x="${x + 25}" y="${(cy + size * 0.36).toFixed(1)}" font-family="${xesc(fam.body)}" font-size="${size}" fill="${T["--ink-2"]}">${xesc(it.text)}</text>`);
+        x += w + 18;
+      }
+      y += lh + 6;
+    }
+    // the footer first, so a line chart can take the height left to make about 16:9
+    const foot = [];
+    const fy = (key, text, color, weight) => { const n = wrapText(text, SHOT_FONT[key][0], IW).length; foot.push([key, text, color, weight]); return n * SHOT_FONT[key][2]; };
+    let fh = 14 + fy("src", spec.source || shotSource(), T["--ink-2"], 400);
+    for (const n of [spec.note, ...(spec.notes || [])].filter(Boolean)) fh += fy("src", n, T["--ink-2"], 400);
+    fh += 4 + fy("site", SHOT_SITE, T["--muted"], 600);
+    // the chart, drawn again off screen at the picture's width in the light colors, its styles written onto it
+    const off = el("div", { class: "chart", "aria-hidden": "true",
+      style: `position:fixed;left:-10000px;top:0;width:${IW}px;` + Object.entries(T).map(([k, v]) => `${k}:${v}`).join(";") });
+    document.body.append(off);
+    let svgXml, ch;
+    try {
+      host._redraw(off, Math.max(230, SHOT.H - y - fh - PAD));
+      const svg = off.querySelector("svg");
+      if (!svg) throw new Error("no chart");
+      ch = svg.viewBox.baseVal.height;
+      const copy = svg.cloneNode(true), a = [svg, ...svg.querySelectorAll("*")], b = [copy, ...copy.querySelectorAll("*")];
+      a.forEach((n, i) => { const cs = getComputedStyle(n);
+        b[i].setAttribute("style", SHOT_PROPS.map(p => `${p}:${cs.getPropertyValue(p)}`).join(";")); b[i].removeAttribute("class"); });
+      for (const k of ["role", "aria-label", "tabindex", "height"]) copy.removeAttribute(k);
+      for (const [k, v] of Object.entries({ x: PAD, y, width: IW, height: ch, overflow: "visible" })) copy.setAttribute(k, v);
+      svgXml = new XMLSerializer().serializeToString(copy);
+    } finally { off.remove(); }
+    y += ch;
+    if (spec.xaxis) {          // the axis title the page leaves to its controls (days kept, weight)
+      parts.push(`<text x="${W / 2}" y="${y + 14}" text-anchor="middle" font-family="${xesc(fam.body)}" font-size="12.5" fill="${T["--ink-2"]}">${xesc(spec.xaxis)}</text>`);
+      y += 20;
+    }
+    y += 14;
+    parts.push(`<line x1="${PAD}" x2="${W - PAD}" y1="${y}" y2="${y}" stroke="${T["--rule"]}" stroke-width="1"/>`);
+    y += 10;
+    for (const [key, text, color, weight] of foot) y = lines(key, text, y, color, weight);
+    const H = Math.ceil(y + PAD - 8);
+    const xml = `<svg xmlns="http://www.w3.org/2000/svg" width="${W * SCALE}" height="${H * SCALE}" viewBox="0 0 ${W} ${H}">` +
+      `<style>${await shotFonts()}</style><rect width="${W}" height="${H}" fill="#ffffff"/>` +   // plain white, no band (Josh, 11/24/2026)
+      parts.join("") + svgXml + "</svg>";
+    const url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml" }));
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const cv = document.createElement("canvas"); cv.width = W * SCALE; cv.height = H * SCALE;
+      const c = cv.getContext("2d");
+      c.drawImage(img, 0, 0, cv.width, cv.height);
+      await new Promise(r => setTimeout(r, 150));      // Safari can apply a picture's own fonts a moment after it loads: draw again
+      c.clearRect(0, 0, cv.width, cv.height); c.drawImage(img, 0, 0, cv.width, cv.height);
+      return await new Promise((ok, no) => cv.toBlob(bl => bl ? ok(bl) : no(new Error("no picture")), "image/png"));
+    } finally { URL.revokeObjectURL(url); }
+  }
+  const SHARE_ICON = '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M8 10V2M5 4.8 8 2l3 2.8M4.5 7H3.5v7h9V7h-1"/></svg>';
+  function shareControl(host) {
+    const btn = el("button", { type: "button", class: "cs-btn", "aria-expanded": "false", html: `${SHARE_ICON}<span>Share this chart</span>` });
+    const panel = el("div", { class: "cs-panel", hidden: "" });
+    const close = () => { panel.hidden = true; if (panel._url) URL.revokeObjectURL(panel._url); panel._url = null; panel.replaceChildren(); btn.setAttribute("aria-expanded", "false"); };
+    btn.addEventListener("click", () => { if (!panel.hidden) { close(); return; } openShare(host, btn, panel, close); });
+    panel.addEventListener("keydown", e => { if (e.key === "Escape") { close(); btn.focus(); } });
+    new MutationObserver(close).observe(host, { childList: true });     // the chart changed: the picture is out of date
+    return el("div", { class: "chart-share" }, [btn, panel]);
+  }
+  async function openShare(host, btn, panel, close) {
+    const make = SHARE_SPECS[host.id];
+    if (!make || !host._redraw || !host.querySelector("svg")) return;
+    const spec = make(), lab = btn.querySelector("span");
+    if (!host.id.startsWith("cmp-") && stateShotNote()) spec.notes = [stateShotNote()];      // Compare names its own states
+    btn.disabled = true; lab.textContent = "Making the picture…";
+    let blob;
+    try { blob = await chartPicture(host, spec); }
+    catch (e) { console.error(e); panel.replaceChildren(el("p", { class: "note", text: "The picture couldn't be made in this browser." })); panel.hidden = false; return; }
+    finally { btn.disabled = false; lab.textContent = "Share this chart"; }
+    const name = `cattle-prices-${D.meta.id}-${spec.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70).replace(/-$/, "")}-${D.meta.through}.png`;
+    const file = new File([blob], name, { type: "image/png" }), url = URL.createObjectURL(blob);
+    panel._url = url;
+    const msg = el("p", { class: "note cs-msg", role: "status" });
+    const act = (t, f) => { const b = el("button", { type: "button", class: "cs-act", text: t }); b.addEventListener("click", f); return b; };
+    let files = false; try { files = !!(navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { files = false; }
+    const share = files && act("Share…", async () => {
+      try { await navigator.share({ files: [file], title: spec.title }); }
+      catch (e) { if (!e || e.name !== "AbortError") msg.textContent = "Sharing didn't work here. Use Download, or press and hold the picture."; }
+    });
+    const copy = !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) && act("Copy image", async () => {
+      try { await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); msg.textContent = "Copied. Paste it into a slide, document or message."; }
+      catch (e) { msg.textContent = "This browser won't copy pictures. Use Download, or right-click the picture to copy it."; }
+    });
+    const dl = act("Download", () => { const a = el("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove(); });
+    const coarse = matchMedia("(pointer: coarse)").matches;
+    const acts = (coarse ? [share, dl, copy] : [copy, dl, share]).filter(Boolean);
+    panel.replaceChildren(el("img", { class: "cs-img", src: url, alt: `${spec.title}. ${spec.sub}` }),
+      el("div", { class: "cs-acts" }, [...acts, act("Close", () => { close(); btn.focus(); })]),
+      el("p", { class: "note cs-hint", text: coarse ? "Or press and hold the picture to save or copy it." : "Or right-click the picture to copy or save it." }), msg);
+    panel.hidden = false; btn.setAttribute("aria-expanded", "true");
+    acts[0].focus({ preventScroll: true });
+  }
+  for (const id of Object.keys(SHARE_SPECS)) { const h = document.getElementById(id); if (h) h.after(shareControl(h)); }
+
   const VIEWS = { week: renderWeek, trend: renderTrend, cmp: renderCmp, keep: renderSell, buy: renderBuy, bull: renderBull, season: renderSeason };
   // links to tabs folded into others (11/9/2026): the Cull cows tab (#cows) opens This week on Cows & bulls
   // (renderWeek sends a state without cows back to Steers); Calf value (#value) opens Sell or keep
@@ -2812,7 +3070,9 @@ details.method .card { margin-top: 10px; }
   $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
   $("#state").addEventListener("change", e => loadState(e.target.value));
   for (const [i, k] of [[1, "c1"], [2, "c2"], [3, "c3"]]) $(`#cmp-s${i}`).addEventListener("change", e => { S[k] = e.target.value; renderCmp(); });
-  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => D && VIEWS[S.tab](), 120); }).observe(document.querySelector("main"));
+  // only a change of width redraws (a panel opening, such as Share this chart's, makes the page taller, not wider)
+  let rt, mainW = 0; new ResizeObserver(es => { const w = Math.round(es[0].contentRect.width); if (w === mainW) return; mainW = w;
+    clearTimeout(rt); rt = setTimeout(() => D && VIEWS[S.tab](), 120); }).observe(document.querySelector("main"));
 
   // the pickers and footer for the state just loaded
   function setState(data) {
@@ -2933,6 +3193,7 @@ details.method .card { margin-top: 10px; }
     const t = e.target.closest('[role="tab"]');
     if (t) count(`${tool}: ${(t.querySelector(".l") || t).textContent.trim()}`);   // the long label where a tab has two
     if (e.target.closest("#share-view")) count(`${tool}: share`);
+    if (e.target.closest(".cs-btn")) count(`${tool}: share chart`);
   });
 })();
 </script>
