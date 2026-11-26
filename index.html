@@ -334,6 +334,7 @@ details.calc#keep-calc { max-width: none; }
        border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; font-size: 13px;
        box-shadow: 0 4px 16px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
 .tip b { display: block; margin-bottom: 2px; }
+.tip .say { white-space: normal; width: 200px; }   /* a sentence in a readout wraps (it ran 75 px off a 375 px phone) */
 .tip .row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .key { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; }
 .key.dash { border-top-style: dashed; }
@@ -1598,7 +1599,10 @@ details.method .card { margin-top: 10px; }
     $("#week-pick-row").hidden = !hasPrev();
     // a seasonal state two weeks past its last sale (Colorado, North Dakota in summer): when the prices are from,
     // and that the quiet is the usual season (Josh, 11/10/2026)
-    const quiet = !!seasonalSt() && (Date.now() - new Date(D.meta.through + "T12:00:00")) / 864e5 > 14;
+    // only in the off-season months: Colorado and North Dakota also stop for two or three weeks over New Year's
+    // (Dec. 17 to Jan. 6-7 in 2025-26), and "pick up again in the fall" would show in January (release review, 11/26/2026)
+    const quiet = !!seasonalSt() && seasonalSt().off.includes(new Date().getMonth() + 1) &&
+      (Date.now() - new Date(D.meta.through + "T12:00:00")) / 864e5 > 14;
     $("#week-quiet").hidden = !quiet;
     if (quiet) $("#week-quiet").textContent = `${stName()}'s last reported sales were the week of ${day(D.report.state.week[0])}. ` +
       "Feeder sales pick up again in the fall.";
@@ -1713,22 +1717,29 @@ details.method .card { margin-top: 10px; }
     if (!v || !v.x.length || !v.months) return null;
     const yr = +v.through.slice(0, 4), avg = !!v.avg, pc = x => `${Math.round(x * 100)}%`;
     const chart = el("div", { class: "chart", id: "vol-chart" }), legend = el("ul", { class: "legend", id: "vol-legend" });
-    const say = avg
-      ? `Head sold each month at the auctions USDA reported in the same weeks of every year shown. They sold ${pc(v.share)} of this year's head.`
-      : `Head sold each month at the auctions USDA reported in the same weeks of both years. They sold ${pc(v.share)} of this year's head. ` +
-        `The ${v.years} average is left off: only ${pc(v.avg_share)} of this year's head sold at auctions reported in each of those years.`;
+    const say = (avg
+      ? `Only auctions USDA reported in the same weeks of every year shown count, so the bars compare years and can run below a month's full total. They sold ${pc(v.share)} of this year's head.`
+      : `Only auctions USDA reported in the same weeks of both years count, so the bars compare years and can run below a month's full total. They sold ${pc(v.share)} of this year's head. ` +
+        `The ${v.years} average is left off: only ${pc(v.avg_share)} of this year's head sold at auctions reported in each of those years.`);
+    // a month with sales but none at auctions matched in every year shown is left off, never drawn as 0 head (release
+    // review, 11/26/2026: Montana's July and August). A month the matched auctions hold only part of is still drawn: its
+    // years compare like for like, and the readout gives the share (Josh, 11/26/2026: Mississippi's January, 37%)
+    const off = volOff(v), offM = v.months.m.filter((_, i) => off[i]).map(mo => MON_FULL[mo - 1]);
+    const offSay = !offM.length ? "" : ` ${andList(offM)} ${offM.length > 1 ? "are" : "is"} left off: none of the auctions that sold then were reported in the same weeks of every year shown.`;
     // a week counts in the month its Friday falls in (the price charts' rule); the latest month says how far it runs
     const lastWk = v.x[v.x.length - 1], part = volPartial(v);
     const monthSay = ` A week counts in the month its Friday falls in.` +
       (part ? ` ${MON_FULL[+lastWk.slice(5, 7) - 1]} runs through the week of ${day(isoAdd(lastWk, -4))}${volOpen(v) ? ", still under way" : ""}.` : "");
     // weeks that add nothing are named (review, 11/25/2026); a seasonal state's quiet summer is many weeks, so past
     // four the note gives the count
-    const fl = v.flat || [], noneSold = " no auction sold in that week of every year shown.";
+    const offMo = new Set(v.months.m.filter((_, i) => off[i]));       // a left-off month's weeks are said once, above
+    const fl = (v.flat || []).filter(s => !offMo.has(+isoAdd(s, 4).slice(5, 7))), noneSold = " no auction sold in that week of every year shown.";
     const flatSay = !fl.length ? "" : fl.length <= 4
       ? ` Nothing is added for the week${fl.length > 1 ? "s" : ""} of ${andList(fl.map(s => day(s)))}:${noneSold}`
       : ` Nothing is added for ${fl.length} weeks when${noneSold}`;
-    const node = el("div", { class: "vol" }, [el("h4", { text: `${isState() ? "Cattle" : "Statewide: cattle"} sold each month in ${yr}` }),
-      el("p", { class: "note", text: say + monthSay + flatSay }), legend, chart, shareControl(chart)]);
+    // the heading says these are the same auctions each year, not each month's total (release review, 11/26/2026)
+    const node = el("div", { class: "vol" }, [el("h4", { text: `${isState() ? "Cattle" : "Statewide: cattle"} sold each month at the same auctions, ${yr} vs. past years` }),
+      el("p", { class: "note", text: say + offSay + monthSay + flatSay }), legend, chart, shareControl(chart)]);
     const draw = () => {
       // left to right, as the bars stand: the base years' average, last year, this year (Josh, 11/25/2026)
       legend.replaceChildren(...volKeys(v).map(([, c, name]) => el("li", {}, [el("span", { class: `key kbar k${c}` }), el("span", { text: name })])));
@@ -1743,6 +1754,9 @@ details.method .card { margin-top: 10px; }
   // Saturday build still waits on that day's sales
   const volOpen = v => isoAdd(v.x[v.x.length - 1], 2) >= (D.meta.generated || "").slice(0, 10);
   const volPartial = v => { const f = v.x[v.x.length - 1]; return isoAdd(f, 7).slice(5, 7) === f.slice(5, 7) || volOpen(v); };
+  // months left off the chart: cattle sold (export's months.all, every barn-week this year by the same Friday rule) but
+  // none at auctions matched in every year shown; a month with no sales at all has nothing to leave off
+  const volOff = v => v.months.m.map((_, i) => (v.months.all || [])[i] > 0 && !v.months.now[i]);
   const volKeys = v => [...(v.months.avg ? [["avg", 2, `${v.years} avg.`]] : []), ["ago", 3, String(+v.through.slice(0, 4) - 1)],
     ["now", 1, v.through.slice(0, 4)]];
   // the About card's volume chart (Josh, 11/25/2026; a running total until then, whose lines parted only at the end):
@@ -1750,10 +1764,11 @@ details.method .card { margin-top: 10px; }
   // this year (maroon), at the same auctions in the same weeks (the export's volume_ytd)
   function volBars(host, v, ht) {
     host._redraw = (h, hh) => volBars(h, v, hh);
-    const M = v.months, yr = +v.through.slice(0, 4), keys = volKeys(v), n = M.m.length, part = volPartial(v);
+    const M = v.months, yr = +v.through.slice(0, 4), keys = volKeys(v), n = M.m.length, part = volPartial(v), off = volOff(v);
+    const pc0 = x => `${Math.round(x * 100)}%`;
     const W = Math.max(280, host.clientWidth || 600), small = W < 520, H = ht || (small ? 230 : 250);
     const m = { t: 12, r: 6, b: 28, l: small ? 38 : 46 };
-    const max = Math.max(1, ...keys.flatMap(([k]) => M[k]));
+    const max = Math.max(1, ...keys.flatMap(([k]) => M[k].filter((_, i) => !off[i])));
     // the axis runs one step past the tallest bar, so every bar sits under a labeled tick
     const { ticks, step } = niceTicks(0, max, 4);
     if (ticks[ticks.length - 1] < max) ticks.push(+(ticks[ticks.length - 1] + step).toFixed(6));
@@ -1773,15 +1788,21 @@ details.method .card { margin-top: 10px; }
     const mname = i => MON_FULL[M.m[i] - 1] + (part && i === n - 1 ? " (so far)" : "");
     M.m.forEach((mo, i) => {
       const x0 = m.l + i * gw, cx = x0 + gw / 2, left = cx - bw * keys.length / 2;
-      keys.forEach(([k, c], j) => { const y = Y(M[k][i]);
+      if (off[i]) {                                          // left off: a dash at the base, never a short bar
+        const d = svgEl("text", { x: cx, y: Y(0) - 5, "text-anchor": "middle" }); d.textContent = "–"; svg.append(d);
+      } else keys.forEach(([k, c], j) => { const y = Y(M[k][i]);
         svg.append(svgEl("rect", { x: left + j * bw + 0.5, y, width: Math.max(1, bw - 1), height: Math.max(0, Y(0) - y), class: `f${c}` })); });
       const tx = svgEl("text", { x: cx, y: H - m.b + 18, "text-anchor": "middle" });
       tx.textContent = small && (n - 1 - i) % 2 ? "" : MON3[mo - 1]; svg.append(tx);   // every other month on a phone, the latest always
       const hit = svgEl("rect", { x: x0, y: m.t, width: gw, height: H - m.t - m.b, fill: "transparent" });
       const show = () => {
-        const a = M.ago[i], c = M.now[i];
-        tip.replaceChildren(el("b", { text: mname(i) }), ...keys.map(([k, , name]) => el("div", { text: `${name}: ${fmtN(M[k][i])} head` })),
-          a > 0 ? el("div", { text: `${pctS((c / a - 1) * 100)} vs. ${yr - 1}` }) : null);
+        const a = M.ago[i], c = M.now[i], all = (M.all || [])[i];
+        // the change leads; then each year's head; then how much of the month those auctions hold (release review)
+        tip.replaceChildren(el("b", { text: mname(i) }), ...(off[i]
+          ? [el("div", { class: "say", text: `Left off: none of the month's ${fmtN(all)} head sold at the same auctions.` })]
+          : [a > 0 ? el("div", { text: `${pctS((c / a - 1) * 100)} vs. ${yr - 1}` }) : null,
+             ...keys.map(([k, , name]) => el("div", { text: `${name}: ${fmtN(M[k][i])} head` })),
+             all > 0 ? el("div", { text: `${pc0(c / all)} of the month's ${fmtN(all)} head` }) : null]));
         tip.hidden = false;
         const rr = svg.getBoundingClientRect(), px = cx * rr.width / W, tw = tip.offsetWidth;
         tip.style.left = Math.max(0, Math.min(rr.width - tw, px - tw / 2)) + "px"; tip.style.top = "6px";
@@ -1795,7 +1816,7 @@ details.method .card { margin-top: 10px; }
     keyNav(svg, n, () => cur, i => { cur = i; shows[i](); box.at(m.l + i * gw + 1, m.t, gw - 2, H - m.t - m.b); },
       () => { tip.hidden = true; box.off(); });
     host.replaceChildren(svg, tip, srTable(label, ["Month", ...keys.map(k => k[2])],
-      M.m.map((mo, i) => [mname(i), ...keys.map(([k]) => `${fmtN(M[k][i])} head`)])));
+      M.m.map((mo, i) => [mname(i), ...keys.map(([k]) => off[i] ? "left off" : `${fmtN(M[k][i])} head`)])));
   }
   // graded, special and board sales USDA reported in the last three weeks: named, dated, linked to their USDA
   // report, and never in any figure on the page (Josh, 11/2/2026); in the About box, statewide view only
@@ -2821,7 +2842,7 @@ details.method .card { margin-top: 10px; }
     "cmp-week": () => cmpShot(true),
     "cmp-month": () => cmpShot(false),
     "vol-chart": () => { const v = D.volume, yr = +v.through.slice(0, 4);
-      return { title: `Cattle sold each month at ${stName()} auctions, ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
+      return { title: `Cattle sold each month at the same ${stName()} auctions, ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
         sub: ($("#vol-chart").parentElement.querySelector("p.note") || { textContent: "" }).textContent.trim() }; },
     "keep-vog-chart": () => ({ title: `${textOf("#keep-vog-title")}, ${stPlace()}`, sub: textOf("#keep-vog-sub"), note: SHOT_EST, xaxis: "Days kept" }),
     "buy-chart": () => ({ title: `${textOf("#buy-chart-title")}, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stPlace()}`, sub: textOf("#buy-chart-sub"), note: SHOT_EST, xaxis: "Days kept" }),
