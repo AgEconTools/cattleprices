@@ -100,8 +100,8 @@ button, input, select { font: inherit; color: inherit; }
               grid-template-columns: 1fr auto; align-items: end; }
 h1 { font: 700 clamp(28px, 5vw, 40px)/1.08 var(--display); margin: 0; text-wrap: balance; }
 .asof { margin: 6px 0 0; font-size: 14px; opacity: .88; }
-.asof.edu { margin-top: 2px; font-size: 13px; }
 .asof a { color: inherit; }
+.asof .nobr { white-space: nowrap; }
 .disc { border: 1px solid var(--rule); border-left: 4px solid var(--ink-2); background: var(--surface); border-radius: 8px;
         padding: 14px 16px; max-width: 78ch; display: grid; gap: 6px; }
 .disc h2 { font-size: 17px; }
@@ -162,6 +162,10 @@ h2 { font: 700 clamp(22px, 3.4vw, 28px)/1.2 var(--display); margin: 0; text-wrap
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip-scope { color: var(--line-1); } }
 .card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 18px; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+/* This week opens on two toggles, no heading: start them closer under the tabs and space them like toggles grouped in one
+   block on the other tabs (12 px), not the 18 px between blocks (Josh, 11/26/2026) */
+#p-week { margin-top: -10px; }
+#week-pick-row:not([hidden]) + .controls { margin-top: -6px; }
 .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--rule); border-radius: 999px;
        padding: 3px; flex-wrap: wrap; }
 .seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 999px; cursor: pointer;
@@ -472,7 +476,7 @@ details.method .card { margin-top: 10px; }
   .mast .wrap { padding-block: 12px 12px; gap: 10px; }
   h1 { font-size: 24px; }
   .asof { margin-top: 3px; font-size: 13px; }
-  .asof.edu, .asof.tools-line { margin-top: 1px; font-size: 12.5px; }
+  .asof.tools-line { margin-top: 1px; font-size: 12.5px; }
   .pickers { gap: 6px 8px; }
   .picker label, .picker .lab { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .picker select { padding-block: 8px; font-size: 15px; }
@@ -481,6 +485,10 @@ details.method .card { margin-top: 10px; }
   .tally .lead { font-size: 13px; }
   .tally .row { font-size: 13.5px; line-height: 1.4; }
   .tally .row b { font-size: 15px; } .tally .row b.big { font-size: 16px; }
+  /* the three counts side by side, number over its label (Josh, 11/26/2026: one line needs ~400 px, a 375 phone has 339) */
+  .tally .row { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 22px; line-height: 1.3; }
+  .tally .row .sep { display: none; }
+  .tally .row b { display: block; }
   .tabs .wrap { flex-wrap: wrap; overflow: visible; gap: 2px 2px; padding-block: 5px; }
   .tab { flex: 1 1 auto; padding: 6px 5px; font-size: 13.5px; }   /* each row fills the width; four fit from 360 px */
   .tab-break { display: block; flex-basis: 100%; height: 0; }
@@ -517,8 +525,9 @@ details.method .card { margin-top: 10px; }
       <h1>Cattle Auction Prices</h1>
       <p class="asof" id="asof">Loading the latest sale reports…</p>
       <p class="asof" id="linknote" hidden></p>
-      <p class="asof edu">For educational use only. <a href="#disclaimer" id="to-disc">Read the disclaimer</a>.</p>
-      <p class="asof tools-line"><a href="#more-tools">More cattle tools</a><button type="button" class="share-btn" id="share-view">Share this view</button><span class="sr-only" role="status" id="share-msg"></span></p>
+      <!-- Disclaimer, Share, More cattle tools, in Josh's order (11/26/2026; the disclaimer line folded in here, one line fewer
+           on a phone; the full text is in the footer box). "Share" shares this view; its name for screen readers says so -->
+      <p class="asof tools-line"><a href="#disclaimer" id="to-disc">Disclaimer</a><button type="button" class="share-btn" id="share-view" aria-label="Share this view">Share</button><a href="#more-tools">More cattle tools</a><span class="sr-only" role="status" id="share-msg"></span></p>
       <div class="share-box" id="share-box" hidden><label for="share-url">Copy this link:</label><input id="share-url" type="text" readonly spellcheck="false"><button type="button" class="share-btn" id="share-close">Close</button></div>
     </div>
     <div class="pickers">
@@ -572,10 +581,9 @@ details.method .card { margin-top: 10px; }
     </div>
   </section>
   <section class="panel" id="p-week" role="tabpanel" aria-labelledby="t-week">
-    <div>
-      <h2 class="sr-only">Cattle prices by week</h2>   <!-- shown only to screen readers: it repeated the page title (review of build 70) -->
-      <p class="sub" id="week-quiet" hidden></p>
-    </div>
+    <!-- no wrapper div here: an empty one took a grid row and put an extra 18 px gap under the tabs (Josh, 11/26/2026) -->
+    <h2 class="sr-only">Cattle prices by week</h2>   <!-- shown only to screen readers: it repeated the page title (review of build 70) -->
+    <p class="sub" id="week-quiet" hidden></p>
     <div class="controls" id="week-pick-row"><div class="seg" id="week-pick"></div></div>
     <div class="controls"><div class="seg" id="week-class"></div></div>
     <div class="card tablewrap"><table id="week-feeders"></table></div>
@@ -1439,7 +1447,9 @@ details.method .card { margin-top: 10px; }
     // "Updated Monday, Nov. 2. Latest sales: Wednesday, Oct. 28." (Josh, 11/2/2026): the latest sale is this
     // state's, so it follows the state picker; the weekdays say why a Friday visit still shows Wednesday
     const upd = (D.meta.generated || "").slice(0, 10);
-    $("#asof").textContent = `${/^\d{4}-\d\d-\d\d$/.test(upd) ? `Updated ${wday(upd)}. ` : ""}Latest sales: ${wday(D.meta.through)}.`;
+    // "Latest sales: <date>" never splits: a phone breaks before it, not after "Latest sales:" (Josh, 11/26/2026)
+    $("#asof").replaceChildren(/^\d{4}-\d\d-\d\d$/.test(upd) ? `Updated ${wday(upd)}. ` : "",
+      el("span", { class: "nobr", text: `Latest sales: ${wday(D.meta.through)}.` }));
     // the page normally rebuilds every morning (weekends too since 11/2/2026); past STALE_DAYS (two missed mornings) it says so
     // (Josh, 11/1/2026), counted from when the page was built, not the last sale (holiday weeks have no sales)
     const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
@@ -1471,10 +1481,12 @@ details.method .card { margin-top: 10px; }
     // said once at the end when both comparisons cover all of this week's auctions (plain-language pass,
     // 11/6/2026); when either covers fewer, each keeps its own "(4 of these 8 auctions sold)"
     const sp = sold("prior"), sy = sold("year_ago"), once = same && !sp && !sy;
+    // the dots are their own spans so a phone can drop them and set the three counts side by side (Josh, 11/26/2026)
+    const dot = () => el("span", { class: "sep", "aria-hidden": "true", text: " · " });
     t.replaceChildren(
       el("div", { class: "lead", text: lead }),
-      el("div", { class: "row" }, [item(rc.week, `head ${isState() ? weekWord(r) : "this sale"}`, true), " · ",
-        item(rc.prior, (!isState() || !underWay(r) ? "the week before" : "last week") + (once ? "" : sp || same)), " · ",
+      el("div", { class: "row" }, [item(rc.week, "head sold", true), dot(),
+        item(rc.prior, (!isState() || !underWay(r) ? "the week before" : "last week") + (once ? "" : sp || same)), dot(),
         item(rc.year_ago, "a year ago" + (once ? ` (same ${r.reports} auction${r.reports === 1 ? "" : "s"})` : sy || same))]));
     YTD = y.ytd != null ? { n: y.ytd, yr: y.through.slice(0, 4), pct: ytdP } : null;
     const g = D.meta.generated || "", gd = g.slice(0, 10);   // ISO with offset, written in Central time
@@ -3191,7 +3203,18 @@ details.method .card { margin-top: 10px; }
       if (t) t.hidden = true; if (x) x.setAttribute("visibility", "hidden");
     }
   });
-  $("#to-disc").addEventListener("click", e => { e.preventDefault(); $("#disc-full").open = true; $("#disclaimer").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  // the masthead's in-page links (Disclaimer, More cattle tools) scroll and move focus without touching the address:
+  // following the href put "#more-tools" in it for a moment and added a Back step that went nowhere, and focus stayed
+  // at the top (the drought page's fix, Josh, 11/26/2026). Disclaimer also opens the full text. A typed
+  // ".../#disclaimer" address still opens as before (load code below).
+  document.querySelectorAll('.tools-line a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+    const t = document.querySelector(a.getAttribute("href")); if (!t) return;
+    e.preventDefault();
+    if (t.id === "disclaimer") $("#disc-full").open = true;
+    t.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1");
+    t.focus({ preventScroll: true });
+  }));
   $("#market").addEventListener("change", e => { S.market = e.target.value; store.set("market." + D.meta.id, S.market); render(); });
   $("#state").addEventListener("change", e => loadState(e.target.value));
   for (const [i, k] of [[1, "c1"], [2, "c2"], [3, "c3"]]) $(`#cmp-s${i}`).addEventListener("change", e => { S[k] = e.target.value; renderCmp(); });
@@ -3277,7 +3300,7 @@ details.method .card { margin-top: 10px; }
   const btn = document.getElementById("share-view"), msg = document.getElementById("share-msg");
   if (btn) {
     const say = t => { msg.textContent = t; btn.textContent = t; clearTimeout(btn._t);
-      btn._t = setTimeout(() => { btn.textContent = "Share this view"; msg.textContent = ""; }, 2500); };
+      btn._t = setTimeout(() => { btn.textContent = "Share"; msg.textContent = ""; }, 2500); };
     btn.addEventListener("click", async () => {
       const url = location.href;
       if (navigator.share && matchMedia("(pointer: coarse)").matches) {
