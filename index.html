@@ -1672,15 +1672,16 @@ details.method .card { margin-top: 10px; }
     $("#week-facts").replaceChildren(el("h3", { text: isState() ? (underWay(r) ? `About this week's ${stName()} sales` : `About ${stName()} sales, week of ${day(r.week[0])}`) : `About this sale at ${market().name}` }),
       el("dl", {}, items),
       el("p", { class: "gmix" }, [document.createTextNode("Reporters grade differently from barn to barn, so prices here combine #1 and #2 calves. " + (vaOn() ? "These are Value Added lots only. " : "")), why]),
-      ...[specialsNote()].filter(Boolean), ...(vol ? [vol.node] : []));   // null (no special sales, or a barn view) would print as "null" (bug 11/2/2026)
+      ...[specialsNote()].filter(Boolean), ...(vol ? [vol.node] : []));   // null (no special sales, or no volume data) would print as "null" (bug 11/2/2026)
     if (vol) vol.draw();                      // after it is in the page, so the chart takes the card's width
   }
   // cattle sold so far this year, added up week by week, vs. last year and the base years' average (Josh, 11/23/2026):
-  // statewide only, the same auctions in every year shown (the export's volume_ytd), the average only where those
-  // auctions sold 80% or more of this year's head
+  // statewide, the same auctions in every year shown (the export's volume_ytd), the average only where those
+  // auctions sold 80% or more of this year's head; a barn's view shows the same statewide chart, its heading
+  // starting "Statewide:" (Josh, 11/25/2026)
   function volumeBlock() {
     const v = D.volume;
-    if (!isState() || !v || !v.x.length || !v.months) return null;
+    if (!v || !v.x.length || !v.months) return null;
     const yr = +v.through.slice(0, 4), avg = !!v.avg, pc = x => `${Math.round(x * 100)}%`;
     const chart = el("div", { class: "chart", id: "vol-chart" }), legend = el("ul", { class: "legend", id: "vol-legend" });
     const say = avg
@@ -1690,14 +1691,14 @@ details.method .card { margin-top: 10px; }
     // a week counts in the month its Friday falls in (the price charts' rule); the latest month says how far it runs
     const lastWk = v.x[v.x.length - 1], part = volPartial(v);
     const monthSay = ` A week counts in the month its Friday falls in.` +
-      (part ? ` ${MON_FULL[+lastWk.slice(5, 7) - 1]} runs through the week of ${day(isoAdd(lastWk, -4))}${lastWk > v.through ? ", still under way" : ""}.` : "");
+      (part ? ` ${MON_FULL[+lastWk.slice(5, 7) - 1]} runs through the week of ${day(isoAdd(lastWk, -4))}${volOpen(v) ? ", still under way" : ""}.` : "");
     // weeks that add nothing are named (review, 11/25/2026); a seasonal state's quiet summer is many weeks, so past
     // four the note gives the count
     const fl = v.flat || [], noneSold = " no auction sold in that week of every year shown.";
     const flatSay = !fl.length ? "" : fl.length <= 4
       ? ` Nothing is added for the week${fl.length > 1 ? "s" : ""} of ${andList(fl.map(s => day(s)))}:${noneSold}`
       : ` Nothing is added for ${fl.length} weeks when${noneSold}`;
-    const node = el("div", { class: "vol" }, [el("h4", { text: `Cattle sold each month in ${yr}` }),
+    const node = el("div", { class: "vol" }, [el("h4", { text: `${isState() ? "Cattle" : "Statewide: cattle"} sold each month in ${yr}` }),
       el("p", { class: "note", text: say + monthSay + flatSay }), legend, chart, shareControl(chart)]);
     const draw = () => {
       // left to right, as the bars stand: the base years' average, last year, this year (Josh, 11/25/2026)
@@ -1708,8 +1709,11 @@ details.method .card { margin-top: 10px; }
   }
   const isoAdd = (s, n) => { const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   // the latest month is under way unless its last counted week is the month's last (the next Friday is in a new month)
-  // and that week is over (its Friday on or before the latest sale)
-  const volPartial = v => { const f = v.x[v.x.length - 1]; return isoAdd(f, 7).slice(5, 7) === f.slice(5, 7) || f > v.through; };
+  // and that week is over. A week is under way through its Sunday, by the build day, not the latest sale: a state whose
+  // last sale was a Wednesday has finished its week (MS read "still under way" for a week a week old), and a Friday or
+  // Saturday build still waits on that day's sales
+  const volOpen = v => isoAdd(v.x[v.x.length - 1], 2) >= (D.meta.generated || "").slice(0, 10);
+  const volPartial = v => { const f = v.x[v.x.length - 1]; return isoAdd(f, 7).slice(5, 7) === f.slice(5, 7) || volOpen(v); };
   const volKeys = v => [...(v.months.avg ? [["avg", 2, `${v.years} avg.`]] : []), ["ago", 3, String(+v.through.slice(0, 4) - 1)],
     ["now", 1, v.through.slice(0, 4)]];
   // the About card's volume chart (Josh, 11/25/2026; a running total until then, whose lines parted only at the end):
