@@ -181,6 +181,10 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 th:last-child, td:last-child { padding-right: 0; }
 thead th { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 td.price { font-weight: 700; font-size: 17px; }
+#cmp-gap th { white-space: normal; }
+@media (max-width: 400px) { #cmp-gap th, #cmp-gap td { padding-left: 6px; padding-right: 6px; font-size: 14px; } }
+#cmp-gap tbody th { font-weight: 400; }
+#cmp-gap .gap-all th, #cmp-gap .gap-all td { font-weight: 700; border-bottom: 0; }
 td.price.tiny { font-weight: 400; color: var(--muted); }   /* 1 or 2 head: shown as reported, not set like a market price */
 /* a price that opens its range (Josh, 11/6/2026): looks like the number, with a dotted underline */
 .pbtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
@@ -662,12 +666,25 @@ details.method .card { margin-top: 10px; }
       <ul class="legend" id="cmp-mlegend"></ul>
       <div class="chart" id="cmp-month"></div>
     </div>
+    <!-- price gap by year (Josh, 11/25/2026): the first state against each other one, matched weeks only -->
+    <div class="card" id="cmp-gapcard" style="display:grid;gap:10px" hidden>
+      <div>
+        <h3 style="margin:0;font:700 17px/1.3 var(--body)">Price gap by year</h3>
+        <p class="note" id="cmp-gsub"></p>
+      </div>
+      <div class="tablewrap"><table id="cmp-gap"></table></div>
+      <p class="note" id="cmp-gnote" style="margin:0"></p>
+    </div>
     <p class="note" id="cmp-note"></p>
     <details class="method"><summary>How this is calculated</summary><p class="note">Each line is one state's average of every
       reporting auction, averaged by head, for the same calves, lots and cull grades as the rest of the page (see "How these
       numbers are calculated" at the bottom). A cull cow or bull line is drawn only where the state sold at least 20 head in
       two-thirds of its sale weeks (weekly) or months (monthly). The week still under way is left off the weekly chart;
-      the latest month can be partial. Circled points rest on fewer than 20 head. Individual auctions aren't compared
+      the latest month can be partial. Circled points rest on fewer than 20 head. The price gap by year compares the first
+      state picked with each other one in only the weeks both sold the same 50-lb weight class (feeder cattle) or the same
+      grade (cull cows and bulls), each week and class counted by the smaller state's head, so a gap isn't moved by one state
+      selling more of its calves at lighter or heavier weights; a year shows a dash with fewer than 13 such weeks or 100
+      head. Individual auctions aren't compared
       here: one auction's sales are too few for a fair comparison.</p></details>
   </section>
 
@@ -2041,6 +2058,7 @@ details.method .card { margin-top: 10px; }
       return few ? `${nameOf(id)}: too few ${what} sales to chart.` : `${nameOf(id)}: no ${what} sales reported in the past 5 years.`;
     }).filter(Boolean);
     $("#cmp-missing").textContent = why.join(" ");
+    cmpGaps(ids, key, what, culls, label, nameOf);
     const picked = ids.map(id => CMP[id]).filter(d => d && d !== "missing");
     const sea = picked.filter(d => d.seasonal).map(d => d.name), graded = picked.filter(d => d.graded).map(d => d.name);
     $("#cmp-note").textContent = "States don't grade or sell calves the same way: some report more #1 calves than others, the mix of " +
@@ -2048,6 +2066,39 @@ details.method .card { margin-top: 10px; }
       "between two states can come from those differences, not price alone." +
       (graded.length ? ` ${graded.join(" and ")}'s prices are state graded sales, where calves sell in groups sorted by grade and weight.` : "") +
       (sea.length ? ` ${sea.join(" and ")} ${sea.length > 1 ? "sell" : "sells"} few feeder cattle from May through September, so ${sea.length > 1 ? "their lines skip" : "its line skips"} most of those months.` : "");
+  }
+
+  // Price gap by year (Josh, 11/25/2026, from his Lexington vs. Cullman table): the first state picked against
+  // each other one, in words ("$7.76 lower"), never green or red (a gap between states isn't good or bad) and
+  // never ranked. Only weeks both states sold the same 50-lb class (feeders) or grade (culls) count, each weighed
+  // by the smaller state's head (export compare_gaps, from the first state's file); a column only where both
+  // states' 5-year lines are drawn; a dash where a year had too few matched weeks or head.
+  const gapText = v => v == null ? "–" : Math.abs(v) < 0.005 ? "$0.00" : `${fmt$(Math.abs(v))} ${v > 0 ? "higher" : "lower"}`;
+  function cmpGaps(ids, key, what, culls, label, nameOf) {
+    const card = $("#cmp-gapcard"), a = CMP[ids[0]];
+    const others = ids.slice(1).filter(id => CMP[id] && CMP[id] !== "missing" && a && a !== "missing" && a.monthly[key] && CMP[id].monthly[key]);
+    const G = (a && a !== "missing" && a.gap) || { years: [], by: {} };
+    card.hidden = ids.length < 2 || !G.years.length;      // a Compare file kept from before the gaps: no table
+    if (card.hidden) return;
+    const row = id => ((G.by[id] || {})[key]) || [];
+    const shown = others.filter(id => row(id).some(v => v != null));
+    const yrs = G.years;
+    $("#cmp-gsub").textContent = `${nameOf(ids[0])} compared with ${others.length ? others.map(nameOf).join(" and ") : "the states picked"}: ` +
+      `${what} prices in the weeks both states sold ${culls ? "that grade" : "the same 50-lb weight class"}, $/cwt.`;
+    if (!shown.length) {
+      $("#cmp-gap").replaceChildren();
+      $("#cmp-gnote").textContent = `Too few matched ${what} sales to show a gap for the states picked.`;
+      return;
+    }
+    const lab = (y, i) => i === yrs.length ? `All ${yrs.length} years` : i === yrs.length - 1 ? `${y} to date` : String(y);
+    $("#cmp-gap").setAttribute("aria-label", `${nameOf(ids[0])}'s ${what} price gap by year`);
+    $("#cmp-gap").replaceChildren(
+      el("thead", {}, el("tr", {}, [el("th", { scope: "col", text: "Year" }), ...shown.map(id => el("th", { scope: "col", text: `vs. ${label(id)}` }))])),
+      el("tbody", {}, [...yrs, null].map((y, i) => el("tr", { class: y == null ? "gap-all" : "" },
+        [el("th", { scope: "row", text: lab(y, i) }), ...shown.map(id => el("td", { text: gapText(row(id)[i]) }))]))));
+    $("#cmp-gnote").textContent = `Each week and ${culls ? "grade" : "weight class"} counts by the smaller state's head. ` +
+      `A dash: fewer than 13 such weeks or 100 head in that year. As with the lines above, part of a gap can come from how ` +
+      "states grade and sell, not price alone.";
   }
 
   // ---------- sell now or keep ----------
