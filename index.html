@@ -151,6 +151,9 @@ main { padding-block: 26px 40px; }
 /* in-page jumps land with their heading below the sticky tab bar, which wraps to two rows on a phone: --tabs-h is the
    bar's measured height, set on load and whenever it changes (iPhone review, 11/23/2026; was a fixed 80 px on the strip) */
 #more-tools, #disclaimer, #week-facts, #foot-how, #curve-card { scroll-margin-top: calc(var(--tabs-h, 80px) + env(safe-area-inset-top, 0px) + 12px); }
+/* the masthead jumps focus these sections (tabindex -1) so the next Tab starts there; they are places, not controls, and
+   iPhone Safari drew the gold focus ring around the whole section (Live Cattle's fix, cross-dashboard review 11/26/2026) */
+#more-tools:focus, #disclaimer:focus { outline: none; }
 .panel > * { min-width: 0; }
 h2 { font: 700 clamp(22px, 3.4vw, 28px)/1.2 var(--display); margin: 0; text-wrap: balance; }
 .sub { margin: 4px 0 0; color: var(--ink-2); font-size: 15px; max-width: 68ch; }
@@ -997,6 +1000,27 @@ details.method .card { margin-top: 10px; }
   const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   // "Wednesday, Oct. 28": the weekday shows a Monday-Wednesday state is current on a Friday (Josh, 11/2/2026);
   // non-breaking spaces keep a date on one line when the sentence wraps on a phone
+  // holiday weeks (Josh, 11/26/2026, his pick of two drafts): most auctions don't sell Thanksgiving week or the weeks of
+  // Christmas and New Year's Day, so an old "Latest sales" date says why. Shown when the state's latest sale is HOLI_AGE
+  // or more days older than the build and a holiday week (Monday-Sunday) has started by the build, ended no more than a
+  // week before it and not before the latest sale; the next sales clear it. Dates from the build, not the visit
+  const HOLI_AGE = 6;
+  const holidayNote = (through, built) => {
+    const DAY = 864e5, at = x => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10));
+    if (!/^\d{4}-\d\d-\d\d$/.test(through || "") || !/^\d{4}-\d\d-\d\d$/.test(built || "")) return "";
+    const t = at(through), b = at(built), y = +built.slice(0, 4), hit = new Set();
+    if (b - t < HOLI_AGE * DAY) return "";
+    for (const yr of [y - 1, y]) {
+      const thu4 = 1 + (4 - new Date(Date.UTC(yr, 10, 1)).getUTCDay() + 7) % 7 + 21;          // fourth Thursday of November
+      for (const [k, h] of [["thanks", Date.UTC(yr, 10, thu4)], ["xmas", Date.UTC(yr, 11, 25)], ["ny", Date.UTC(yr + 1, 0, 1)]]) {
+        const mon = h - ((new Date(h).getUTCDay() + 6) % 7) * DAY, sun = mon + 6 * DAY;
+        if (mon <= b && sun + 7 * DAY >= b && sun >= t) hit.add(k);
+      }
+    }
+    const when = hit.has("xmas") && hit.has("ny") ? "the weeks of Christmas and New Year's Day" : hit.has("thanks") ? "Thanksgiving week"
+      : hit.has("xmas") ? "the week of Christmas" : hit.has("ny") ? "the week of New Year's Day" : "";
+    return when ? `Most auctions don't sell ${when}.` : "";
+  };
   const wday = (s, year) => `${DOW[iso(s).getDay()]}, ${day(s, year)}`.replace(/ /g, " ");
   const span = (a, b) => {
     const x = iso(a), y = iso(b);
@@ -1450,7 +1474,8 @@ details.method .card { margin-top: 10px; }
     const upd = (D.meta.generated || "").slice(0, 10);
     // "Latest sales: <date>" never splits: a phone breaks before it, not after "Latest sales:" (Josh, 11/26/2026)
     $("#asof").replaceChildren(/^\d{4}-\d\d-\d\d$/.test(upd) ? `Updated ${wday(upd)}. ` : "",
-      el("span", { class: "nobr", text: `Latest sales: ${wday(D.meta.through)}.` }));
+      el("span", { class: "nobr", text: `Latest sales: ${wday(D.meta.through)}.` }),
+      holidayNote(D.meta.through, upd) ? ` ${holidayNote(D.meta.through, upd)}` : "");
     // the page normally rebuilds every morning (weekends too since 11/2/2026); past STALE_DAYS (two missed mornings) it says so
     // (Josh, 11/1/2026), counted from when the page was built, not the last sale (holiday weeks have no sales)
     const built = (D.meta.generated || "").slice(0, 10), age = /^\d{4}-\d\d-\d\d$/.test(built) ? Math.round((today() - new Date(built + "T00:00")) / 864e5) : 0;
@@ -2841,8 +2866,9 @@ details.method .card { margin-top: 10px; }
       sub: textOf("#curve-sub").replace(/ Tap a point for head counts\.$/, ""), xaxis: "Weight (lb), by 50-lb class" }),
     "cmp-week": () => cmpShot(true),
     "cmp-month": () => cmpShot(false),
+    // Virginia's counts are its graded sales, so its title says so, as its other pictures do (cross-dashboard review, 11/26/2026)
     "vol-chart": () => { const v = D.volume, yr = +v.through.slice(0, 4);
-      return { title: `Cattle sold each month at the same ${stName()} auctions, ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
+      return { title: `Cattle sold each month at the same ${stName()} ${B.meta.graded ? "graded sales" : "auctions"}, ${yr} vs. ${v.avg ? `${yr - 1} and the ${v.years} average` : yr - 1}`,
         sub: ($("#vol-chart").parentElement.querySelector("p.note") || { textContent: "" }).textContent.trim() }; },
     "keep-vog-chart": () => ({ title: `${textOf("#keep-vog-title")}, ${stPlace()}`, sub: textOf("#keep-vog-sub"), note: SHOT_EST, xaxis: "Days kept" }),
     "buy-chart": () => ({ title: `${textOf("#buy-chart-title")}, ${S.pw}-lb ${S.pcls.toLowerCase()}, ${stPlace()}`, sub: textOf("#buy-chart-sub"), note: SHOT_EST, xaxis: "Days kept" }),
@@ -3010,7 +3036,9 @@ details.method .card { margin-top: 10px; }
     const dl = act("Download", () => { const a = el("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove(); });
     const coarse = matchMedia("(pointer: coarse)").matches;
     const acts = (coarse ? [share, dl, copy] : [copy, dl, share]).filter(Boolean);
-    panel.replaceChildren(el("img", { class: "cs-img", src: url, alt: `${spec.title}. ${spec.sub}` }),
+    // the alt text carries the picture's footnotes too (Virginia's graded sales, few barns, seasonal states), as the picture does
+    const alt = [`${spec.title}. ${spec.sub}`, spec.note, ...(spec.notes || [])].filter(Boolean).join(" ");
+    panel.replaceChildren(el("img", { class: "cs-img", src: url, alt }),
       el("div", { class: "cs-acts" }, [...acts, act("Close", () => { close(); btn.focus(); })]),
       el("p", { class: "note cs-hint", text: coarse ? "Or press and hold the picture to save or copy it." : "Or right-click the picture to copy or save it." }), msg);
     panel.hidden = false; btn.setAttribute("aria-expanded", "true");
